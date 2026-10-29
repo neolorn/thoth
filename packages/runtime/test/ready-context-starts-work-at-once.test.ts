@@ -61,7 +61,7 @@ describe('work asked of a ready context', () => {
     const transferred = localizationTransferSnapshot(localization);
 
     expect(transferred).toMatchObject({
-      profile: 'equator-transfer-state/1',
+      profile: 'thoth-transfer-state/1',
       primaryLocale: 'en-US',
     });
     expect(transferred?.catalogs).toHaveLength(1);

@@ -2,7 +2,7 @@
  * The file a stage's claims go to, and the two things that write it.
  *
  * A stage's claims are one file, named for the stage, and the gate hands a claiming stage its path
- * in `EQUATOR_CAPABILITY_CLAIMS`. A process with nothing in that variable records nothing, which is
+ * in `THOTH_CAPABILITY_CLAIMS`. A process with nothing in that variable records nothing, which is
  * what keeps a run under an injected defect out of the matrix: the stages that inject are never
  * handed a path. Every writer appends one line per record, so the suites, the drivers and the
  * command steps of one stage can all write to the same file.
@@ -24,7 +24,7 @@ import {
   type ClaimsMeta,
 } from './capability-claims.ts';
 
-export const EVIDENCE_PROFILE = 'equator-capability-evidence/1';
+export const EVIDENCE_PROFILE = 'thoth-capability-evidence/1';
 
 /**
  * A claim as a stage's evidence file holds it: the record `claimRecord` built, the check that made

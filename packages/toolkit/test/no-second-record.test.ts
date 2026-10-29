@@ -4,7 +4,7 @@
  * `specs/README.md` rules out a second record of anything derived: no digest, version or revision
  * field in an authored file, and nothing a project has to update when its work changes. Two halves
  * are asserted. The owner a compilation records moves with the project and never with the scopes it
- * has, so adding a scope costs no Equator step. And an authored catalog offers no field for a
+ * has, so adding a scope costs no Thoth step. And an authored catalog offers no field for a
  * version or a digest, so there is nowhere to keep one by hand.
  */
 import { describe, expect, it } from 'vitest';

@@ -50,7 +50,7 @@ describe('a within refinement that loosens a global nesting rule', () => {
         '      action:',
         '        within: [link]',
       ]),
-    ).toContain('EQ1303');
+    ).toContain('TH1303');
   });
 
   it('is refused for a slot placed inside code', () => {
@@ -61,6 +61,6 @@ describe('a within refinement that loosens a global nesting rule', () => {
         '      strong:',
         '        within: [code]',
       ]),
-    ).toContain('EQ1303');
+    ).toContain('TH1303');
   });
 });

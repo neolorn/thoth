@@ -61,7 +61,7 @@ describe('the selector ceiling', () => {
   it('refuses a message with one more', () => {
     expect(
       refusals(withSelectors(RESOURCE_LIMITS.selectorsPerMessage + 1)),
-    ).toEqual(['EQ1302 messages/subject']);
+    ).toEqual(['TH1302 messages/subject']);
   });
 });
 
@@ -75,6 +75,6 @@ describe('the variant ceiling', () => {
   it('refuses a message with one more', () => {
     expect(
       refusals(withVariants(RESOURCE_LIMITS.variantsPerMessage + 1)),
-    ).toEqual(['EQ1302 messages/subject']);
+    ).toEqual(['TH1302 messages/subject']);
   });
 });

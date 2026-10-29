@@ -1,18 +1,18 @@
-import { type Localization } from '@neolorn/equator';
+import { type Localization } from '@neolorn/thoth';
 import { messages } from '#i18n/shell';
 
 declare const localization: Localization;
 
 const noInputMessage: string = localization.text(messages.title);
 const inferredInputMessage: string = localization.text(messages.welcome, {
-  name: 'Equator',
+  name: 'Thoth',
 });
 const structuredMessage = localization.parts(messages.guide);
 
 // @ts-expect-error The generated welcome handle requires its inferred name input.
 localization.text(messages.welcome);
 // @ts-expect-error Generated message inputs reject undeclared fields.
-localization.text(messages.welcome, { name: 'Equator', extra: true });
+localization.text(messages.welcome, { name: 'Thoth', extra: true });
 // @ts-expect-error Generated message inputs preserve their declared value types.
 localization.text(messages.welcome, { name: 42 });
 

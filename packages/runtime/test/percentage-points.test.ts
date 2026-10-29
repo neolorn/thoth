@@ -7,7 +7,7 @@ import {
   percent,
   percentagePoints,
 } from '../src/formatting.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 /**
  * A rate that moved from four percent to six rose by two percentage points, and writing that as

@@ -1,5 +1,5 @@
 messages:
-  title: ตัวอย่าง Equator ขนาดเล็ก
+  title: ตัวอย่าง Thoth ขนาดเล็ก
   welcome: 'ยินดีต้อนรับ {$name}!'
   guide: 'อ่าน{#strong}คู่มือ{/strong}'
   recovery.unavailable: คำแปลไม่พร้อมใช้งานชั่วคราว

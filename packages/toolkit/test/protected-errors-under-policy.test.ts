@@ -56,14 +56,14 @@ describe('a protected error under every completeness policy', () => {
           requireCompleteTargets,
         });
         const invented = analysis.diagnostics.filter(
-          ({ code }) => code === 'EQ1304',
+          ({ code }) => code === 'TH1304',
         );
         expect(invented).toHaveLength(1);
         expect(invented[0]?.severity).toBe('error');
         expect(analysis.ok).toBe(false);
 
         const omitted = analysis.diagnostics.find(
-          ({ code }) => code === 'EQ1307',
+          ({ code }) => code === 'TH1307',
         );
         expect(omitted?.severity).toBe(
           requireCompleteTargets && !declared ? 'error' : 'warning',
@@ -127,7 +127,7 @@ describe('a protected error under every run policy together', () => {
       requireFreshOutput: true,
     });
     const invented = checked.diagnostics.filter(
-      ({ code }) => code === 'EQ1304',
+      ({ code }) => code === 'TH1304',
     );
     expect(invented, JSON.stringify(checked.diagnostics)).toHaveLength(1);
     expect(invented[0]?.severity).toBe('error');

@@ -83,7 +83,7 @@ describe('characters that can reorder surrounding text', () => {
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.diagnostics.map((d) => d.code)).toContain('EQ1103');
+    expect(result.diagnostics.map((d) => d.code)).toContain('TH1103');
     // The summary has to explain what the character does, since the reader cannot see it.
     expect(result.diagnostics[0]?.summary).toContain('reorders');
   });

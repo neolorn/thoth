@@ -17,7 +17,7 @@
  *
  * A failure renders nothing and is reported. A formatter reports rather than throws, and a template
  * is the wrong place to catch. Throwing here would take down the view over a value that one locale
- * cannot express, and a stand-in sentence would put Equator wording on a consumer page. So the
+ * cannot express, and a stand-in sentence would put Thoth wording on a consumer page. So the
  * output is empty and the diagnostic goes to the observability sink, where
  * `specs/11-diagnostics-and-observability.spec.md` section 8 already collapses equivalent failures
  * inside a window, which matters for a surface that re-runs on every change detection.
@@ -49,7 +49,7 @@ import type {
   PlainDateValue,
   PlainTimeValue,
   ZonedDateTimeValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { Localization, emitLocalizationRuntimeEvent } from './localization';
 import { RUNTIME_EVENT_CODES } from './observability';
 

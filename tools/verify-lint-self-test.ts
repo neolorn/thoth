@@ -15,7 +15,7 @@ import type { SpawnedText } from './spawned-text.ts';
  * visible in a passing run, which is the same argument `verify-browser-assurance-self-test.ts`
  * makes: a gate nobody has seen fail is indistinguishable from one that cannot.
  *
- * A floating promise is what the compiler cannot see with every strictness flag Equator already
+ * A floating promise is what the compiler cannot see with every strictness flag Thoth already
  * sets, and it needs types to detect at all, so a run that reports it proves the rule is on *and*
  * that the TypeScript program reached the file. An import cycle is the other half: no compiler flag
  * reports one, it is a property of the module graph rather than of any file, and the module
@@ -185,7 +185,7 @@ for (const seed of seeds) {
 }
 
 process.stdout.write(
-  `Equator lint self-test verified: ${seeds.length} seeded files turn the lint stage red, naming ` +
+  `Thoth lint self-test verified: ${seeds.length} seeded files turn the lint stage red, naming ` +
     `${seeds
       .filter(({ rule }) => rule !== undefined)
       .map(({ rule, name }) => `${rule} in ${name}`)

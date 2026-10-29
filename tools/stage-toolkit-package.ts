@@ -3,8 +3,8 @@
  *
  * `specs/02-packages-and-platform.spec.md` section 4 says what this package publishes: a
  * side-effect-free programmatic API, the schemas of its public file formats, its own manifest, and
- * the `equator` executable. The schemas are exports because a consumer validating a file against
- * the schema Equator used has to resolve it by name; reaching a path inside the installed directory
+ * the `thoth` executable. The schemas are exports because a consumer validating a file against
+ * the schema Thoth used has to resolve it by name; reaching a path inside the installed directory
  * would make the package's internal layout a consumer's dependency.
  *
  * The manifest is derived from the source one so the two cannot disagree about a version, a peer
@@ -66,7 +66,7 @@ const outputPackage = {
     './package.json': './package.json',
   },
   bin: {
-    equator: './cli.js',
+    thoth: './cli.js',
   },
 };
 
@@ -101,7 +101,7 @@ for (const [fileName, schema] of [
     schema.$schema !== 'https://json-schema.org/draft/2020-12/schema'
   ) {
     throw new TypeError(
-      `Refusing to stage an invalid Equator schema: ${fileName}`,
+      `Refusing to stage an invalid Thoth schema: ${fileName}`,
     );
   }
   await writeFile(

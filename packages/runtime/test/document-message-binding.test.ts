@@ -21,7 +21,7 @@ import {
   GENERATED_ABI,
   LocalizationError,
   type PlainMessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -53,11 +53,11 @@ describe('a document field that takes no values', () => {
 
 describe('a document field whose message takes a value', () => {
   it('carries the value when it is bound', () => {
-    const bound = documentMessage(takesAName, { name: 'Equator' });
+    const bound = documentMessage(takesAName, { name: 'Thoth' });
 
     expect(isBoundDocumentMessage(bound)).toBe(true);
     expect(bound.message).toBe(takesAName);
-    expect(bound.inputs).toEqual({ name: 'Equator' });
+    expect(bound.inputs).toEqual({ name: 'Thoth' });
     claimCapability('declaration:document-metadata');
   });
 
@@ -74,7 +74,7 @@ describe('a document field whose message takes a value', () => {
     const takesTwo = handle('document.greeting', ['name', 'section']);
 
     expect(() =>
-      refuseUnboundDocumentMessage(takesTwo, { name: 'Equator' }),
+      refuseUnboundDocumentMessage(takesTwo, { name: 'Thoth' }),
     ).toThrow(LocalizationError);
   });
 

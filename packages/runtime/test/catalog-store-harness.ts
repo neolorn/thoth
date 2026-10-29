@@ -10,7 +10,7 @@ import type {
   CatalogSetDescriptor,
   GeneratedConfiguration,
   LocalizationDiagnostic,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A generated set as the toolkit compiles it, handed to the store the runtime admits it with.

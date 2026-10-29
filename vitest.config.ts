@@ -12,7 +12,7 @@ import { defineConfig } from 'vitest/config';
  * library compiles to, and only a file that declares one goes through it.
  */
 const standardDecorators = {
-  name: 'equator-standard-decorators',
+  name: 'thoth-standard-decorators',
   enforce: 'pre' as const,
   transform(code: string, id: string) {
     if (!id.endsWith('.ts') || !/^@[A-Z]\w*\(/mu.test(code)) return null;
@@ -32,7 +32,7 @@ const standardDecorators = {
 /**
  * Two aliases, and the rule that decides which specifiers may have one.
  *
- * `@neolorn/equator/core` and `@neolorn/equator/http` are real published entry points, so the
+ * `@neolorn/thoth/core` and `@neolorn/thoth/http` are real published entry points, so the
  * package's own sources import them by those specifiers rather than reaching across directories,
  * which is what keeps each compiled into exactly one bundle. Under vitest there is no published
  * package to resolve them against, so each is mapped to the source its entry point is built from.
@@ -40,7 +40,7 @@ const standardDecorators = {
  * compiled around a second copy of it would be answering through something other than what a
  * deployment installs.
  *
- * The primary is deliberately *not* aliased. An earlier attempt to alias `@neolorn/equator` to
+ * The primary is deliberately *not* aliased. An earlier attempt to alias `@neolorn/thoth` to
  * `src/public-api.ts` threw `The injectable 'PlatformLocation' needs to be compiled using the JIT
  * compiler`, which was not a configuration problem to work around but the finding that started
  * this step: the primary cannot be loaded outside an Angular application. `core` and `http` import
@@ -83,10 +83,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@neolorn/equator/core': fileURLToPath(
+      '@neolorn/thoth/core': fileURLToPath(
         new URL('./packages/runtime/core/src/public-api.ts', import.meta.url),
       ),
-      '@neolorn/equator/http': fileURLToPath(
+      '@neolorn/thoth/http': fileURLToPath(
         new URL('./packages/runtime/http/src/public-api.ts', import.meta.url),
       ),
     },

@@ -1,6 +1,6 @@
 /** Generated from cldr-person-names-full 48.2.0 by tools/generate-person-names.ts. */
 export const PERSON_NAME_DATA_PROFILE =
-  'cldr-48.2/equator-person-names-1' as const;
+  'cldr-48.2/thoth-person-names-1' as const;
 
 /**
  * Cube axes, in the order the flat cell index walks them.

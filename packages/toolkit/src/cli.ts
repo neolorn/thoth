@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * The eight things a person can ask Equator to do, and the two that change a project's shape.
+ * The eight things a person can ask Thoth to do, and the two that change a project's shape.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 11 separates them that way. Initialization
  * adds the setup an owner is missing and migration changes an established shape; generate,
@@ -55,7 +55,7 @@ interface ParsedInvocation {
   readonly requireFresh: boolean;
   readonly pseudo: boolean;
   /**
-   * The configuration fields this invocation sets, keyed as `equator.config.json` keys them.
+   * The configuration fields this invocation sets, keyed as `thoth.config.json` keys them.
    *
    * Not one field per flag. The flags are generated from `CONFIGURATION_SCHEMA`, so a named
    * field here would be a second list to keep in step with the first, and the second list going
@@ -82,22 +82,22 @@ const projectHost = () => import('./project-host.js');
 const authoredChanges = () => import('./authoring-transaction.js');
 
 function helpText(): string {
-  return `Equator toolkit ${packageManifest.version}
+  return `Thoth toolkit ${packageManifest.version}
 
-Usage: equator <command> [options]
+Usage: thoth <command> [options]
 
 Commands:
-  init       Add compatible Equator configuration and package setup
+  init       Add compatible Thoth configuration and package setup
   generate   Compile and safely publish generated #i18n artifacts
   check      Validate authored inputs, analysis, and generated freshness
-  format     Canonically format Equator configuration and catalogs
-  clean      Remove only verified Equator-owned generated and work state
-  uninstall  Remove Equator from this owner, keeping authored catalogs
+  format     Canonically format Thoth configuration and catalogs
+  clean      Remove only verified Thoth-owned generated and work state
+  uninstall  Remove Thoth from this owner, keeping authored catalogs
   watch      Reconcile changes in one foreground process
-  migrate    Preview or apply one explicit Equator-authored migration plan
+  migrate    Preview or apply one explicit Thoth-authored migration plan
 
 Common options:
-  --project <path>   Select an owner directory or equator.config.json
+  --project <path>   Select an owner directory or thoth.config.json
   --json             Emit deterministic machine-readable JSON
   --dry-run          Preview init, generate, format, clean, uninstall, or migrate
   --help             Show this help
@@ -115,7 +115,7 @@ Check options:
   --pseudo           Also generate the configured pseudo-locales (development only)
 
 Migrate options:
-  --plan <path>      Select one equator-authored-change-plan/1 JSON file
+  --plan <path>      Select one thoth-authored-change-plan/1 JSON file
   --project <owner>  Select the explicit migration owner (required)
 
 Exit codes: 0 success, 1 diagnostics, 2 invocation/configuration, 3 environment, 130 interruption.
@@ -139,8 +139,8 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
   if (commandValue === undefined || !commands.has(commandValue)) {
     throw new InvocationError(
       commandValue === undefined
-        ? 'Equator requires a command.'
-        : `Unknown Equator command: ${commandValue}`,
+        ? 'Thoth requires a command.'
+        : `Unknown Thoth command: ${commandValue}`,
     );
   }
   const command = commandValue as CliCommand;
@@ -214,7 +214,7 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
         const option = initOptionForFlag(flag);
         if (option === undefined) {
           throw new InvocationError(
-            `Unknown option for equator ${command}: ${flag}`,
+            `Unknown option for thoth ${command}: ${flag}`,
           );
         }
         firstInitFlag ??= flag;
@@ -235,30 +235,30 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
     )
   ) {
     throw new InvocationError(
-      `--dry-run is not supported by equator ${command}.`,
+      `--dry-run is not supported by thoth ${command}.`,
     );
   }
   if (fix && command !== 'check') {
-    throw new InvocationError(`--fix is not supported by equator ${command}.`);
+    throw new InvocationError(`--fix is not supported by thoth ${command}.`);
   }
   if (catalogs && command !== 'uninstall') {
     throw new InvocationError(
-      '--catalogs is supported only by equator uninstall.',
+      '--catalogs is supported only by thoth uninstall.',
     );
   }
   if (firstInitFlag !== undefined && command !== 'init') {
     throw new InvocationError(
-      `${firstInitFlag} is supported only by equator init.`,
+      `${firstInitFlag} is supported only by thoth init.`,
     );
   }
   if (requireComplete && command !== 'check') {
     throw new InvocationError(
-      '--require-complete is supported only by equator check.',
+      '--require-complete is supported only by thoth check.',
     );
   }
   if (requireFresh && command !== 'check') {
     throw new InvocationError(
-      '--require-fresh is supported only by equator check.',
+      '--require-fresh is supported only by thoth check.',
     );
   }
   // `check` as well as `generate`, and for one reason: `--require-fresh` compares generated output
@@ -267,17 +267,17 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
   // is exactly correct as stale.
   if (pseudo && command !== 'generate' && command !== 'check') {
     throw new InvocationError(
-      '--pseudo is supported only by equator generate and equator check.',
+      '--pseudo is supported only by thoth generate and thoth check.',
     );
   }
   if (plan !== undefined && command !== 'migrate') {
-    throw new InvocationError('--plan is supported only by equator migrate.');
+    throw new InvocationError('--plan is supported only by thoth migrate.');
   }
   if (command === 'migrate' && project === undefined) {
-    throw new InvocationError('equator migrate requires --project <owner>.');
+    throw new InvocationError('thoth migrate requires --project <owner>.');
   }
   if (command === 'migrate' && plan === undefined) {
-    throw new InvocationError('equator migrate requires --plan <path>.');
+    throw new InvocationError('thoth migrate requires --plan <path>.');
   }
   return Object.freeze({
     command,
@@ -321,13 +321,13 @@ function orderedDiagnostics(
 
 function machineSafeSummary(summary: string): string {
   // A machine-absolute path is the consumer's machine, and
-  // `specs/10-compiler-and-tooling.spec.md` section 7 keeps those out of what Equator publishes.
+  // `specs/10-compiler-and-tooling.spec.md` section 7 keeps those out of what Thoth publishes.
   // It cannot be matched exactly, because a Windows path may contain spaces and so has no
   // reliable end; the stop set is what a path may not contain.
   //
   // The quote is in that set because a path in a summary is written with `JSON.stringify`, which
   // means the closing quote is where it ends: exactly, not heuristically. Without it the redaction
-  // ate the rest of the sentence: `EQ1602` names the two owner identities and the recovery, and in
+  // ate the rest of the sentence: `TH1602` names the two owner identities and the recovery, and in
   // machine output the whole of that ended at `<machine-path>`, because nothing after the path
   // happened to be a comma. A diagnostic that says what to do only in human output says it to half
   // its readers. A Windows path cannot contain a quote, so nothing that is a path is left behind.
@@ -376,18 +376,18 @@ function failureExitCode(
 ): number {
   if (
     command === 'migrate' &&
-    diagnostics.some(({ code }) => code === 'EQ1805')
+    diagnostics.some(({ code }) => code === 'TH1805')
   ) {
     return 2;
   }
   if (
     diagnostics.some(
       ({ code }) =>
-        code === 'EQ1701' ||
-        code === 'EQ1702' ||
-        code === 'EQ1705' ||
-        code === 'EQ1806' ||
-        /^EQ100[1-6]$/u.test(code),
+        code === 'TH1701' ||
+        code === 'TH1702' ||
+        code === 'TH1705' ||
+        code === 'TH1806' ||
+        /^TH100[1-6]$/u.test(code),
     )
   ) {
     return 2;
@@ -395,7 +395,7 @@ function failureExitCode(
   if (
     diagnostics.some(
       ({ code, severity }) =>
-        severity === 'error' && (code === 'EQ1602' || code === 'EQ1703'),
+        severity === 'error' && (code === 'TH1602' || code === 'TH1703'),
     )
   ) {
     return 3;
@@ -428,7 +428,7 @@ function writeMachineResult(
 ): void {
   process.stdout.write(
     `${JSON.stringify({
-      profile: 'equator-cli-result/1',
+      profile: 'thoth-cli-result/1',
       command,
       status: statusForExit(exitCode),
       diagnostics: orderedDiagnostics(diagnostics).map(machineDiagnostic),
@@ -453,17 +453,17 @@ function reportFailure(
       process.stderr.write(humanDiagnostic(diagnostic));
     if (
       invocation.command === 'init' &&
-      ordered.some(({ code }) => code === 'EQ1701')
+      ordered.some(({ code }) => code === 'TH1701')
     ) {
       process.stderr.write(
         `Complete invocation: ${INIT_INVOCATION} [--project <path>]\n`,
       );
     } else if (
       invocation.command === 'migrate' &&
-      ordered.some(({ code }) => code === 'EQ1701')
+      ordered.some(({ code }) => code === 'TH1701')
     ) {
       process.stderr.write(
-        'Complete invocation: equator migrate --plan <path> --project <owner> [--dry-run] [--json]\n',
+        'Complete invocation: thoth migrate --plan <path> --project <owner> [--dry-run] [--json]\n',
       );
     }
   }
@@ -516,8 +516,8 @@ function reportSuccess(
 ): number {
   const ordered = orderedDiagnostics(diagnostics);
   // A command can do what it was asked to do and still have found something that is not allowed to
-  // pass. Unless the success path reads severity, `equator check --require-complete` returns exit 0
-  // and `"status": "success"` while carrying `EQ1310` at `severity: error`, and `equator generate`
+  // pass. Unless the success path reads severity, `thoth check --require-complete` returns exit 0
+  // and `"status": "success"` while carrying `TH1310` at `severity: error`, and `thoth generate`
   // does the same.
   //
   // The test is on **severity**, never on a list of codes.
@@ -635,7 +635,7 @@ async function interactiveInitOptions(
       ...(invocation.project === undefined
         ? {}
         : { project: invocation.project }),
-      // Four questions, because the tooling specification fixes what a bare `equator init` on a TTY
+      // Four questions, because the tooling specification fixes what a bare `thoth init` on a TTY
       // may ask. The fields the flags reach beyond these are set on the command line, and widening
       // the prompt list is a specification change rather than a parser change.
       configuration: {
@@ -667,13 +667,13 @@ async function executeInit(invocation: ParsedInvocation): Promise<number> {
         configuration: preview.value.configuration,
       },
       preview.value.changed
-        ? `Equator init would update: ${preview.value.files.join(', ')}.`
-        : 'Equator init is already complete.',
+        ? `Thoth init would update: ${preview.value.files.join(', ')}.`
+        : 'Thoth init is already complete.',
     );
   }
   if (!invocation.json && preview.value.changed) {
     process.stdout.write(
-      `Equator init plan: ${preview.value.files.join(', ')}.\n`,
+      `Thoth init plan: ${preview.value.files.join(', ')}.\n`,
     );
   }
   const applied = await initializeProject({ ...options, dryRun: false });
@@ -688,8 +688,8 @@ async function executeInit(invocation: ParsedInvocation): Promise<number> {
       configuration: applied.value.configuration,
     },
     applied.value.changed
-      ? `Equator init updated: ${applied.value.files.join(', ')}.`
-      : 'Equator init is already complete.',
+      ? `Thoth init updated: ${applied.value.files.join(', ')}.`
+      : 'Thoth init is already complete.',
   );
 }
 
@@ -706,11 +706,11 @@ async function executeGenerate(invocation: ParsedInvocation): Promise<number> {
   const summary = generationSummary(result.value);
   const human = invocation.dryRun
     ? result.value.publication.changed
-      ? `Equator generate would write ${result.value.publication.written.length} and remove ${result.value.publication.removed.length} files.`
-      : 'Equator generated output is already current.'
+      ? `Thoth generate would write ${result.value.publication.written.length} and remove ${result.value.publication.removed.length} files.`
+      : 'Thoth generated output is already current.'
     : result.value.publication.changed
-      ? `Equator generated ${result.value.publication.written.length} files and removed ${result.value.publication.removed.length} stale files.`
-      : 'Equator generated output is already current.';
+      ? `Thoth generated ${result.value.publication.written.length} files and removed ${result.value.publication.removed.length} stale files.`
+      : 'Thoth generated output is already current.';
   return reportSuccess(
     invocation,
     result.diagnostics,
@@ -736,8 +736,8 @@ async function executeCheck(invocation: ParsedInvocation): Promise<number> {
     result.diagnostics,
     { fix: invocation.fix, ...checkSummary(result.value) },
     result.value.freshness.fresh
-      ? 'Equator check passed; generated output is current.'
-      : 'Equator check passed with a generated-output freshness advisory.',
+      ? 'Thoth check passed; generated output is current.'
+      : 'Thoth check passed with a generated-output freshness advisory.',
   );
 }
 
@@ -760,9 +760,9 @@ async function executeFormat(invocation: ParsedInvocation): Promise<number> {
     },
     result.value.changed
       ? invocation.dryRun
-        ? `Equator format would update: ${result.value.files.join(', ')}.`
-        : `Equator formatted: ${result.value.files.join(', ')}.`
-      : 'Equator authoring files are already canonical.',
+        ? `Thoth format would update: ${result.value.files.join(', ')}.`
+        : `Thoth formatted: ${result.value.files.join(', ')}.`
+      : 'Thoth authoring files are already canonical.',
   );
 }
 
@@ -785,9 +785,9 @@ async function executeClean(invocation: ParsedInvocation): Promise<number> {
     },
     result.value.changed
       ? invocation.dryRun
-        ? `Equator clean would remove ${result.value.removed.length} owned files.`
-        : `Equator clean removed ${result.value.removed.length} owned files.`
-      : 'Equator clean found no owned state.',
+        ? `Thoth clean would remove ${result.value.removed.length} owned files.`
+        : `Thoth clean removed ${result.value.removed.length} owned files.`
+      : 'Thoth clean found no owned state.',
   );
 }
 
@@ -818,10 +818,10 @@ async function executeUninstall(invocation: ParsedInvocation): Promise<number> {
     result.value.changed
       ? `${
           invocation.dryRun
-            ? `Equator uninstall would remove ${result.value.removed.length} files or entries.`
-            : `Equator uninstall removed ${result.value.removed.length} files or entries.`
+            ? `Thoth uninstall would remove ${result.value.removed.length} files or entries.`
+            : `Thoth uninstall removed ${result.value.removed.length} files or entries.`
         }${retained}`
-      : `Equator uninstall found nothing of its own to remove.${retained}`,
+      : `Thoth uninstall found nothing of its own to remove.${retained}`,
   );
 }
 
@@ -844,14 +844,14 @@ async function readMigrationPlan(
   } catch (error) {
     if (missingFileError(error)) {
       throw new InvocationError(
-        `Equator migration plan ${JSON.stringify(path)} does not exist.`,
+        `Thoth migration plan ${JSON.stringify(path)} does not exist.`,
       );
     }
     throw error;
   }
   if (!metadata.isFile() || metadata.isSymbolicLink()) {
     throw new InvocationError(
-      'Equator --plan must select an ordinary non-symbolic JSON file.',
+      'Thoth --plan must select an ordinary non-symbolic JSON file.',
     );
   }
   let handle: Awaited<ReturnType<typeof open>>;
@@ -860,7 +860,7 @@ async function readMigrationPlan(
   } catch (error) {
     if (missingFileError(error)) {
       throw new InvocationError(
-        `Equator migration plan ${JSON.stringify(path)} does not exist.`,
+        `Thoth migration plan ${JSON.stringify(path)} does not exist.`,
       );
     }
     throw error;
@@ -869,15 +869,15 @@ async function readMigrationPlan(
     const openedMetadata = await handle.stat();
     if (!openedMetadata.isFile()) {
       throw new InvocationError(
-        'Equator --plan must select an ordinary JSON file.',
+        'Thoth --plan must select an ordinary JSON file.',
       );
     }
     const maximum = RESOURCE_LIMITS.authoredChangePlanBytes;
     if (openedMetadata.size > maximum) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1805',
-          `Equator authored change plan exceeds the ${maximum}-byte implementation ceiling.`,
+          'TH1805',
+          `Thoth authored change plan exceeds the ${maximum}-byte implementation ceiling.`,
         ),
       ]);
     }
@@ -894,8 +894,8 @@ async function readMigrationPlan(
     if (position > maximum) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1805',
-          `Equator authored change plan exceeds the ${maximum}-byte implementation ceiling.`,
+          'TH1805',
+          `Thoth authored change plan exceeds the ${maximum}-byte implementation ceiling.`,
         ),
       ]);
     }
@@ -907,8 +907,8 @@ async function readMigrationPlan(
     } catch {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1805',
-          'Equator authored change plan must be valid UTF-8 JSON.',
+          'TH1805',
+          'Thoth authored change plan must be valid UTF-8 JSON.',
         ),
       ]);
     }
@@ -929,7 +929,7 @@ function authoredFiles(count: number): string {
 async function executeMigrate(invocation: ParsedInvocation): Promise<number> {
   if (invocation.project === undefined || invocation.plan === undefined) {
     throw new InvocationError(
-      'equator migrate requires --plan <path> and --project <owner>.',
+      'thoth migrate requires --plan <path> and --project <owner>.',
     );
   }
   const { discoverProject } = await projectHost();
@@ -959,13 +959,13 @@ async function executeMigrate(invocation: ParsedInvocation): Promise<number> {
         regenerate: plan.value.regenerate,
       },
       preview.value.changed
-        ? `Equator migrate would apply ${plan.value.id} to ${authoredFiles(preview.value.files.length)}: ${preview.value.files.join(', ')}.`
-        : `Equator migration ${plan.value.id} is already applied.`,
+        ? `Thoth migrate would apply ${plan.value.id} to ${authoredFiles(preview.value.files.length)}: ${preview.value.files.join(', ')}.`
+        : `Thoth migration ${plan.value.id} is already applied.`,
     );
   }
   if (!invocation.json && preview.value.changed) {
     process.stdout.write(
-      `Equator migrate plan ${plan.value.id}: ${authoredFiles(preview.value.files.length)}.\n`,
+      `Thoth migrate plan ${plan.value.id}: ${authoredFiles(preview.value.files.length)}.\n`,
     );
   }
   const applied = await applyAuthoredChangePlan({
@@ -985,8 +985,8 @@ async function executeMigrate(invocation: ParsedInvocation): Promise<number> {
       regenerate: plan.value.regenerate,
     },
     applied.value.changed
-      ? `Equator migrate applied ${plan.value.id} to ${authoredFiles(applied.value.files.length)}: ${applied.value.files.join(', ')}. Run equator generate.`
-      : `Equator migration ${plan.value.id} is already applied.`,
+      ? `Thoth migrate applied ${plan.value.id} to ${authoredFiles(applied.value.files.length)}: ${applied.value.files.join(', ')}. Run thoth generate.`
+      : `Thoth migration ${plan.value.id} is already applied.`,
   );
 }
 
@@ -999,7 +999,7 @@ function writeWatchCycle(
     if (invocation.json) {
       process.stdout.write(
         `${JSON.stringify({
-          profile: 'equator-cli-watch-event/1',
+          profile: 'thoth-cli-watch-event/1',
           command: 'watch',
           sequence: cycle.sequence,
           status: statusForExit(exitCode),
@@ -1019,7 +1019,7 @@ function writeWatchCycle(
   if (invocation.json) {
     process.stdout.write(
       `${JSON.stringify({
-        profile: 'equator-cli-watch-event/1',
+        profile: 'thoth-cli-watch-event/1',
         command: 'watch',
         sequence: cycle.sequence,
         status: 'success',
@@ -1034,7 +1034,7 @@ function writeWatchCycle(
       process.stderr.write(humanDiagnostic(diagnostic));
     }
     process.stdout.write(
-      `Equator watch cycle ${cycle.sequence}: ${
+      `Thoth watch cycle ${cycle.sequence}: ${
         cycle.result.value.publication.changed ? 'generated changes' : 'current'
       }.\n`,
     );
@@ -1116,7 +1116,7 @@ try {
   process.exitCode = await main();
 } catch (error) {
   if (error instanceof InvocationError) {
-    const diagnostic = toolkitDiagnostic('EQ1701', error.message);
+    const diagnostic = toolkitDiagnostic('TH1701', error.message);
     const json = process.argv.includes('--json');
     process.exitCode = reportFailure(
       {
@@ -1128,8 +1128,8 @@ try {
   } else {
     const detail = error instanceof Error ? error.message : String(error);
     const diagnostic = toolkitDiagnostic(
-      'EQ1703',
-      'Equator could not complete because an environment operation failed.',
+      'TH1703',
+      'Thoth could not complete because an environment operation failed.',
     );
     const json = process.argv.includes('--json');
     if (json) {

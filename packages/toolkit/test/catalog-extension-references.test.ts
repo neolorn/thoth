@@ -71,7 +71,7 @@ describe('a catalog reference to an extension', () => {
     expect(
       errors([catalog('messages:\n  title: "{$x :acme:upper}"\n')]),
     ).toEqual([
-      'EQ1805 Message function "acme:upper" has no registered application-local descriptor.',
+      'TH1805 Message function "acme:upper" has no registered application-local descriptor.',
     ]);
   });
 
@@ -82,7 +82,7 @@ describe('a catalog reference to an extension', () => {
         registry(),
       ),
     ).toEqual([
-      'EQ1805 Custom message function "acme:upper" does not declare option "mode".',
+      'TH1805 Custom message function "acme:upper" does not declare option "mode".',
     ]);
   });
 });

@@ -21,7 +21,7 @@ import { parseMessageSemanticModel } from '../src/message-format.js';
  * What that produces is not a crash. `RegExp.prototype.test` coerces its argument, so `42` is
  * tested as `"42"` and `undefined` as `"undefined"`, both of which satisfy an identifier grammar as
  * readily as a real identity does. The validator returns success and brands the original value,
- * still a number or still `undefined`, as an Equator identity, and every later consumer of that
+ * still a number or still `undefined`, as a Thoth identity, and every later consumer of that
  * value works with a type that lies.
  *
  * The parameters are `unknown`, because that is what a validator's callers actually hold, and
@@ -49,7 +49,7 @@ describe('identities', () => {
     const result = parseProviderId(42);
 
     expect(result.ok).toBe(false);
-    expect(result.diagnostics[0]?.code).toBe('EQ1104');
+    expect(result.diagnostics[0]?.code).toBe('TH1104');
     expect(result.diagnostics[0]?.summary).toContain('must be a string');
   });
 
@@ -98,7 +98,7 @@ describe('locales and aliases', () => {
     const result = parseLocaleAlias(undefined);
 
     expect(result.ok).toBe(false);
-    expect(result.diagnostics[0]?.code).toBe('EQ1005');
+    expect(result.diagnostics[0]?.code).toBe('TH1005');
   });
 
   it('reports rather than throwing for a locale that is not a string', () => {

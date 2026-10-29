@@ -90,7 +90,7 @@ describe('two families with one template', () => {
     ['last', ['second', 'first']],
   ])('are refused at the later name when it is held %s', (_label, held) => {
     expect(analyze(twins, held)).toEqual({
-      refused: ['EQ1305 families/second'],
+      refused: ['TH1305 families/second'],
     });
   });
 });

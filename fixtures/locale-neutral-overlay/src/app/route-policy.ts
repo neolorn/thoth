@@ -1,7 +1,7 @@
 import {
   createLocaleNeutralPolicy,
   type LocaleUrlPolicy,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 
 /** The site this deployment answers at, which the router and `server.ts` both compose from. */
@@ -11,8 +11,8 @@ export const SITE_ORIGIN = 'https://site.example';
  * The locales this policy serves: every locale this build generated, except `en-Latn-XA`.
  *
  * Read from the generated configuration, which is where the locales are declared, so adding or
- * removing one is an edit to `equator.config.json` and nothing here. A pseudo-locale is in the
- * configuration only in a build made with `equator generate --pseudo`.
+ * removing one is an edit to `thoth.config.json` and nothing here. A pseudo-locale is in the
+ * configuration only in a build made with `thoth generate --pseudo`.
  *
  * `en-Latn-XA` is left out as the development row leaves it out, so what differs between the rows
  * is only where the locale is not.

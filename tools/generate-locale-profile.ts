@@ -1,5 +1,5 @@
 /**
- * The locale tables Equator carries, derived from the pinned CLDR release rather than transcribed.
+ * The locale tables Thoth carries, derived from the pinned CLDR release rather than transcribed.
  *
  * `specs/01-standards-profile.spec.md` section 2 requires every such table to come from a source
  * the lock records, and to agree with that source. `--check` is what makes the second half true: it
@@ -167,7 +167,7 @@ const BIDI_LONG_NAMES = new Map([
 // character that exists today and wrong for the next one added to the Arabic block. That is the
 // worst shape a generated table can have. It passes every test, ships, and stays right until some
 // Unicode release years from now assigns a character in one of those blocks: at which point a
-// value containing it silently stops being isolated, in a released version of Equator, with nothing
+// value containing it silently stops being isolated, in a released version of Thoth, with nothing
 // in the repository having changed. Nothing would connect the two events.
 //
 // So the defaults go down first and every explicit line overrides them, and the class includes
@@ -211,7 +211,7 @@ const scriptClass = (property: string) =>
 assert.equal(
   (process.versions as { readonly unicode?: string }).unicode,
   '17.0',
-  'The cross-check below compares the vendored Unicode 17.0.0 file against the running ICU. Under a different Unicode version the two disagree for reasons that have nothing to do with Equator, so this runs on the pinned toolchain or not at all.',
+  'The cross-check below compares the vendored Unicode 17.0.0 file against the running ICU. Under a different Unicode version the two disagree for reasons that have nothing to do with Thoth, so this runs on the pinned toolchain or not at all.',
 );
 const inRtlScript = scriptClass('Script');
 const usedWithRtlScript = scriptClass('Script_Extensions');
@@ -301,7 +301,7 @@ const rtlPattern = `[${rtlRanges
 
 const output = [
   '/** Generated from cldr-core 48.2.0 and Unicode 17.0.0 by tools/generate-locale-profile.ts. */',
-  "export const LOCALE_DATA_PROFILE =\n  'cldr-48.2+unicode-17.0/equator-rtl-bidi-1' as const;",
+  "export const LOCALE_DATA_PROFILE =\n  'cldr-48.2+unicode-17.0/thoth-rtl-bidi-1' as const;",
   '',
   '/**',
   ' * Every script code written right to left, from the CLDR release named above.',
@@ -393,7 +393,7 @@ const ordinalCategories = categoriesFrom(
 
 const pluralOutput = [
   '/** Generated from cldr-core 48.2.0 by tools/generate-locale-profile.ts. */',
-  "export const PLURAL_DATA_PROFILE = 'cldr-48.2/equator-plurals-1' as const;",
+  "export const PLURAL_DATA_PROFILE = 'cldr-48.2/thoth-plurals-1' as const;",
   '',
   '/**',
   ' * Cardinal plural categories each language requires, keyed by CLDR language subtag.',
@@ -436,7 +436,7 @@ const pluralOutput = [
 // are being refused. The script and region dimensions: for `zh-Hant` against a supported
 // `zh-Hans-CN` the script dimension alone contributes 50, which is exactly the specification's
 // default threshold, so under the whole distance model the refusal would rest on how the dimensions
-// combine and on where the threshold sits. Equator decides that pair categorically today, by
+// combine and on where the threshold sits. Thoth decides that pair categorically today, by
 // comparing maximized scripts, and with a test. And the rest of the language dimension: it holds
 // 114 pairs that share no macrolanguage (`af`/`en` at 20, `be`/`ru` at 30, `da`/`no` at 8) which
 // are judgments about what a reader will accept instead, not about what their language is. Serving
@@ -557,7 +557,7 @@ for (const [key, distance] of [...languageDistance].sort(([left], [right]) =>
   if (!sameGroup(desired, supported)) continue;
   assert.ok(
     distance < DEFAULT_THRESHOLD,
-    `CLDR now rates ${desired} and ${supported} at ${distance}, at or beyond the default matching threshold, though one encompasses the other. Whether Equator should still treat them as the same language is a decision, not a regeneration.`,
+    `CLDR now rates ${desired} and ${supported} at ${distance}, at or beyond the default matching threshold, though one encompasses the other. Whether Thoth should still treat them as the same language is a decision, not a regeneration.`,
   );
   widestKept = Math.max(widestKept, distance);
   encompassed[desired] ??= {};
@@ -573,7 +573,7 @@ const encompassedOutput = [
   `/** Generated from cldr-core ${manifest.version} and the IANA registry of ${registrySource.fileDate} by tools/generate-locale-profile.ts. */`,
   // Built rather than written out: this string exists to change when the data under it changes,
   // and a literal is a thing somebody has to remember to edit.
-  `export const ENCOMPASSED_LANGUAGE_PROFILE =\n  '${cldrProfile}+iana-${registrySource.fileDate}/equator-encompassed-1' as const;`,
+  `export const ENCOMPASSED_LANGUAGE_PROFILE =\n  '${cldrProfile}+iana-${registrySource.fileDate}/thoth-encompassed-1' as const;`,
   '',
   '/**',
   ' * How far apart two language subtags are, for subtags that are the same language written twice.',
@@ -581,11 +581,11 @@ const encompassedOutput = [
   ' * Keyed by the requested language subtag, then by the supported one, in CLDR distances where a',
   ' * smaller number is a closer match. A pair is present only when the IANA registry says one subtag',
   ' * encompasses the other or that both are encompassed by one macrolanguage, BCP 47 3.1.10, and CLDR',
-  ' * ranks the pair at the language dimension. Absent means Equator has nothing to say about the pair,',
+  ' * ranks the pair at the language dimension. Absent means Thoth has nothing to say about the pair,',
   ' * not that the two are unrelated.',
   ' *',
   ' * This is not the whole of CLDR language matching and is not meant to become it. The dimensions it',
-  ' * leaves out are the ones Equator already decides categorically, and the language-dimension pairs',
+  ' * leaves out are the ones Thoth already decides categorically, and the language-dimension pairs',
   " * it leaves out are CLDR's judgments about what a reader will accept instead of their own language,",
   ' * which is a policy rather than an identity.',
   ' */',
@@ -599,12 +599,12 @@ const encompassedOutput = [
 //
 // `selfName` on a locale choice is decided here rather than by
 // `new Intl.DisplayNames([locale], { type: 'language' })` read in the browser, which is the
-// engine's own CLDR snapshot. Over sixteen locales on the four engines Equator gates on, three of
+// engine's own CLDR snapshot. Over sixteen locales on the four engines Thoth gates on, three of
 // sixteen disagree in two distinct ways: WebKit 26.5
 // title-cases the language name (`Portugues (Brasil)`, `Espanol latinoamericano`) where CLDR's own
 // casing is lowercase, and Chromium 149 does not translate the `valencia` variant subtag and prints
 // `catala (Espanya, VALENCIA)`. A name no reader of any language has seen. The sharper half is
-// not the browsers disagreeing with each other: Equator server-renders the switcher on Node, so a
+// not the browsers disagreeing with each other: Thoth server-renders the switcher on Node, so a
 // WebKit visitor would be sent one label and recompute a different one on hydration.
 //
 // So the name is derived here from a pinned release and shipped, and the engine has no vote.
@@ -715,7 +715,7 @@ const undParents = Object.values(parentLocales).filter(
   (parent) => parent === 'und',
 ).length;
 
-// Equator's two pseudo-locales are named here for the same reason every other locale is: they
+// Thoth's two pseudo-locales are named here for the same reason every other locale is: they
 // appear in a switcher during development, and CLDR does have names for XA and XB.
 const PSEUDO_LOCALES = ['en-Latn-XA', 'en-Arab-XB'];
 
@@ -926,7 +926,7 @@ assert.equal(endonyms['ca-ES-valencia'], 'català (Espanya, valencià)');
 
 const endonymOutput = [
   `/** Generated from cldr-localenames-full ${localeNamesManifest.version} by tools/generate-locale-profile.ts. */`,
-  `export const ENDONYM_PROFILE = 'cldr-${cldrProfile.slice('cldr-'.length)}/equator-endonyms-1' as const;`,
+  `export const ENDONYM_PROFILE = 'cldr-${cldrProfile.slice('cldr-'.length)}/thoth-endonyms-1' as const;`,
   '',
   '/**',
   ' * The name each locale has for itself, in itself, keyed by CLDR locale identifier.',
@@ -934,7 +934,7 @@ const endonymOutput = [
   ' * Derived by TR35 locale display name from the same CLDR release the rest of the profile comes',
   ' * from, so a switcher renders one label for a locale on every engine and on both sides of',
   " * hydration. The engine's own answer is not wrong, it is merely the engine's: measured over the",
-  ' * four engines Equator gates on, three of sixteen locales disagreed, and a server-rendered label',
+  ' * four engines Thoth gates on, three of sixteen locales disagreed, and a server-rendered label',
   ' * that changes on hydration is a defect no consumer can fix.',
   ' *',
   ' * A locale absent from this table is one CLDR has no name for. There are',
@@ -1203,7 +1203,7 @@ const parentLocaleOutput = [
   // Wrapped as prettier wraps it: the name and the value together pass the print width, and a
   // generated file that the formatter would rewrite fails the gate on a difference nobody made.
   'export const PARENT_LOCALE_PROFILE =',
-  `  '${cldrProfile}/equator-parent-locales-1' as const;`,
+  `  '${cldrProfile}/thoth-parent-locales-1' as const;`,
   '',
   '/**',
   ' * The parent CLDR declares for a locale, where that parent is not the tag with its last subtag',
@@ -1225,7 +1225,7 @@ const parentLocaleOutput = [
   ' * from the likely scripts to the locales this table does not name, `ru-Latn` among them.',
   ' *',
   ' * Four parents change the language: `hi-Latn` takes `en-IN`, `ht` takes `fr-HT`, and `nb` and',
-  ' * `nn` take `no`. That is CLDR data rather than a choice Equator made, and a project that',
+  ' * `nn` take `no`. That is CLDR data rather than a choice Thoth made, and a project that',
   ' * disagrees says so under `parentLocales` in its own configuration.',
   ' *',
   ' * Both packages carry the same table. The toolkit resolves from it the chain each configured',
@@ -1717,7 +1717,7 @@ try {
   if ((error as NodeJS.ErrnoException | undefined)?.code !== 'ENOENT')
     throw error;
 }
-const previousTimeZoneRelease = /'tzdata-([^/']+)\/equator-time-zone-/u.exec(
+const previousTimeZoneRelease = /'tzdata-([^/']+)\/thoth-time-zone-/u.exec(
   previousTimeZoneTable ?? '',
 )?.[1];
 if (
@@ -1816,7 +1816,7 @@ const timeZoneOutput = [
     timeZoneRelease +
     ' by tools/generate-locale-profile.ts. */',
   'export const TIME_ZONE_IDENTITIES_VERSION =',
-  "  'tzdata-" + timeZoneRelease + "/equator-time-zone-1' as const;",
+  "  'tzdata-" + timeZoneRelease + "/thoth-time-zone-1' as const;",
   '',
   '/**',
   ' * Every name the release gives a time zone, separated by spaces. A name that is not its own',
@@ -2039,39 +2039,39 @@ if (process.argv.includes('--check')) {
   assert.equal(
     await readFile(outputPath, 'utf8'),
     output,
-    'The checked-in Equator locale profile is stale; run pnpm run generate:locale-profile.',
+    'The checked-in Thoth locale profile is stale; run pnpm run generate:locale-profile.',
   );
   assert.equal(
     await readFile(pluralOutputPath, 'utf8'),
     pluralOutput,
-    'The checked-in Equator plural-category table is stale; run pnpm run generate:locale-profile.',
+    'The checked-in Thoth plural-category table is stale; run pnpm run generate:locale-profile.',
   );
   assert.equal(
     await readFile(encompassedOutputPath, 'utf8'),
     encompassedOutput,
-    'The checked-in Equator encompassed-language table is stale; run pnpm run generate:locale-profile.',
+    'The checked-in Thoth encompassed-language table is stale; run pnpm run generate:locale-profile.',
   );
   assert.equal(
     await readFile(endonymOutputPath, 'utf8'),
     endonymOutput,
-    'The checked-in Equator endonym table is stale; run pnpm run generate:locale-profile.',
+    'The checked-in Thoth endonym table is stale; run pnpm run generate:locale-profile.',
   );
   for (const path of parentLocaleOutputPaths) {
     assert.equal(
       await readFile(path, 'utf8'),
       parentLocaleOutput,
-      'The checked-in Equator parent-locale table is stale; run pnpm run generate:locale-profile.',
+      'The checked-in Thoth parent-locale table is stale; run pnpm run generate:locale-profile.',
     );
   }
   assert.equal(
     await readFile(likelyScriptOutputPath, 'utf8'),
     likelyScriptOutput,
-    'The checked-in Equator likely-script table is stale; run pnpm run generate:locale-profile.',
+    'The checked-in Thoth likely-script table is stale; run pnpm run generate:locale-profile.',
   );
   assert.equal(
     await readFile(languageScriptOutputPath, 'utf8'),
     languageScriptOutput,
-    'The checked-in Equator language-script table is stale; run pnpm run generate:locale-profile.',
+    'The checked-in Thoth language-script table is stale; run pnpm run generate:locale-profile.',
   );
   assert.equal(
     await readFile(toolkitRtlOutputPath, 'utf8'),
@@ -2082,7 +2082,7 @@ if (process.argv.includes('--check')) {
     assert.equal(
       await readFile(path, 'utf8'),
       localeAliasOutput,
-      'The checked-in Equator locale alias table is stale; run pnpm run generate:locale-profile.',
+      'The checked-in Thoth locale alias table is stale; run pnpm run generate:locale-profile.',
     );
   }
   assert.equal(
@@ -2099,7 +2099,7 @@ if (process.argv.includes('--check')) {
     assert.equal(
       await readFile(path, 'utf8'),
       timeZoneOutput,
-      'The checked-in Equator time zone identity table is stale; run pnpm run generate:locale-profile.',
+      'The checked-in Thoth time zone identity table is stale; run pnpm run generate:locale-profile.',
     );
   }
   console.log(

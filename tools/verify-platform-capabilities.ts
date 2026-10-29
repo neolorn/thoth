@@ -1,5 +1,5 @@
 /**
- * The `Intl` capabilities Equator relies on, probed on every engine it claims to support.
+ * The `Intl` capabilities Thoth relies on, probed on every engine it claims to support.
  *
  * `specs/01-standards-profile.spec.md` section 5 makes the host's own implementation the engine and
  * requires a capability to be feature-detected before anything rests on it. The probe runs on the
@@ -228,7 +228,7 @@ async function probePlatform() {
   // Every such control is data rather than an algorithm. LDML part 3 says number patterns may carry
   // LRM, RLM and ALM, and the release ships them inside the symbols themselves: the Arabic minus
   // sign is U+061C followed by the hyphen, the Latin-digit one is U+200E followed by it, and the
-  // Arabic currency pattern opens with U+200F. Equator builds no numeric text of its own and
+  // Arabic currency pattern opens with U+200F. Thoth builds no numeric text of its own and
   // inserts none of these, so a control reaches a page only because an engine emitted it out of
   // whatever release that engine carries.
   //
@@ -594,7 +594,7 @@ const capabilityServer = createServer((request, response) => {
   const module = servedModules.get(request.url ?? '');
   if (module === undefined) {
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
-    response.end('<!doctype html><title>Equator capability probe</title>');
+    response.end('<!doctype html><title>Thoth capability probe</title>');
     return;
   }
   readFile(module).then(
@@ -655,7 +655,7 @@ try {
       browser = await row.browserType.launch({ headless: true });
     } catch (error) {
       throw new Error(
-        `${row.label} could not start for the Equator platform capability row. ` +
+        `${row.label} could not start for the Thoth platform capability row. ` +
           `Install the pinned browser engines with "pnpm exec playwright install chromium firefox webkit" and retry. ` +
           `Original error: ${error instanceof Error ? error.message : String(error)}`,
         { cause: error },
@@ -753,7 +753,7 @@ try {
 }
 
 // Every optional capability the probe reads is either one the runtime reports as unsupported, and so
-// one the page has to name, or one Equator formats nothing with. A capability added to the probe
+// one the page has to name, or one Thoth formats nothing with. A capability added to the probe
 // without that decision would otherwise be measured and never held to anything.
 assert.deepEqual(
   Object.keys(nodeEvidence.optionalIntl).sort(),
@@ -830,7 +830,7 @@ const numericControlEvidence = Object.entries(nodeEvidence.formats).map(
 
 process.stdout.write(
   [
-    `Equator platform capability rows verified against Node ${process.version}.`,
+    `Thoth platform capability rows verified against Node ${process.version}.`,
     `Numeric direction controls, agreed by every row above, as code-point index and value: ${numericControlEvidence.join('; ')}.`,
     `Canonical identities of ${identitySpellings.length} spellings agreed by the toolkit, ${nodeRowResults.map(({ label }) => label).join(', ')} and every browser row with the pinned alias data.`,
     `Hosts lacking a reported capability, each named in ${compatibilityPage}: ${measuredGaps.length === 0 ? 'none' : measuredGaps.join('; ')}.`,

@@ -1,6 +1,6 @@
 # How to test localized output
 
-`@neolorn/equator/testing` composes the runtime from the generated `localizationSetup` your
+`@neolorn/thoth/testing` composes the runtime from the generated `localizationSetup` your
 application composes, with the same features, so a test and the application cannot drift apart.
 Three properties of the test environment decide what a test actually asserts.
 
@@ -37,7 +37,7 @@ and `aria-current`, and drive the switch through the facade.
 ## Reset the environment between files
 
 Angular's unit-test builder reuses one DOM across the spec files that land in one worker, so the
-address bar, the cookie jar and both web storages are shared. Equator reads the address for the
+address bar, the cookie jar and both web storages are shared. Thoth reads the address for the
 locale when routing is configured, and a persistence store when one is composed.
 
 A file that leaves the address at `/ar-eg/second` hands the next file an Arabic page to make English

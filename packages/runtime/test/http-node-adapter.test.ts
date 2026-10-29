@@ -11,7 +11,7 @@ import {
 import {
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The adapter, exercised without a socket.
@@ -34,7 +34,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -115,7 +115,7 @@ describe('reading a Node request as a Fetch request', () => {
 describe('writing a Fetch response onto a Node response', () => {
   it('keeps two cookies as two headers rather than one comma-joined one', async () => {
     const headers = new Headers();
-    headers.append('set-cookie', 'equator-locale=ar-EG; Path=/');
+    headers.append('set-cookie', 'thoth-locale=ar-EG; Path=/');
     headers.append('set-cookie', 'other=1; Path=/');
     headers.set('cache-control', 'private, no-store');
     const sink = recorder();
@@ -127,7 +127,7 @@ describe('writing a Fetch response onto a Node response', () => {
 
     // Joined with a comma this sets neither cookie, which is why `getSetCookie` exists.
     expect(sink.headers.get('set-cookie')).toStrictEqual([
-      'equator-locale=ar-EG; Path=/',
+      'thoth-locale=ar-EG; Path=/',
       'other=1; Path=/',
     ]);
     expect(sink.headers.get('cache-control')).toBe('private, no-store');
@@ -158,7 +158,7 @@ describe('the handler behind a Node listener', () => {
       policy: POLICY,
       projection: PROJECTION,
       cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
-      cookie: { name: 'equator-locale' },
+      cookie: { name: 'thoth-locale' },
       render: ({ locale }) =>
         new Response(`<!doctype html><html lang="${locale}"></html>`, {
           headers: { 'content-type': 'text/html' },
@@ -179,14 +179,14 @@ describe('the handler behind a Node listener', () => {
       'public, max-age=600, must-revalidate',
     );
     expect(sink.headers.get('set-cookie')).toStrictEqual([
-      expect.stringContaining('equator-locale=ar-EG') as unknown as string,
+      expect.stringContaining('thoth-locale=ar-EG') as unknown as string,
     ]);
     expect(sink.body()).toContain('lang="ar-EG"');
   });
 });
 
 /**
- * `specs/07-routing-rendering-and-seo.spec.md` section 4: an Equator release MUST NOT repair a
+ * `specs/07-routing-rendering-and-seo.spec.md` section 4: a Thoth release MUST NOT repair a
  * structurally unsafe target, and section 5 answers one with 400 before presentation routing.
  *
  * The adapter builds a Fetch `Request`, and a URL resolves dot segments and rewrites a backslash as
@@ -211,7 +211,7 @@ describe('a structurally unsafe target read through the Node adapter', () => {
         policy: POLICY,
         projection: PROJECTION,
         cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
-        cookie: { name: 'equator-locale' },
+        cookie: { name: 'thoth-locale' },
         render: () => {
           renders += 1;
           return new Response('<!doctype html>');
@@ -234,7 +234,7 @@ describe('a structurally unsafe target read through the Node adapter', () => {
       policy: POLICY,
       projection: PROJECTION,
       cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
-      cookie: { name: 'equator-locale' },
+      cookie: { name: 'thoth-locale' },
     });
 
     const response = await handler(
@@ -261,7 +261,7 @@ describe('a request no URL can be built from, read through the Node listener', (
       policy: POLICY,
       projection: PROJECTION,
       cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
-      cookie: { name: 'equator-locale' },
+      cookie: { name: 'thoth-locale' },
       render: () => {
         renders += 1;
         return new Response('');

@@ -1,6 +1,6 @@
 # Locale identity and resolution
 
-What a locale is in Equator, how one is declared, how the runtime decides which one a visitor gets,
+What a locale is in Thoth, how one is declared, how the runtime decides which one a visitor gets,
 where that decision is remembered, and what happens when a translation for it is missing.
 
 The standards editions behind identity and matching are in `01-standards-profile.spec.md` section 3.
@@ -60,7 +60,7 @@ diagnostic.
 
 ## 4. Inheritance
 
-Which locale a locale inherits from is pinned data, not a consumer's statement. Equator takes each
+Which locale a locale inherits from is pinned data, not a consumer's statement. Thoth takes each
 parent from the pinned CLDR release under the inheritance rules of UTS #35 Part 1, Parent Locales
 (LDML 48.2): a locale takes the parent that release declares for it; a locale it declares no parent
 for takes the tag with its last subtag removed; and a locale it gives no parent below root inherits

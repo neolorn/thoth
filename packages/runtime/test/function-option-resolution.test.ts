@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { LocalizedSlotPart } from '@neolorn/equator/core';
+import type { LocalizedSlotPart } from '@neolorn/thoth/core';
 
 import type {
   CompiledInputContract,

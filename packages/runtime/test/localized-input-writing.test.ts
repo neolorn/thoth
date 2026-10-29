@@ -21,7 +21,7 @@ import {
   type FormattingContext,
   type LocalizedInputProfile,
   type LocalizedInputValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Writing is the other half of reading: a value is written in the spelling its profile reads, and

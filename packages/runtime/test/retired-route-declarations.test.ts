@@ -7,7 +7,7 @@ import {
   type RouteParameterCodec,
   type RouteParameterContext,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What a projection's `historical` table is refused for.
@@ -39,7 +39,7 @@ const projection = (
   slug: RouteParameterCodec<string> = SLUG,
 ): RouteRuntimeProjection => ({
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: `sha256-${'RetiredRouteDeclarationsIdentity'.padEnd(43, '0')}`,
     routes: [
       { id: 'home', path: '', parameterNames: [] },

@@ -122,7 +122,7 @@ describe('the chain CLDR declares', () => {
   });
 
   it('follows the four parents that change the language', () => {
-    // Leaving these out would be Equator overriding pinned data on taste. They are named in the
+    // Leaving these out would be Thoth overriding pinned data on taste. They are named in the
     // README's fallback section so nobody meets them by surprise, and the per-locale declaration
     // is where a project that disagrees says so.
     expect(chainOf('hi-Latn')).toEqual(['en-IN', 'en-001', 'en']);
@@ -196,7 +196,7 @@ describe('the declarations a configuration is refused for', () => {
     // this means "no parent" and there is a spelling for that.
     expect(
       codesOf(configuration({ parentLocales: { 'en-AU': 'en-AU' } })),
-    ).toContain('EQ1007');
+    ).toContain('TH1007');
     claimCapability('capability:fallback-chain');
   });
 
@@ -209,7 +209,7 @@ describe('the declarations a configuration is refused for', () => {
     });
     // One finding per locale caught in it, and each one prints the walk that came back, because a
     // reader looking at two entries in a file cannot see the loop and a reader given the path can.
-    const cycles = parsed.diagnostics.filter(({ code }) => code === 'EQ1007');
+    const cycles = parsed.diagnostics.filter(({ code }) => code === 'TH1007');
     expect(cycles.map(({ summary }) => summary).join('\n')).toContain(
       'en-AU to en-US to en-AU',
     );
@@ -224,17 +224,17 @@ describe('the declarations a configuration is refused for', () => {
     // has no effect, which is a typo far more often than it is a plan.
     expect(
       codesOf(configuration({ parentLocales: { 'fr-CA': 'fr' } })),
-    ).toContain('EQ1004');
+    ).toContain('TH1004');
     claimCapability('capability:fallback-chain');
   });
 
   it('refuses a malformed locale on either side', () => {
     expect(
       codesOf(configuration({ parentLocales: { 'not a locale': 'en' } })),
-    ).toContain('EQ1003');
+    ).toContain('TH1003');
     expect(
       codesOf(configuration({ parentLocales: { 'en-AU': 'not a locale' } })),
-    ).toContain('EQ1003');
+    ).toContain('TH1003');
     claimCapability('capability:fallback-chain');
   });
 });
@@ -443,7 +443,7 @@ describe('the release completeness gate', () => {
       [french, english, australian],
     );
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).not.toContain('EQ1307');
+    expect(codes(graph)).not.toContain('TH1307');
   });
 
   it('still reports a message no locale in the chain has', () => {
@@ -451,7 +451,7 @@ describe('the release completeness gate', () => {
     // been given the second place to look that the runtime already looks in.
     const thin = catalog('target', 'en', 'messages:\n  nav.home: Home\n');
     const graph = analyze(['fr-FR', 'en', 'en-AU'], [french, thin, australian]);
-    const reported = graph.diagnostics.filter(({ code }) => code === 'EQ1307');
+    const reported = graph.diagnostics.filter(({ code }) => code === 'TH1307');
     // Both locales are short of it and both are told so: `en-AU` inherits from an `en` that does
     // not have it either.
     expect(reported).toHaveLength(2);
@@ -466,12 +466,12 @@ describe('the release completeness gate', () => {
     // numbers, and every string it shows is `en`.
     const graph = analyze(['fr-FR', 'en', 'en-AU'], [french, english]);
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).not.toContain('EQ1306');
+    expect(codes(graph)).not.toContain('TH1306');
   });
 
   it('still reports a locale with no catalog and nothing to inherit from', () => {
     expect(
       codes(analyze(['fr-FR', 'en', 'de-DE'], [french, english])),
-    ).toContain('EQ1306');
+    ).toContain('TH1306');
   });
 });

@@ -2,7 +2,7 @@ import {
   resolveLocalizedRoute,
   type Localization,
   type PlainMessageHandle,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { messages } from '#i18n/shell';
 
 import { routePolicy, appRouteProjection } from './app/localization.routes';
@@ -30,7 +30,7 @@ localization.text(messages.welcome);
 
 // The same guarantee from the other side: an input the message does not declare.
 // EXPECT: 'nmae' does not exist in type
-localization.text(messages.welcome, { nmae: 'Equator' });
+localization.text(messages.welcome, { nmae: 'Thoth' });
 
 // A structured handle is not a plain one. `PlainMessageHandle` widening far enough to accept the
 // call above would generally also accept this, and a structured message rendered through the plain
@@ -41,7 +41,7 @@ const structuredAsPlain: PlainMessageHandle = messages.learnMore;
 // The catalog is the only author of a message's words, so a call site cannot carry wording of its
 // own beside the inputs for the runtime to fall back to.
 // EXPECT: Expected 2 arguments, but got 3
-localization.text(messages.welcome, { name: 'Equator' }, 'Welcome back');
+localization.text(messages.welcome, { name: 'Thoth' }, 'Welcome back');
 
 // A signal of a message is evaluated as the message is, so it needs the same inputs, whether they
 // are given as values or as a signal of them.

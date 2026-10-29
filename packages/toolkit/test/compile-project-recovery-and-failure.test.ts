@@ -96,7 +96,7 @@ describe('a recovery message passed to compileProject', () => {
       compiled.diagnostics.map(({ code, summary }) => ({ code, summary })),
     ).toEqual([
       {
-        code: 'EQ1501',
+        code: 'TH1501',
         summary:
           'Recovery identity "@example/app:shell:absent" must resolve to one plain message without inputs or slots.',
       },
@@ -116,7 +116,7 @@ describe('a compilation that fails while a sink is listening', () => {
     );
 
     expect(compiled.ok).toBe(false);
-    expect(compiled.diagnostics.map(({ code }) => code)).toEqual(['EQ1501']);
+    expect(compiled.diagnostics.map(({ code }) => code)).toEqual(['TH1501']);
     expect(
       events.map(({ code, status, diagnosticCode }) => ({
         code,

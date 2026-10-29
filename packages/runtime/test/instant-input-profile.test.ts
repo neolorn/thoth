@@ -10,7 +10,7 @@ import {
   type LocalizedInputProfile,
   type LocalizedInputStatus,
   type LocalizedInputValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * An instant field takes a machine syntax and nothing a locale would write: a four-digit year, a

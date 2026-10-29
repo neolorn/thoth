@@ -21,11 +21,11 @@ import {
   withFormattingContext,
   type DynamicAssetParticipantReportInput,
   type RouteRuntimeProjection,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   provideLocalizationTesting,
   renderedText,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import {
   createMigrationPlan,
   PSEUDO_LOCALE_ACCENTED,
@@ -39,7 +39,7 @@ import {
   planMessageRefactor,
   type Catalog,
   type CatalogParseOptions,
-} from '@neolorn/equator-toolkit';
+} from '@neolorn/thoth-toolkit';
 import { configuration, localizationSetup } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -95,7 +95,7 @@ describe('shared URL policies', () => {
       buildLocalizedRoute(policy, localizedProjection, 'route:second', 'ar-EG'),
     ).toBe('/ar-eg/%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A');
     claimCapability('policy:default-locale-prefix', { policy });
-    claimCapability('entry:@neolorn/equator', { policy });
+    claimCapability('entry:@neolorn/thoth', { policy });
   });
 
   it('uses locale-neutral presentation paths with explicit locale context and truthful SEO', () => {
@@ -133,7 +133,7 @@ describe('shared URL policies', () => {
     expect(seo.xDefault).toBe('https://site.example/');
     claimCapability('policy:locale-neutral', { policy });
     claimCapability('declaration:x-default', { policy });
-    claimCapability('entry:@neolorn/equator', { policy });
+    claimCapability('entry:@neolorn/thoth', { policy });
   });
 
   it('maps locale-specific trusted origins without accepting request-controlled hosts', () => {
@@ -187,7 +187,7 @@ describe('shared URL policies', () => {
     expect(seo.xDefault).toBe('https://site.example/');
     claimCapability('policy:locale-host', { policy });
     claimCapability('declaration:x-default', { policy });
-    claimCapability('entry:@neolorn/equator', { policy });
+    claimCapability('entry:@neolorn/thoth', { policy });
   });
 });
 
@@ -211,7 +211,7 @@ class ExtensionLines {
 
   protected called(): string {
     return this.localization.text(messages.extension.uppercase, {
-      name: 'Equator',
+      name: 'Thoth',
     });
   }
 
@@ -254,8 +254,8 @@ describe('application-local extensibility', () => {
     await localization.initialize();
 
     expect(
-      localization.text(messages.extension.uppercase, { name: 'Equator' }),
-    ).toBe('Custom function: EQUATOR!');
+      localization.text(messages.extension.uppercase, { name: 'Thoth' }),
+    ).toBe('Custom function: THOTH!');
     const badge = localization.parts(messages.extension.badge);
     expect(badge.text).toBe('Badge: New');
     expect(badge.value[0]).toMatchObject({
@@ -289,7 +289,7 @@ describe('application-local extensibility', () => {
       value: { value: 'ITEM-42' },
     });
     localization.dispose();
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('fails runtime admission before evaluation when required bindings are absent', () => {
@@ -304,7 +304,7 @@ describe('application-local extensibility', () => {
         formattingContext: { timeZone: 'UTC' },
       }),
     ).toThrow(/Required runtime extension/u);
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('renders what each binding withExtensions installed answers', async () => {
@@ -333,7 +333,7 @@ describe('application-local extensibility', () => {
 
     // Each expectation is the application's own rule for its binding, in `runtime-extensions.ts`,
     // applied to the en-US catalog.
-    expect(line('message-function')).toBe('Custom function: EQUATOR!');
+    expect(line('message-function')).toBe('Custom function: THOTH!');
     expect(line('identifier-segment')).toBe('Feature state ready');
     expect(line('rich-slot-kind')).toBe('Badge: New');
     expect(line('formatting-adapter')).toBe('SKU-ITEM-42');
@@ -349,7 +349,7 @@ describe('application-local extensibility', () => {
     claimCapability('extension:rich-slot-kind', { platform });
     claimCapability('extension:formatting-adapter', { platform });
     claimCapability('extension:parsing-adapter', { platform });
-    claimCapability('entry:@neolorn/equator', { platform });
+    claimCapability('entry:@neolorn/thoth', { platform });
   });
 });
 
@@ -432,7 +432,7 @@ describe('localized assets', () => {
       metadata: { description: { supplyingLocale: 'ar-EG' } },
     });
     localization.dispose();
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('exposes only safe dynamic participant metadata, never payload or URL state', () => {
@@ -468,7 +468,7 @@ describe('localized assets', () => {
     expect(report).not.toHaveProperty('url');
     expect(report).not.toHaveProperty('payload');
     expect(JSON.stringify(report)).not.toContain('private.invalid');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -541,7 +541,7 @@ describe('built-toolkit lifecycle', () => {
     ).toContain('⟦');
     claimCapability('capability:xliff');
     claimCapability('capability:pseudo-locale');
-    claimCapability('entry:@neolorn/equator-toolkit');
+    claimCapability('entry:@neolorn/thoth-toolkit');
   });
 
   it('classifies semantic changes and previews checked refactor/migration transactions', () => {
@@ -627,9 +627,9 @@ describe('built-toolkit lifecycle', () => {
       toVersion: '1.1',
       changes: [
         {
-          path: 'equator.config.json',
+          path: 'thoth.config.json',
           before: '{"schemaVersion":1}\n',
-          after: '{"schemaVersion":1,"profile":"equator-1"}\n',
+          after: '{"schemaVersion":1,"profile":"thoth-1"}\n',
         },
       ],
     });
@@ -640,6 +640,6 @@ describe('built-toolkit lifecycle', () => {
       id: 'configuration/1-to-1.1/phase-five-profile',
     });
     expect(migration.value.digest).toMatch(/^sha256-[A-Za-z0-9_-]{43}$/u);
-    claimCapability('entry:@neolorn/equator-toolkit');
+    claimCapability('entry:@neolorn/thoth-toolkit');
   });
 });

@@ -60,7 +60,7 @@ describe('a generated set', () => {
     [
       'it and its configuration agree on a generated ABI this release does not read',
       (copy) => {
-        const abi = 'equator-generated/0';
+        const abi = 'thoth-generated/0';
         (copy.configuration as Record<string, unknown>)['generatedAbi'] = abi;
         (copy.descriptor as unknown as Record<string, unknown>)[
           'generatedAbi'
@@ -72,7 +72,7 @@ describe('a generated set', () => {
       'its generated ABI is not the configuration’s',
       ({ descriptor }) => {
         (descriptor as unknown as Record<string, unknown>)['generatedAbi'] =
-          'equator-generated/0';
+          'thoth-generated/0';
       },
     ],
     [
@@ -127,7 +127,7 @@ describe('an entry of a generated set', () => {
     [
       'a generated ABI that is not the configuration’s',
       (address) => {
-        address['generatedAbi'] = 'equator-generated/0';
+        address['generatedAbi'] = 'thoth-generated/0';
       },
     ],
     [
@@ -289,7 +289,7 @@ describe('an entry’s resource summary', () => {
     [
       'states a profile this release does not read',
       ({ resources }) => {
-        resources['profile'] = 'equator-resource-summary/0';
+        resources['profile'] = 'thoth-resource-summary/0';
       },
     ],
     [

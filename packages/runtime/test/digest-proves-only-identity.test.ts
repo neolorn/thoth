@@ -32,7 +32,7 @@ describe('a matching digest is not admission', () => {
     };
     hostile.messages[0]!.body['kind'] = 'script';
     const digest = digestCanonicalJson(
-      'equator-compiled-catalog/1',
+      'thoth-compiled-catalog/1',
       hostile as unknown as CanonicalJsonValue,
     );
     const set = editedSet(compiled, ({ descriptor }) => {

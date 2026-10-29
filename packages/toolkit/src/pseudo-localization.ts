@@ -105,7 +105,7 @@ export function pseudoLocaleTagProblem(
  * exists to avoid.
  *
  * **Accenting is not a setting either, because it is what makes the locale a pseudo-locale.** The
- * substituted alphabet is how a reader tells transformed text from text that never reached Equator,
+ * substituted alphabet is how a reader tells transformed text from text that never reached Thoth,
  * and a pseudo-locale with it switched off is just the source language under a different tag.
  */
 export interface PseudoLocaleTransform {
@@ -129,7 +129,7 @@ export interface PseudoLocaleTransform {
    *
    * One pair around the whole message rather than around each literal run, so a message containing
    * a placeholder reads as one bounded string instead of several. That is what makes a hardcoded
-   * string visible: everything Equator rendered has boundaries and it does not.
+   * string visible: everything Thoth rendered has boundaries and it does not.
    */
   readonly markers?: boolean;
 }
@@ -348,7 +348,7 @@ export function pseudoLocalizeMessage(
     // remove without cutting consonants, which stops reading as the same word.
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1804',
+        'TH1804',
         'Pseudo-localization length factor must be between minus one and two. Positive expands, negative contracts, and omitting it leaves length unchanged.',
       ),
     ]);
@@ -359,7 +359,7 @@ export function pseudoLocalizeMessage(
   } catch {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1804',
+        'TH1804',
         'Pseudo-localization requires a valid MessageFormat message.',
       ),
     ]);
@@ -444,7 +444,7 @@ function createAdmittedPseudoCatalog(
   if (source.role !== 'source') {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1804',
+        'TH1804',
         'Pseudo-locales can be generated only from a source catalog.',
       ),
     ]);

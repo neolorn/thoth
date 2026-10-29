@@ -5,7 +5,7 @@ import type {
   FormattingContext,
   LocalizationParticipant,
   LocalizationParticipantContext,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A progressive region that fails stays failed on its own.

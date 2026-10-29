@@ -4,7 +4,7 @@ import { parseLocalizedInput } from '../src/localized-input.js';
 import {
   type FormattingContext,
   type LocalizedInputProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A number field that is given a word has been given something that is not a number, and typing

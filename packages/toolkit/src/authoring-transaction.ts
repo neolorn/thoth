@@ -54,7 +54,7 @@ import {
  *
  * A refactor is a rename or a reorganization somebody asked for. A migration moves a project from
  * one version of a format to another. They are applied the same way and recorded apart, so a
- * history says which changes were the team's and which were Equator's.
+ * history says which changes were the team's and which were Thoth's.
  */
 export type AuthoredChangeKind = 'refactor' | 'migration';
 
@@ -95,7 +95,7 @@ export interface AuthoredFileChange extends AuthoredFileChangeInput {
  */
 export interface AuthoredChangePlan {
   /** The version stamp of the change-plan shape. */
-  readonly profile: 'equator-authored-change-plan/1';
+  readonly profile: 'thoth-authored-change-plan/1';
   /** What this change is, as a stable name a history can be indexed by. */
   readonly id: string;
   /** Whether this is a team's own change or a move between versions. */
@@ -214,7 +214,7 @@ function validDigest(value: unknown): value is string {
 }
 
 function invalidPlan(summary: string): ToolkitResult<AuthoredChangePlan> {
-  return toolkitFailure([toolkitDiagnostic('EQ1805', summary)]);
+  return toolkitFailure([toolkitDiagnostic('TH1805', summary)]);
 }
 
 function reconstructAuthoredChangePlan(
@@ -231,7 +231,7 @@ function reconstructAuthoredChangePlan(
       'regenerate',
       'digest',
     ]) ||
-    value['profile'] !== 'equator-authored-change-plan/1' ||
+    value['profile'] !== 'thoth-authored-change-plan/1' ||
     typeof value['id'] !== 'string' ||
     (value['kind'] !== 'refactor' && value['kind'] !== 'migration') ||
     (expectedKind !== undefined && value['kind'] !== expectedKind) ||
@@ -242,15 +242,15 @@ function reconstructAuthoredChangePlan(
   ) {
     return invalidPlan(
       expectedKind === undefined
-        ? 'Equator authored change plan must exactly match equator-authored-change-plan/1.'
-        : `Equator authored change plan must exactly match equator-authored-change-plan/1 with kind ${JSON.stringify(expectedKind)}.`,
+        ? 'Thoth authored change plan must exactly match thoth-authored-change-plan/1.'
+        : `Thoth authored change plan must exactly match thoth-authored-change-plan/1 with kind ${JSON.stringify(expectedKind)}.`,
     );
   }
   const changes: AuthoredFileChangeInput[] = [];
   for (const rawChange of value['changes']) {
     if (!isRecord(rawChange)) {
       return invalidPlan(
-        'Equator authored change plan contains an invalid file operation.',
+        'Thoth authored change plan contains an invalid file operation.',
       );
     }
     const hasBefore = Object.hasOwn(rawChange, 'before');
@@ -276,7 +276,7 @@ function reconstructAuthoredChangePlan(
           !validDigest(rawChange['afterDigest'])))
     ) {
       return invalidPlan(
-        'Equator authored change plan contains an invalid file operation.',
+        'Thoth authored change plan contains an invalid file operation.',
       );
     }
     changes.push(
@@ -301,12 +301,12 @@ function reconstructAuthoredChangePlan(
       )
     ) {
       return invalidPlan(
-        'Equator authored change plan content or digest does not match its reconstructed plan.',
+        'Thoth authored change plan content or digest does not match its reconstructed plan.',
       );
     }
   } catch {
     return invalidPlan(
-      'Equator authored change plan contains invalid Unicode or noncanonical content.',
+      'Thoth authored change plan contains invalid Unicode or noncanonical content.',
     );
   }
   return reconstructed;
@@ -320,12 +320,12 @@ export function parseAuthoredChangePlan(
     Buffer.byteLength(source, 'utf8') > RESOURCE_LIMITS.authoredChangePlanBytes
   ) {
     return invalidPlan(
-      `Equator authored change plan exceeds the ${RESOURCE_LIMITS.authoredChangePlanBytes}-byte implementation ceiling.`,
+      `Thoth authored change plan exceeds the ${RESOURCE_LIMITS.authoredChangePlanBytes}-byte implementation ceiling.`,
     );
   }
   if (jsonNestingExceeds(source, RESOURCE_LIMITS.jsonDepth)) {
     return invalidPlan(
-      `Equator authored change plan exceeds the ${RESOURCE_LIMITS.jsonDepth}-depth or ${RESOURCE_LIMITS.jsonNodes}-node JSON implementation ceiling.`,
+      `Thoth authored change plan exceeds the ${RESOURCE_LIMITS.jsonDepth}-depth or ${RESOURCE_LIMITS.jsonNodes}-node JSON implementation ceiling.`,
     );
   }
   const parseErrors: ParseError[] = [];
@@ -337,8 +337,8 @@ export function parseAuthoredChangePlan(
   if (parseErrors.length > 0 || root === undefined) {
     const diagnostics = parseErrors.map((error) =>
       toolkitDiagnostic(
-        'EQ1805',
-        `Equator authored change plan contains invalid JSON: ${printParseErrorCode(error.error)}.`,
+        'TH1805',
+        `Thoth authored change plan contains invalid JSON: ${printParseErrorCode(error.error)}.`,
         {
           span: spanAt(
             source,
@@ -352,8 +352,8 @@ export function parseAuthoredChangePlan(
     if (diagnostics.length === 0) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1805',
-          'Equator authored change plan must contain one JSON value.',
+          'TH1805',
+          'Thoth authored change plan must contain one JSON value.',
         ),
       );
     }
@@ -361,13 +361,13 @@ export function parseAuthoredChangePlan(
   }
   if (!jsonTreeWithinLimits(root)) {
     return invalidPlan(
-      `Equator authored change plan exceeds the ${RESOURCE_LIMITS.jsonDepth}-depth or ${RESOURCE_LIMITS.jsonNodes}-node JSON implementation ceiling.`,
+      `Thoth authored change plan exceeds the ${RESOURCE_LIMITS.jsonDepth}-depth or ${RESOURCE_LIMITS.jsonNodes}-node JSON implementation ceiling.`,
     );
   }
   const duplicates = duplicateJsonKeys(source, root, options.sourcePath, {
-    code: 'EQ1805',
+    code: 'TH1805',
     summary: (key) =>
-      `Equator authored change plan contains the duplicate key ${JSON.stringify(key)}.`,
+      `Thoth authored change plan contains the duplicate key ${JSON.stringify(key)}.`,
   });
   if (duplicates.length > 0) return toolkitFailure(duplicates);
   return reconstructAuthoredChangePlan(constructJsonValue(root), options.kind);
@@ -381,14 +381,14 @@ export function createAuthoredChangePlan(
   if (changes.length > RESOURCE_LIMITS.authoredChangePlanChanges) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1805',
+        'TH1805',
         `Authored change plan exceeds the ${RESOURCE_LIMITS.authoredChangePlanChanges}-operation implementation ceiling.`,
       ),
     ]);
   }
   if (!/^[a-z0-9][a-z0-9._/-]{0,127}$/u.test(id)) {
     return toolkitFailure([
-      toolkitDiagnostic('EQ1805', 'Authored change plan identity is invalid.'),
+      toolkitDiagnostic('TH1805', 'Authored change plan identity is invalid.'),
     ]);
   }
   const normalized: AuthoredFileChange[] = [];
@@ -400,7 +400,7 @@ export function createAuthoredChangePlan(
     } catch {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1805',
+          'TH1805',
           'Authored change plan contains invalid Unicode file content.',
         ),
       ]);
@@ -413,7 +413,7 @@ export function createAuthoredChangePlan(
     ) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1805',
+          'TH1805',
           'Authored change plan contains an invalid, duplicate, or unchanged file operation.',
         ),
       ]);
@@ -438,7 +438,7 @@ export function createAuthoredChangePlan(
     );
   }
   normalized.sort((left, right) => compareCodeUnit(left.path, right.path));
-  const digest = digestCanonicalJson('equator-authored-change-plan/1', {
+  const digest = digestCanonicalJson('thoth-authored-change-plan/1', {
     id,
     kind,
     changes: normalized.map(({ path, beforeDigest, afterDigest }) => ({
@@ -448,7 +448,7 @@ export function createAuthoredChangePlan(
     })),
   });
   const plan = Object.freeze({
-    profile: 'equator-authored-change-plan/1' as const,
+    profile: 'thoth-authored-change-plan/1' as const,
     id,
     kind,
     changes: Object.freeze(normalized),
@@ -461,7 +461,7 @@ export function createAuthoredChangePlan(
   ) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1805',
+        'TH1805',
         `Authored change plan exceeds the ${RESOURCE_LIMITS.authoredChangePlanBytes}-byte implementation ceiling.`,
       ),
     ]);
@@ -498,7 +498,7 @@ export function createMigrationPlan(
   ) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1805',
+        'TH1805',
         'Migration versions must be distinct bounded protocol identifiers.',
       ),
     ]);
@@ -587,7 +587,7 @@ async function applyAuthoredChangePlanCore(
   ) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1602',
+        'TH1602',
         'Authored transaction owner must be an ordinary directory.',
       ),
     ]);
@@ -626,8 +626,8 @@ async function applyAuthoredChangePlanCore(
   } catch (error) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1602',
-        `Equator refused the authored transaction before mutation: ${error instanceof Error ? error.message : String(error)}`,
+        'TH1602',
+        `Thoth refused the authored transaction before mutation: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
   }
@@ -641,7 +641,7 @@ async function applyAuthoredChangePlanCore(
     );
   }
 
-  const lockPath = resolve(ownerRoot, '.equator-authoring.lock');
+  const lockPath = resolve(ownerRoot, '.thoth-authoring.lock');
   let lockHandle: Awaited<ReturnType<typeof open>> | undefined;
   const transactionId = randomBytes(12).toString('hex');
   const operations: PublicationOperation[] = [];
@@ -650,7 +650,7 @@ async function applyAuthoredChangePlanCore(
     for (const item of pending) {
       await mkdir(dirname(item.destination), { recursive: true });
       await assertUnlinkedPath(ownerRoot, item.destination);
-      const suffix = `.equator-${transactionId}`;
+      const suffix = `.thoth-${transactionId}`;
       const temporary =
         item.change.after === undefined
           ? undefined
@@ -708,10 +708,10 @@ async function applyAuthoredChangePlanCore(
     }
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1602',
+        'TH1602',
         recovered
-          ? `Equator authored transaction failed and restored its prior complete state: ${error instanceof Error ? error.message : String(error)}`
-          : 'Equator authored transaction failed and automatic recovery could not be completed safely.',
+          ? `Thoth authored transaction failed and restored its prior complete state: ${error instanceof Error ? error.message : String(error)}`
+          : 'Thoth authored transaction failed and automatic recovery could not be completed safely.',
       ),
     ]);
   } finally {
@@ -728,7 +728,7 @@ async function applyAuthoredChangePlanCore(
  * Each file must still read as the change plan found it, or already read as the change plan leaves
  * it, so a file edited since the change plan was made is refused before anything is written. A file
  * already changed is skipped, which makes applying one change plan twice change nothing the second
- * time. A failure part of the way through restores every file it had written. `equator migrate` runs this; calling it
+ * time. A failure part of the way through restores every file it had written. `thoth migrate` runs this; calling it
  * directly is how the work reports to an observability sink.
  */
 export async function applyAuthoredChangePlan(

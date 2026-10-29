@@ -20,7 +20,7 @@ import {
 } from './catalog-store-harness.js';
 
 describe('the standards profile of a compiled artifact', () => {
-  it('admits a set compiled under equator-1', async () => {
+  it('admits a set compiled under thoth-1', async () => {
     const set = compileSet();
     const store = createStore(set);
     await expect(
@@ -35,7 +35,7 @@ describe('the standards profile of a compiled artifact', () => {
           string,
           unknown
         >
-      )['standardsProfile'] = 'equator-2';
+      )['standardsProfile'] = 'thoth-2';
     });
     expect(diagnosticOf(() => createStore(set))).toMatchObject({
       code: 'invalid-configuration',
@@ -49,7 +49,7 @@ describe('the standards profile of a compiled artifact', () => {
     const original = loaders[key]!;
     loaders[key] = () => ({
       ...(original() as object),
-      standardsProfile: 'equator-2',
+      standardsProfile: 'thoth-2',
     });
     const store = createStore(set, loaders);
     expect(

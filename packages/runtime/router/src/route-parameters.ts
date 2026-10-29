@@ -5,13 +5,13 @@ import {
   NavigationError,
   Router,
 } from '@angular/router';
-import type { LocalizedParameterSpellings } from '@neolorn/equator';
+import type { LocalizedParameterSpellings } from '@neolorn/thoth';
 
 /**
  * The per-locale spellings of the current page's route parameters, declared by the code that
  * loaded the record.
  *
- * Equator builds every localized address through `RouteParameterCodec.serialize`, which is
+ * Thoth builds every localized address through `RouteParameterCodec.serialize`, which is
  * synchronous. That is right for a parameter whose spelling is a function of its value (an
  * integer, an identifier, a slug from a fixed table) and it cannot answer for one held in a
  * database, because the answer is a fetch. So the fact is supplied by whoever can observe it: the
@@ -23,13 +23,13 @@ import type { LocalizedParameterSpellings } from '@neolorn/equator';
  * this.parameters.declare({ articleSlug: article.slugs });
  * ```
  *
- * From there Equator uses it for the canonical URL, the `hreflang` alternates, the Open Graph
+ * From there Thoth uses it for the canonical URL, the `hreflang` alternates, the Open Graph
  * alternates and the address the locale switcher moves to.
  *
  * **A declaration belongs to one navigation and cannot be read by another.** This is the whole
  * reason the service exists rather than a settable field. The obvious shape, a mutable record of
  * per-locale parameters, carries a trap that is documented rather than prevented in the
- * framework Equator took this shape from: parameters are not reset on navigation, so moving between
+ * framework Thoth took this shape from: parameters are not reset on navigation, so moving between
  * two routes that share a parameter name serves the previous page's slugs on the new page, in the
  * head, and Google is told that two different articles are translations of each other. Here a
  * declaration is stamped with the navigation that made it: `NavigationEnd` replaces the committed
@@ -37,7 +37,7 @@ import type { LocalizedParameterSpellings } from '@neolorn/equator';
  * discarded. There is no sequence of calls that lets one page read another's.
  *
  * Declaring after the page has loaded is the expected case, not a special one: the fetch that
- * produces the slugs finishes after activation. Equator re-projects the document when a declaration
+ * produces the slugs finishes after activation. Thoth re-projects the document when a declaration
  * arrives, so the head is corrected rather than left as it was built.
  */
 @Injectable({ providedIn: 'root' })
@@ -118,7 +118,7 @@ export class LocalizedRouteParameters {
       // happened to load first, which is the trap this class exists to prevent.
       if (isDevMode()) {
         console.warn(
-          '[Equator] LocalizedRouteParameters.declare() was called before any navigation completed, so there is no page for the declaration to belong to and it was discarded. Declare from a route resolver, a guard, or a component of the page the parameters describe.',
+          '[Thoth] LocalizedRouteParameters.declare() was called before any navigation completed, so there is no page for the declaration to belong to and it was discarded. Declare from a route resolver, a guard, or a component of the page the parameters describe.',
         );
       }
       return;
@@ -150,7 +150,7 @@ export class LocalizedRouteParameters {
   /**
    * The declaration belonging to one specific navigation, and no other.
    *
-   * Internal, and the reason it exists is ordering. Equator projects the document from a context
+   * Internal, and the reason it exists is ordering. Thoth projects the document from a context
    * that carries the navigation that produced it, and both this class and that projection are
    * driven by `NavigationEnd` on the same event stream, so asking for "the current declaration"
    * there would make the answer depend on which subscriber Angular happens to call first. Asking

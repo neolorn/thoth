@@ -50,9 +50,8 @@ describe('the provider identity of the owner compileProject is handed', () => {
       })),
     ).toEqual([
       {
-        code: 'EQ1104',
-        summary:
-          'Provider identity does not match the Equator identity grammar.',
+        code: 'TH1104',
+        summary: 'Provider identity does not match the Thoth identity grammar.',
         path: ['owner', 'providerId'],
       },
     ]);
@@ -66,7 +65,7 @@ describe('the provider identity of the owner compileProject is handed', () => {
       locale: 'en-US',
     });
 
-    expect(refused.diagnostics.map(({ code }) => code)).toEqual(['EQ1104']);
+    expect(refused.diagnostics.map(({ code }) => code)).toEqual(['TH1104']);
   });
 
   it.each([

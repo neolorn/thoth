@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import type {
   LocalizationOverlayAdapter,
   LocalizationSnapshot,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 /**
  * The root this application attaches dialogs and menus to, beside its own. What is attached there

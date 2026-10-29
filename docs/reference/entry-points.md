@@ -5,7 +5,7 @@ packages.
 
 This page is generated from the packages and is not edited by hand.
 
-## `@neolorn/equator`
+## `@neolorn/thoth`
 
 Everything an application component and its bootstrap need.
 
@@ -13,25 +13,25 @@ Publishes 216 name(s).
 
 Composable from here: `provideLocalizationSetup`, `withExtensions`, `withFormattingContext`, `withLocaleAnnouncement`, `withLocaleSources`, `withLocalizationClock`, `withObservability`, `withOverlayLocale`, `withPersistence`, `withRecoveryMessage`, `withRelativeTimePolicy`, `withRouting`, `withoutDocumentLocale`.
 
-## `@neolorn/equator/core`
+## `@neolorn/thoth/core`
 
 The contracts, the locale profiles and negotiation, and the route and address helpers, with no Angular in the graph. This is what a library or a test helper imports.
 
 Publishes 237 name(s).
 
-## `@neolorn/equator/forms`
+## `@neolorn/thoth/forms`
 
 Localized input parsing and the directive that binds it to a form control.
 
 Publishes 3 name(s). Needs `@angular/forms`, which is an optional peer: install it when you import from here.
 
-## `@neolorn/equator/http`
+## `@neolorn/thoth/http`
 
 The locale request handler and its Node adapter: one request in, one response out, with no Angular in the graph.
 
 Publishes 17 name(s).
 
-## `@neolorn/equator/router`
+## `@neolorn/thoth/router`
 
 Localized routing: the router setup, the link directive, and the address projection behind them.
 
@@ -39,7 +39,7 @@ Publishes 17 name(s). Needs `@angular/router`, which is an optional peer: instal
 
 Composable from here: `provideLocalizedRouter`.
 
-## `@neolorn/equator/ssr`
+## `@neolorn/thoth/ssr`
 
 Server rendering: per-route render modes, and the locale the server renders in.
 
@@ -47,7 +47,7 @@ Publishes 2 name(s). Needs `@angular/ssr`, which is an optional peer: install it
 
 Composable from here: `provideLocalizedServerRendering`.
 
-## `@neolorn/equator/testing`
+## `@neolorn/thoth/testing`
 
 The test harness. It replaces the parts of the runtime a test cannot wait for, and nothing else. Everything in it but the server seat runs under `TestBed`, which needs a DOM and a test runner that installs one.
 
@@ -55,9 +55,9 @@ Publishes 17 name(s).
 
 Composable from here: `provideLocalizationTesting`.
 
-## `@neolorn/equator-toolkit`
+## `@neolorn/thoth-toolkit`
 
-The compiler behind the `equator` command, as a library. An application does not import this; a build script that needs the compiler without the command line does.
+The compiler behind the `thoth` command, as a library. An application does not import this; a build script that needs the compiler without the command line does.
 
 Publishes 180 name(s).
 

@@ -1,7 +1,7 @@
 /**
  * What a stage worked around and still passed.
  *
- * A stage that meets a failure outside Equator, gets past it, and passes would otherwise leave no
+ * A stage that meets a failure outside Thoth, gets past it, and passes would otherwise leave no
  * trace of it, and a rate nobody can see is a rate nobody notices rising. The stage records each
  * occurrence here with a signature, and the verification suite carries them into the run's summary,
  * its attempt ledger and its verdict line.
@@ -10,7 +10,7 @@
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 
 /** The file a stage appends its occurrences to, handed to it by the suite. */
-export const OCCURRENCES_FILE_VARIABLE = 'EQUATOR_OCCURRENCES_FILE';
+export const OCCURRENCES_FILE_VARIABLE = 'THOTH_OCCURRENCES_FILE';
 
 /** What a stage says it worked around. */
 export interface OccurrenceReport {

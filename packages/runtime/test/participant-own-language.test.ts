@@ -7,7 +7,7 @@ import {
 import type {
   FormattingContext,
   LocalizationParticipant,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A region's state is what the region reported, and a report is all a region hands over.

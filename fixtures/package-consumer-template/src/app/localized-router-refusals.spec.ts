@@ -12,13 +12,13 @@ import {
   withFormattingContext,
   withRouting,
   type LocaleUrlPolicy,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   RouteLocalization,
   documentMessage,
   provideLocalizedRouter,
-} from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -269,9 +269,9 @@ describe('a document message bound by hand', () => {
           origin: ORIGIN,
           documentMetadata: {
             'route:second': {
-              title: { message: messages.welcome, inputs: { name: 'Equator' } },
+              title: { message: messages.welcome, inputs: { name: 'Thoth' } },
               description: documentMessage(messages.welcome, {
-                name: 'Equator',
+                name: 'Thoth',
               }),
             },
           },

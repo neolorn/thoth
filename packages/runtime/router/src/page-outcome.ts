@@ -21,7 +21,7 @@ import {
   LocalizationError,
   ɵrememberPageOutcome,
   type PageOutcomeDeclaration,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What this page turned out to be, declared by the code that discovered it.
@@ -39,7 +39,7 @@ import {
  *
  * On the server the declaration reaches the response: an absence is answered 404 and a removal 410,
  * both from section 5's own table, and a declared operational failure is answered with the status
- * the application named. In the browser there is no response to reach and Equator does not invent
+ * the application named. In the browser there is no response to reach and Thoth does not invent
  * one; what the declaration governs there is the document. After an absence or a removal it stops
  * claiming a canonical address and stops being offered for indexing; after an operational failure
  * it keeps both, because the address is still the page's and only this attempt to serve it failed.
@@ -51,7 +51,7 @@ import {
  * a declaration left readable across a navigation answers 404 for the page after the missing one.
  *
  * Declaring after activation is the expected case rather than a special one, because the fetch that
- * discovers the fact finishes after the page is on screen. Equator re-projects the document when a
+ * discovers the fact finishes after the page is on screen. Thoth re-projects the document when a
  * declaration arrives.
  */
 @Injectable({ providedIn: 'root' })
@@ -189,7 +189,7 @@ export class LocalizedPageOutcome {
       // happened to load first.
       if (isDevMode()) {
         console.warn(
-          '[Equator] LocalizedPageOutcome.declare() was called before any navigation completed, so there is no page for the declaration to belong to and it was discarded. Declare from a route resolver, a guard, or a component of the page the outcome describes.',
+          '[Thoth] LocalizedPageOutcome.declare() was called before any navigation completed, so there is no page for the declaration to belong to and it was discarded. Declare from a route resolver, a guard, or a component of the page the outcome describes.',
         );
       }
       return;
@@ -210,7 +210,7 @@ export class LocalizedPageOutcome {
     if (this.reportedDetachedRequest) return;
     this.reportedDetachedRequest = true;
     console.warn(
-      `[Equator] A page declared ${describe(declaration)}, and the request this render was given is not the one the Equator request handler is answering, so the declaration cannot reach the response and the address's own status was sent instead. Pass the request the handler received to the render rather than a copy of it.`,
+      `[Thoth] A page declared ${describe(declaration)}, and the request this render was given is not the one the Thoth request handler is answering, so the declaration cannot reach the response and the address's own status was sent instead. Pass the request the handler received to the render rather than a copy of it.`,
     );
   }
 }

@@ -7,7 +7,7 @@ import {
   type LocalizedInputProfile,
   type LocalizedInputStatus,
   type PlainDateValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A date field is read against a pattern the application states: the order of the three fields,

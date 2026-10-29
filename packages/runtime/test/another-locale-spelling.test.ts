@@ -5,7 +5,7 @@ import {
   resolveLocalizedRoute,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -21,7 +21,7 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-AnotherLocaleSpellingTestIdentity0123456789',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -134,7 +134,7 @@ describe("an address in another locale's spelling", () => {
     // variant of two canonical addresses, so it is a variant of neither.
     const crossed: RouteRuntimeProjection = {
       generated: {
-        profile: 'equator-route-projection/1',
+        profile: 'thoth-route-projection/1',
         identity: 'sha256-CrossedSpellingsTestIdentity0123456789abcde',
         routes: [
           { id: 'route:one', path: 'one', parameterNames: [] },

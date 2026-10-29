@@ -3,7 +3,7 @@
  *
  * `specs/07-routing-rendering-and-seo.spec.md` section 11 leaves delivery to the application,
  * because a published URL is composed from six values the application only holds when it runs.
- * What Equator produces is the complete set with each file's name, contents, kind, count and
+ * What Thoth produces is the complete set with each file's name, contents, kind, count and
  * size, and the split is on the count and the byte size together: with an alternate cluster in
  * every entry the size limit arrives first, so a split that counted only URLs would write a
  * file no crawler reads.
@@ -25,7 +25,7 @@ import {
   type RouteRuntimeProjection,
   type SitemapDocument,
   type SitemapRouteDeclaration,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -53,7 +53,7 @@ function projectionWith(
 ): RouteRuntimeProjection {
   return {
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: 'sha256-SitemapProjectionTestIdentity01234567890123',
       routes,
     },
@@ -85,7 +85,7 @@ const PROJECTION = projectionWith([
 ]);
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],
@@ -366,7 +366,7 @@ describe('splitting', () => {
   } {
     const projection: RouteRuntimeProjection = {
       generated: {
-        profile: 'equator-route-projection/1',
+        profile: 'thoth-route-projection/1',
         identity: 'sha256-SitemapProjectionTestIdentity01234567890123',
         routes: [
           {

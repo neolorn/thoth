@@ -220,12 +220,12 @@ const NUMBER_LITERAL = NUMBER_LITERAL_PATTERN;
 /**
  * The `u:` namespace, which MessageFormat 2 reserves for the message syntax itself.
  *
- * Equator parsed these, folded them in with every other option and dropped them at runtime, so
+ * Thoth parsed these, folded them in with every other option and dropped them at runtime, so
  * `{$name :string u:dir=rtl}` produced no diagnostic and no isolation: the worst of the three
  * available behaviours, because the author had no way to find out.
  *
  * `u:dir` and `u:id` are implemented and validated here. Everything else in the namespace is
- * refused rather than ignored: `u:locale` is a real option in the spec that Equator does not
+ * refused rather than ignored: `u:locale` is a real option in the spec that Thoth does not
  * implement, and accepting it quietly would mean a message that formats in the wrong locale with
  * nothing to say so.
  */
@@ -595,7 +595,7 @@ function normalizeVariants(
 }
 
 /**
- * What the parser and the validator found, in Equator's words rather than theirs.
+ * What the parser and the validator found, in Thoth's words rather than theirs.
  *
  * `MessageSyntaxError.message` is the type slug followed by the offset, `parse-error at 6`, and
  * `MessageDataModelError` adds nothing to it, so carrying the text whole read
@@ -677,16 +677,16 @@ export function syntaxErrorSentence(error: MessageSyntaxError): string {
 /**
  * Which refusals are Data Model Errors, by the standard's division rather than the parser's stages.
  *
- * `EQ1201` is a message the syntax refuses and `EQ1202` is a message the data model refuses, and
+ * `TH1201` is a message the syntax refuses and `TH1202` is a message the data model refuses, and
  * telling the two apart by *where* the refusal comes from (anything thrown out of `parseMessage` as
  * syntax, anything reported by `validate` as the data model) follows the implementation's division,
  * and for one type it disagrees with the specification's. LDML 48.2 lists Duplicate Option Name
  * among its Data Model Errors, the working group's own suite files it in `data-model-errors.json`,
  * while `messageformat` throws it while parsing, because a repeated option is visible to the
- * parser. Split by stage, five of that suite's six error types arrive as `EQ1202`, and
- * `duplicate-option-name` alone as `EQ1201`.
+ * parser. Split by stage, five of that suite's six error types arrive as `TH1202`, and
+ * `duplicate-option-name` alone as `TH1201`.
  *
- * Which stage notices something is an implementation detail of the parser Equator embeds; which
+ * Which stage notices something is an implementation detail of the parser Thoth embeds; which
  * class of error it is belongs to the message. So the class decides the code, one rule for all six,
  * and a type raised from either stage lands in the same place.
  *
@@ -708,17 +708,17 @@ const MESSAGE_FORMAT_DATA_MODEL_ERRORS: Readonly<
 
 function messageFormatErrorCode(
   error: MessageSyntaxError,
-): 'EQ1201' | 'EQ1202' {
+): 'TH1201' | 'TH1202' {
   return Object.hasOwn(MESSAGE_FORMAT_DATA_MODEL_ERRORS, error.type)
-    ? 'EQ1202'
-    : 'EQ1201';
+    ? 'TH1202'
+    : 'TH1201';
 }
 
 function errorDiagnostic(
   source: string,
   error: MessageSyntaxError,
   options: MessageParseOptions,
-  code: 'EQ1201' | 'EQ1202',
+  code: 'TH1201' | 'TH1202',
 ): ToolkitDiagnostic {
   const start = Math.max(0, Math.min(error.start, source.length));
   const end = Math.max(start, Math.min(error.end, source.length));
@@ -734,7 +734,7 @@ export function parseMessageSemanticModel(
 ): ToolkitResult<MessageSemanticModel> {
   const sourceText = untrustedText(
     sourceValue,
-    'EQ1201',
+    'TH1201',
     'MessageFormat source',
     RESOURCE_LIMITS.messageBytes,
   );
@@ -743,7 +743,7 @@ export function parseMessageSemanticModel(
   if (Buffer.byteLength(source, 'utf8') > RESOURCE_LIMITS.messageBytes) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1201',
+        'TH1201',
         `MessageFormat source exceeds the ${RESOURCE_LIMITS.messageBytes}-byte implementation ceiling.`,
         {
           ...(options.path === undefined ? {} : { path: options.path }),
@@ -766,7 +766,7 @@ export function parseMessageSemanticModel(
 
   const dataModelDiagnostics: ToolkitDiagnostic[] = [];
   const validation = validate(message, (type, node) => {
-    // Through the same table as the thrown half, rather than passing `EQ1202` because everything
+    // Through the same table as the thrown half, rather than passing `TH1202` because everything
     // reported here happens to be one. Two places deciding the same thing is how they come apart.
     const error = new MessageDataModelError(type, node);
     dataModelDiagnostics.push(
@@ -800,8 +800,8 @@ export function parseMessageSemanticModel(
     return toolkitFailure(
       unsupportedFunctions.map((name) =>
         toolkitDiagnostic(
-          'EQ1203',
-          `MessageFormat function :${name} is not part of the Equator 1 profile.`,
+          'TH1203',
+          `MessageFormat function :${name} is not part of the Thoth 1 profile.`,
           {
             ...(options.path === undefined ? {} : { path: options.path }),
             span: spanAt(source, 0, source.length, options.sourcePath),
@@ -820,12 +820,12 @@ export function parseMessageSemanticModel(
       }),
     );
   };
-  const optionDiagnostic = (summary: string): void => report('EQ1204', summary);
-  // Its own code rather than EQ1204's: an option written wrongly and an operand that is not a
+  const optionDiagnostic = (summary: string): void => report('TH1204', summary);
+  // Its own code rather than TH1204's: an option written wrongly and an operand that is not a
   // number are different mistakes with different fixes, and a consumer filtering on a code is
   // entitled to tell them apart.
   const operandDiagnostic = (summary: string): void =>
-    report('EQ1205', summary);
+    report('TH1205', summary);
   /**
    * @param where  What the option was written on, for the diagnostic.
    * @param allowDirection  `u:dir` is a Bad Option error on markup: markup resolves to no value, so
@@ -840,7 +840,7 @@ export function parseMessageSemanticModel(
       if (!name.startsWith(UNICODE_OPTION_PREFIX)) continue;
       if (!IMPLEMENTED_UNICODE_OPTIONS.has(name)) {
         optionDiagnostic(
-          `MessageFormat option ${name} on ${where} is outside the Equator 1 profile; the profile implements ${[...IMPLEMENTED_UNICODE_OPTIONS].join(' and ')}.`,
+          `MessageFormat option ${name} on ${where} is outside the Thoth 1 profile; the profile implements ${[...IMPLEMENTED_UNICODE_OPTIONS].join(' and ')}.`,
         );
         continue;
       }
@@ -1003,7 +1003,7 @@ export function parseMessageSemanticModel(
           }
           // MessageFormat allows a variable option value in general and forbids it for some:
           // *"if the value is not a literal, a Bad Option error is emitted."* Which ones is a
-          // property of the function and the table says it. `select` is singled out for Equator's
+          // property of the function and the table says it. `select` is singled out for Thoth's
           // reason for checking here at all: it decides which CLDR table a target catalog's
           // plural coverage is measured against, and a value that arrives at render time cannot be
           // measured against anything. The date family singles out everything except its three
@@ -1060,7 +1060,7 @@ export function parseMessageSemanticModel(
       if (profile.operand === 'string') return;
       if (profile.operand === 'date-time') {
         /**
-         * `input` is a time zone the operand carries, and an Equator date input is a `Date`. So the
+         * `input` is a time zone the operand carries, and a Thoth date input is a `Date`. So the
          * only operand that can answer is one whose own declaration wrote a zone, which is exactly
          * what the carried map holds, and `resolvedDateOptions` has already substituted it if
          * there was one. An `input` still standing here means nothing in the message provides it.
@@ -1152,18 +1152,18 @@ export function parseMessageSemanticModel(
       if (name === undefined || selectorNames.has(name)) continue;
       // MessageFormat splits its functions into formatters and selectors, and
       // `formatting.md` is explicit about what happens when a `.match` names a formatter: the
-      // selector matches nothing but the catch-all and a *Bad Selector* error is emitted. Equator
+      // selector matches nothing but the catch-all and a *Bad Selector* error is emitted. Thoth
       // knew which functions select before anything ran, the built-in profile is closed and an
       // extension descriptor declares it, and compiled the message anyway.
       //
       // Reported here rather than at render, on
       // `specs/04-message-authoring-and-catalogs.spec.md` section 6: the standard permits
-      // reporting the error and continuing with a fallback, and Equator does not take that
+      // reporting the error and continuing with a fallback, and Thoth does not take that
       // permission. The output of the fallback is the trap. Every keyed variant the author wrote is
       // dead and the catch-all renders, so the string is plausible and nobody is told that four of
       // the five variants in the message can never be chosen.
       report(
-        'EQ1206',
+        'TH1206',
         `MessageFormat function :${name} formats but does not select, so .match cannot select on $${selector.name}. ` +
           `A selecting function is one of ${selecting.map((each) => `:${each}`).join(', ')}, or an extension whose descriptor declares selector "exact".`,
       );

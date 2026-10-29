@@ -6,7 +6,7 @@ import {
   formatInstantRange,
   instant,
   type FormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 
@@ -17,7 +17,7 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
  * `unsupported-formatting-capability`. Sub-millisecond instants are ordinary: .NET's
  * `DateTimeOffset` carries 100-nanosecond ticks, Go and Rust count nanoseconds, and PostgreSQL
  * `timestamptz` stores microseconds, so any system whose canonical timestamp comes from one of
- * those hands Equator a value it refused. An ordinary order timestamp did not format at all. Not
+ * those hands Thoth a value it refused. An ordinary order timestamp did not format at all. Not
  * wrongly: not at all.
  *
  * Nothing is lost by accepting them, which is what makes this a refusal rather than a safeguard.
@@ -60,7 +60,7 @@ describe('an instant carrying .NET tick precision', () => {
     expect(text(formatInstant(ticks, english, CLOCK))).toBe('08:00:00.123');
     expect(formatInstant(ticks, arabic, { dateStyle: 'long' }).ok).toBe(true);
     claimCapability('format:formatInstant');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('formats at nanosecond precision too', () => {
@@ -68,7 +68,7 @@ describe('an instant carrying .NET tick precision', () => {
       text(formatInstant(instant('1800000000123456789'), english, CLOCK)),
     ).toBe('08:00:00.123');
     claimCapability('format:formatInstant');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('shows the caller the precision they asked for and no more', () => {
@@ -87,7 +87,7 @@ describe('an instant carrying .NET tick precision', () => {
       ),
     ).toBe('08:00');
     claimCapability('format:formatInstant');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('formats a range whose endpoints both carry ticks', () => {
@@ -100,7 +100,7 @@ describe('an instant carrying .NET tick precision', () => {
       ).ok,
     ).toBe(true);
     claimCapability('format:formatInstantRange');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -116,7 +116,7 @@ describe('the millisecond an instant falls in', () => {
       text(formatInstant(instant('-1'), english, { dateStyle: 'short' })),
     ).toBe('12/31/69');
     claimCapability('format:formatInstant');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('keeps the epoch itself on the right side', () => {
@@ -130,7 +130,7 @@ describe('the millisecond an instant falls in', () => {
       text(formatInstant(instant('1'), english, { dateStyle: 'short' })),
     ).toBe('1/1/70');
     claimCapability('format:formatInstant');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('still refuses an instant outside the native date range', () => {
@@ -143,7 +143,7 @@ describe('the millisecond an instant falls in', () => {
 
     expect(result.ok).toBe(false);
     claimCapability('format:formatInstant');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -161,6 +161,6 @@ describe('decimal normalization cost', () => {
     expect(decimal(`1.5${zeros}`).value).toBe('1.5');
     expect(decimal(`0.${zeros}`).value).toBe('0');
     expect(decimal(`-1.${zeros}`).value).toBe('-1');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

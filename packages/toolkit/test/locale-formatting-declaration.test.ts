@@ -62,7 +62,7 @@ async function project(options: ProjectOptions = {}): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -122,7 +122,7 @@ async function generated(root: string): Promise<{
 }> {
   const result = await generateProject({ project: root });
   const codes = result.diagnostics.map(({ code }) => code);
-  const index = codes.some((code) => code.startsWith('EQ1'))
+  const index = codes.some((code) => code.startsWith('TH1'))
     ? ''
     : await readFile(
         resolve(root, 'src/generated/i18n/index.ts'),
@@ -177,7 +177,7 @@ describe('a locale declares how it is written', () => {
         formatting: { 'fa-IR': { numberingSystem: 'arabext' } },
       }),
     );
-    expect(codes).toContain('EQ1004');
+    expect(codes).toContain('TH1004');
     claimCapability('declaration:locale-formatting');
   });
 
@@ -187,7 +187,7 @@ describe('a locale declares how it is written', () => {
         formatting: { 'not a locale': { calendar: 'gregory' } },
       }),
     );
-    expect(codes).toContain('EQ1003');
+    expect(codes).toContain('TH1003');
     claimCapability('declaration:locale-formatting');
   });
 
@@ -200,7 +200,7 @@ describe('a locale declares how it is written', () => {
     claimCapability('declaration:locale-formatting');
   });
 
-  it('refuses an option Equator does not carry per locale', async () => {
+  it('refuses an option Thoth does not carry per locale', async () => {
     // `timeZone` is the fourth field of a formatting context and is deliberately not here: it
     // belongs to the reader or to the deployment, not to the language, and one page is read in one
     // zone whichever language it is in.

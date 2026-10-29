@@ -8,7 +8,7 @@ import {
   type LocalizedText,
   type LocalizedValuePart,
   type MessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import type {
   CompiledCatalog,
@@ -277,9 +277,9 @@ const catalogOf = ({ locale, messages }: Shipped): CompiledCatalog => {
     outputParts: 8,
   };
   return {
-    profile: 'equator-compiled-ir/1',
-    generatedAbi: 'equator-generated/1',
-    standardsProfile: 'equator-1',
+    profile: 'thoth-compiled-ir/1',
+    generatedAbi: 'thoth-generated/1',
+    standardsProfile: 'thoth-1',
     key: { providerId: 'shop', scopeId: 'cart', catalogLocale: locale },
     applicationContractFingerprint: 'test',
     semanticRegistryFingerprint: 'test',
@@ -302,7 +302,7 @@ const handleFor = (
   resultKind: 'plain' | 'structured' = 'plain',
 ): MessageHandle =>
   ({
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     providerId: 'shop',
     scopeId: 'cart',
     messageId,
@@ -398,7 +398,7 @@ describe('what a result says about where it came from', () => {
  */
 describe('a handle evaluated against a catalog it was not generated for', () => {
   it.each([
-    ['ABI', { generatedAbi: 'equator-generated/0' }],
+    ['ABI', { generatedAbi: 'thoth-generated/0' }],
     ['provider', { providerId: 'blog' }],
     ['scope', { scopeId: 'checkout' }],
     ['result kind', { resultKind: 'structured' }],

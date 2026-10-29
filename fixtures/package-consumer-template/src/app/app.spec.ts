@@ -1,4 +1,4 @@
-import { parseConfiguration } from '@neolorn/equator-toolkit';
+import { parseConfiguration } from '@neolorn/thoth-toolkit';
 
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -23,11 +23,11 @@ import {
   withOverlayLocale,
   withRecoveryMessage,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   LocalizationTestingController,
   provideLocalizationTesting,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -73,7 +73,7 @@ const lazyScope = {
   scopeId: lazyScopeId,
 } as const;
 
-describe('Equator feature-lab package consumer', () => {
+describe('Thoth feature-lab package consumer', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
@@ -123,10 +123,10 @@ describe('Equator feature-lab package consumer', () => {
       localization.textSignal(messages.appTitle),
     );
     expect(element.querySelector('h1')?.textContent).toContain(
-      'Equator feature lab',
+      'Thoth feature lab',
     );
     expect(element.querySelector('[data-welcome]')?.textContent).toContain(
-      'Welcome, Equator!',
+      'Welcome, Thoth!',
     );
     expect(element.querySelector('[data-rich-message]')?.textContent).toContain(
       'Read the guide.',
@@ -194,7 +194,7 @@ describe('Equator feature-lab package consumer', () => {
         .querySelector('[data-locale-choice="ar-EG"]')
         ?.hasAttribute('aria-current'),
     ).toBe(false);
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   // `specs/06-runtime-and-angular.spec.md` section 3: a release must not depend on a manual
@@ -211,14 +211,14 @@ describe('Equator feature-lab package consumer', () => {
 
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('h1')?.textContent).toContain(
-      'مختبر ميزات Equator',
+      'مختبر ميزات Thoth',
     );
     expect(element.querySelector('[data-pipe]')?.textContent).toContain(
-      'مختبر ميزات Equator',
+      'مختبر ميزات Thoth',
     );
     expect(
       element.querySelector('[data-label]')?.getAttribute('aria-label'),
-    ).toBe('مختبر ميزات Equator');
+    ).toBe('مختبر ميزات Thoth');
     expect(element.querySelector('[data-rich-message]')?.textContent).toContain(
       'اقرأ الدليل.',
     );
@@ -256,22 +256,22 @@ describe('Equator feature-lab package consumer', () => {
 
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('h1')?.textContent).toContain(
-      'مختبر ميزات Equator',
+      'مختبر ميزات Thoth',
     );
     expect(element.querySelector('[data-welcome]')?.textContent).toContain(
-      'مرحبًا، \u2067Equator\u2069!',
+      'مرحبًا، \u2067Thoth\u2069!',
     );
     expect(element.querySelector('[data-pipe]')?.textContent).toContain(
-      'مختبر ميزات Equator',
+      'مختبر ميزات Thoth',
     );
     // An attribute-position label follows the active locale like anything else, and writing one
     // attribute leaves the element's other attributes alone: a host binding on every supported
     // name would have cleared this img's static alt.
     expect(
       element.querySelector('[data-label]')?.getAttribute('aria-label'),
-    ).toBe('مختبر ميزات Equator');
+    ).toBe('مختبر ميزات Thoth');
     const labelled = element.querySelector('[data-label-alt]');
-    expect(labelled?.getAttribute('title')).toBe('غلاف دليل Equator');
+    expect(labelled?.getAttribute('title')).toBe('غلاف دليل Thoth');
     expect(labelled?.getAttribute('alt')).toBe('static alt');
     expect(labelled?.hasAttribute('aria-label')).toBe(false);
     expect(element.querySelector('[data-rich-message]')?.textContent).toContain(
@@ -295,7 +295,7 @@ describe('Equator feature-lab package consumer', () => {
     expect(fallback.targetLocale).toBe('ar-EG');
     expect(fallback.supplyingLocale).toBe('en-US');
     expect(fallback.fallback).toBe(true);
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('keeps the committed view while the latest locale intent supersedes pending work', async () => {
@@ -329,7 +329,7 @@ describe('Equator feature-lab package consumer', () => {
     expect(arriving?.selfName).toBe(configuration.localeNames?.['ar-EG']);
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain(
-      'Equator feature lab',
+      'Thoth feature lab',
     );
 
     const latest = localization.changeLocale('en-US');
@@ -343,7 +343,7 @@ describe('Equator feature-lab package consumer', () => {
 
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(localization.targetLocale()).toBeUndefined();
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
     claimCapability('declaration:GeneratedConfiguration.localeNames', {
       policy: routePolicy,
       platform: TestBed.inject(PLATFORM_ID) as string,
@@ -366,12 +366,12 @@ describe('Equator feature-lab package consumer', () => {
     await localization.changeLocale('en-US');
     await localization.changeLocale('ar-EG');
     expect(controller.loadCount({ providerId, scopeId }, 'ar-EG')).toBe(2);
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
     claimCapability('testing:LocalizationTestingController', {
       policy: routePolicy,
       platform: TestBed.inject(PLATFORM_ID) as string,
     });
-    claimCapability('entry:@neolorn/equator/testing', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth/testing', { policy: routePolicy });
   });
 
   it('keeps canonical values exact and percentage scales explicit', () => {
@@ -420,7 +420,7 @@ describe('Equator feature-lab package consumer', () => {
     });
     claimCapability('format:formatNumber', { policy: routePolicy, platform });
     claimCapability('format:formatInstant', { policy: routePolicy, platform });
-    claimCapability('entry:@neolorn/equator', {
+    claimCapability('entry:@neolorn/thoth', {
       policy: routePolicy,
       platform,
     });
@@ -466,7 +466,7 @@ describe('Equator feature-lab package consumer', () => {
     fixture.detectChanges();
     expect(control?.errors).toEqual({
       localizedInput: {
-        code: 'equator.input.invalid',
+        code: 'thoth.input.invalid',
         status: 'invalid',
       },
     });
@@ -483,7 +483,7 @@ describe('Equator feature-lab package consumer', () => {
     expect(input.value).toBe('1 2%');
     expect(control?.errors).toEqual({
       localizedInput: {
-        code: 'equator.input.invalid',
+        code: 'thoth.input.invalid',
         status: 'invalid',
       },
     });
@@ -510,12 +510,12 @@ describe('Equator feature-lab package consumer', () => {
     expect(
       element.querySelector('[data-percent-model]')?.textContent,
     ).toContain('0.5');
-    // Equator owns this region and puts it on the document, so it is found there rather than inside
+    // Thoth owns this region and puts it on the document, so it is found there rather than inside
     // the component under test, which is the point: nothing in the application renders it. It is
     // filled on the frame after the commit, which nothing the fixture waits for includes.
     await vi.waitFor(() => {
       expect(
-        document.querySelector('[data-equator-announcer]')?.textContent,
+        document.querySelector('[data-thoth-announcer]')?.textContent,
       ).toContain('locale:ar-EG');
     });
 
@@ -530,7 +530,7 @@ describe('Equator feature-lab package consumer', () => {
       element.querySelector('[data-percent-model]')?.textContent,
     ).toContain('0.5');
     claimCapability('directive:LocalizedInput', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('refuses to write a localized label into an attribute that is not text', () => {
@@ -549,7 +549,7 @@ describe('Equator feature-lab package consumer', () => {
 
     expect(anchor?.getAttribute('href')).toBe('/safe');
     expect(anchor?.hasAttribute('aria-label')).toBe(false);
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('localizes stable issue, external-value, and notification codes without exposing unknown raw values', () => {
@@ -619,7 +619,7 @@ describe('Equator feature-lab package consumer', () => {
       tone: 'success',
       content: { value: 'Changes saved.' },
     });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('rolls back a coherence-critical adapter that mutates and then fails', async () => {
@@ -663,12 +663,12 @@ describe('Equator feature-lab package consumer', () => {
     expect(document.documentElement.lang).toBe('en-US');
     expect(document.documentElement.dir).toBe('ltr');
     claimCapability('feature:withOverlayLocale');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('isolates an explicitly owned child localization context', async () => {
     const parent = TestBed.inject(Localization);
-    const announcer = document.querySelector('[data-equator-announcer]');
+    const announcer = document.querySelector('[data-thoth-announcer]');
     expect(announcer).not.toBeNull();
     const child = parent.createChildContext({ initialLocale: 'ar-EG' });
     await child.initialize();
@@ -683,9 +683,9 @@ describe('Equator feature-lab package consumer', () => {
 
     child.dispose();
     expect(() => child.text(messages.appTitle)).toThrow(/disposed/u);
-    expect(parent.text(messages.appTitle)).toBe('Equator feature lab');
+    expect(parent.text(messages.appTitle)).toBe('Thoth feature lab');
     expect(announcer?.isConnected).toBe(true);
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('keeps lazy-scope evaluation behind explicit readiness without hidden loading', async () => {
@@ -721,7 +721,7 @@ describe('Equator feature-lab package consumer', () => {
     await localization.ensureScope(lazyScope);
     expect(localization.text(lazyMessages.status)).toBe('Lazy scope ready.');
     expect(localization.scopeReadiness(lazyScope)().status).toBe('ready');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('holds a coordinated commit until every required local scope is ready', async () => {
@@ -741,7 +741,7 @@ describe('Equator feature-lab package consumer', () => {
 
     expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
     expect(localization.text(lazyMessages.status)).toContain('جاهز');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('honors a new same-locale coordinated scope contract before committing', async () => {
@@ -772,7 +772,7 @@ describe('Equator feature-lab package consumer', () => {
             owner === lazyProviderId && id === lazyScopeId,
         ),
     ).toBe(true);
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('starts newly requested same-locale progressive scope work', async () => {
@@ -794,7 +794,7 @@ describe('Equator feature-lab package consumer', () => {
       expect(localization.scopeReadiness(lazyScope)().status).toBe('ready');
     });
     expect(localization.text(lazyMessages.status)).toBe('Lazy scope ready.');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('commits the primary progressive state while a governed lazy scope remains truthful and pending', async () => {
@@ -826,7 +826,7 @@ describe('Equator feature-lab package consumer', () => {
       expect(localization.scopeReadiness(lazyScope)().status).toBe('ready');
     });
     expect(localization.text(lazyMessages.status)).toContain('جاهز');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('folds a required scope still in flight into the transaction that starts beside it', async () => {
@@ -855,7 +855,7 @@ describe('Equator feature-lab package consumer', () => {
     await expect(transition).resolves.toMatchObject({ status: 'committed' });
     expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
     expect(localization.text(lazyMessages.status)).toContain('جاهز');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('lands a progressive scope after its own transaction has committed, as a transaction', async () => {
@@ -881,7 +881,7 @@ describe('Equator feature-lab package consumer', () => {
     expect(localization.snapshot()?.id).toBe(committed + 1);
     expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
     expect(localization.text(lazyMessages.status)).toContain('جاهز');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('discards a load whose snapshot was superseded, and answers the request that outlived it', async () => {
@@ -916,7 +916,7 @@ describe('Equator feature-lab package consumer', () => {
     expect(localization.snapshot()?.id).toBe(committed);
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(localization.text(lazyMessages.status)).toBe('Lazy scope ready.');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   // The toolkit is Node tooling (specs/02-packages-and-platform.spec.md), so a run of this suite
@@ -937,6 +937,6 @@ describe('Equator feature-lab package consumer', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.sourceLocale).toBe('en-US');
-    claimCapability('entry:@neolorn/equator-toolkit');
+    claimCapability('entry:@neolorn/thoth-toolkit');
   });
 });

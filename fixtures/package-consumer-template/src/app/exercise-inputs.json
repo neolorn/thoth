@@ -56,7 +56,7 @@
     "options": { "dateStyle": "medium" }
   },
   "list": {
-    "values": ["Equator", "Angular", "Intl"],
+    "values": ["Thoth", "Angular", "Intl"],
     "options": { "type": "conjunction" }
   },
   "relativeTime": {
@@ -83,7 +83,7 @@
     "options": {}
   },
   "segmentation": {
-    "text": "Equator خط الاستواء",
+    "text": "Thoth خط الاستواء",
     "options": { "granularity": "word" }
   },
   "personName": {
@@ -102,7 +102,7 @@
     }
   },
   "extensions": {
-    "operand": "equator",
+    "operand": "thoth",
     "member": "ready",
     "refusedMember": "READY",
     "formatted": "item-42",

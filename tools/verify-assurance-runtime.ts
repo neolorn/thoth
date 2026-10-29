@@ -157,7 +157,7 @@ function suiteVerdict(suite: string | undefined, caughtWhen?: RegExp): Verdict {
     workspaceRoot,
     'The workspace did not build with the injection applied, so nothing was proven. A `TS6133 ' +
       'is declared but its value is never read` here is this file to fix, not the runtime: ' +
-      'Equator compiles with `noUnusedLocals` and `noUnusedParameters`, so an injection that ' +
+      'Thoth compiles with `noUnusedLocals` and `noUnusedParameters`, so an injection that ' +
       'removes the only reader of a local or a parameter cannot compile. Reference it with ' +
       '`void`, the way the injections above do, or widen the replacement to take the reader ' +
       'out with it.',
@@ -256,7 +256,7 @@ function suiteVerdict(suite: string | undefined, caughtWhen?: RegExp): Verdict {
 
   // The browser gate serves the consumer's already-built Angular bundle. Refreshing the package in
   // `node_modules` does not rebuild that bundle, so without this the browser would run the old
-  // Equator and every browser-named injection would report itself unguarded. Re-materializing
+  // Thoth and every browser-named injection would report itself unguarded. Re-materializing
   // installs the injected build and rebuilds the application.
   //
   // Materializing is asserted rather than folded into the `&&` chain, and the reason is a false
@@ -318,7 +318,7 @@ required(
   'The workspace did not build, so there is nothing to hand a consumer.',
 );
 // Prepared the way `verify:consumer` prepares it, by running it: a materialized consumer has no
-// configuration until `equator init` writes one, and its suite fails on every injection without
+// configuration until `thoth init` writes one, and its suite fails on every injection without
 // one, for a reason that has nothing to do with the injection.
 required(
   'pnpm',

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { FormattingContext } from '@neolorn/equator/core';
+import type { FormattingContext } from '@neolorn/thoth/core';
 
 import { compareLocalized } from '../src/formatting.js';
 

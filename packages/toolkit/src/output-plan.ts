@@ -14,23 +14,23 @@ import {
 import { compareCodeUnit } from './sorted-records.js';
 
 /** The version stamp on an output plan, checked before one is compared against a manifest. */
-export const OUTPUT_PLAN_PROFILE = 'equator-output-plan/1' as const;
+export const OUTPUT_PLAN_PROFILE = 'thoth-output-plan/1' as const;
 export const COMPLETION_MANIFEST_PROFILE =
-  'equator-completion-manifest/1' as const;
+  'thoth-completion-manifest/1' as const;
 /**
- * The manifest Equator writes into the generated root when generation completes, relative to it.
+ * The manifest Thoth writes into the generated root when generation completes, relative to it.
  *
- * It is the record of exactly which files Equator produced and what each one contained, and it is
+ * It is the record of exactly which files Thoth produced and what each one contained, and it is
  * what makes both `inspectOutputFreshness` and safe cleanup possible: with it, "is this
  * output current" and "is this file mine to delete" are lookups rather than inferences from a
  * naming convention. Published for the same reason the ownership marker is: a consumer writing
  * its own cleanup or CI freshness step needs to be able to find and read it, and a path hardcoded
- * in that script is a copy of an Equator decision that will not be told when it changes.
+ * in that script is a copy of a Thoth decision that will not be told when it changes.
  *
  * Its presence is also the signal that a generation finished. A generated root without it is a
  * generation that was interrupted, which is why cleanup treats those two cases differently.
  */
-export const COMPLETION_MANIFEST_PATH = '.equator-manifest.json' as const;
+export const COMPLETION_MANIFEST_PATH = '.thoth-manifest.json' as const;
 
 /** One file a compilation means to produce, before it is measured. */
 export interface OutputFileInput {
@@ -84,9 +84,9 @@ export interface CompletionManifest {
 const windowsReservedName = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu;
 
 /**
- * The content digest Equator records for a generated file, as `sha256-<base64url>`.
+ * The content digest Thoth records for a generated file, as `sha256-<base64url>`.
  *
- * Published so a consumer can compute the same value Equator stores in the completion manifest and
+ * Published so a consumer can compute the same value Thoth stores in the completion manifest and
  * compare the two itself: checking a file against its recorded digest without this means
  * reimplementing the hash, the encoding and the prefix, and any of the three getting it wrong
  * produces a mismatch that looks like a stale file.
@@ -94,7 +94,7 @@ const windowsReservedName = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu;
  * `base64url` rather than hex, so a digest is safe in a filename or a URL without escaping, and the
  * `sha256-` prefix so the algorithm travels with the value: a bare hash in a stored manifest is one
  * whose algorithm cannot be changed later without silently reinterpreting every old record. Both
- * are required by `specs/01-standards-profile.spec.md` section 13, so every fingerprint Equator
+ * are required by `specs/01-standards-profile.spec.md` section 13, so every fingerprint Thoth
  * writes reads the same way. Recording it in the manifest rather than inside the file it covers is
  * `specs/05-compiled-artifacts-and-trust.spec.md` section 3, because writing it into the file
  * would change the bytes it covers.
@@ -147,7 +147,7 @@ export function createOutputPlan(
     if (pathError !== undefined) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1503',
+          'TH1503',
           `Generated output path ${JSON.stringify(input.path)} ${pathError}.`,
           { path: ['outputs', input.path] },
         ),
@@ -157,7 +157,7 @@ export function createOutputPlan(
     if (input.path === COMPLETION_MANIFEST_PATH) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1503',
+          'TH1503',
           `Generated output cannot replace the reserved completion marker ${COMPLETION_MANIFEST_PATH}.`,
           { path: ['outputs', input.path] },
         ),
@@ -169,7 +169,7 @@ export function createOutputPlan(
     if (exact.has(input.path) || existing !== undefined) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1503',
+          'TH1503',
           `Generated output path ${JSON.stringify(input.path)} collides with ${JSON.stringify(existing ?? input.path)}.`,
           { path: ['outputs', input.path] },
         ),
@@ -190,7 +190,7 @@ export function createOutputPlan(
   if (diagnostics.length > 0) return toolkitFailure(diagnostics);
   files.sort((left, right) => compareCodeUnit(left.path, right.path));
   const planDigest = digestCanonicalJson(
-    'equator-output-plan/1',
+    'thoth-output-plan/1',
     files.map(planFileJson),
   );
   return toolkitSuccess(
@@ -208,7 +208,7 @@ export function createCompletionManifest(
 ): CompletionManifest {
   if (!/^sha256-[A-Za-z0-9_-]{43}$/u.test(ownerId)) {
     throw new TypeError(
-      'Equator output owner identity must be a full SHA-256 fingerprint.',
+      'Thoth output owner identity must be a full SHA-256 fingerprint.',
     );
   }
   return Object.freeze({
@@ -240,16 +240,16 @@ export function parseCompletionManifest(
   } catch {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1503',
-        'Equator completion manifest is not valid JSON.',
+        'TH1503',
+        'Thoth completion manifest is not valid JSON.',
       ),
     ]);
   }
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1503',
-        'Equator completion manifest must be an object.',
+        'TH1503',
+        'Thoth completion manifest must be an object.',
       ),
     ]);
   }
@@ -267,8 +267,8 @@ export function parseCompletionManifest(
   ) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1503',
-        'Equator completion manifest header is invalid.',
+        'TH1503',
+        'Thoth completion manifest header is invalid.',
       ),
     ]);
   }
@@ -278,8 +278,8 @@ export function parseCompletionManifest(
     if (typeof item !== 'object' || item === null || Array.isArray(item)) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1503',
-          'Equator completion manifest file entry is invalid.',
+          'TH1503',
+          'Thoth completion manifest file entry is invalid.',
         ),
       ]);
     }
@@ -298,8 +298,8 @@ export function parseCompletionManifest(
     ) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1503',
-          'Equator completion manifest file entry is invalid.',
+          'TH1503',
+          'Thoth completion manifest file entry is invalid.',
         ),
       ]);
     }
@@ -307,8 +307,8 @@ export function parseCompletionManifest(
     if (parsedFiles.some(({ path }) => path.toLowerCase() === foldedPath)) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1503',
-          'Equator completion manifest contains a case-insensitive path collision.',
+          'TH1503',
+          'Thoth completion manifest contains a case-insensitive path collision.',
         ),
       ]);
     }
@@ -323,7 +323,7 @@ export function parseCompletionManifest(
   }
   parsedFiles.sort((left, right) => compareCodeUnit(left.path, right.path));
   const expectedPlanDigest = digestCanonicalJson(
-    'equator-output-plan/1',
+    'thoth-output-plan/1',
     parsedFiles.map((file) => ({
       path: file.path,
       bytes: file.bytes,
@@ -333,8 +333,8 @@ export function parseCompletionManifest(
   if (expectedPlanDigest !== record['planDigest']) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1503',
-        'Equator completion manifest plan digest does not match its file inventory.',
+        'TH1503',
+        'Thoth completion manifest plan digest does not match its file inventory.',
       ),
     ]);
   }

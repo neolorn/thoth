@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { LocalizationCommitHook } from '../src/localization.js';
-import { LocalizationError } from '@neolorn/equator/core';
+import { LocalizationError } from '@neolorn/thoth/core';
 
 import { PROVIDER, catalogKey } from './catalog-store-harness.js';
 import {

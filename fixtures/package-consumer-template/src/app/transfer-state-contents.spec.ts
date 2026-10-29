@@ -16,7 +16,7 @@ import {
   type LocalizationParticipant,
   type LocalizationParticipantContext,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -38,7 +38,7 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 const DOMAIN_MARKER = 'consumer-domain-record-body';
 
 const TRANSFER_KEY = makeStateKey<unknown>(
-  '@neolorn/equator:localization-state/1',
+  '@neolorn/thoth:localization-state/1',
 );
 
 class ArticleRegion {
@@ -132,7 +132,7 @@ describe('the transfer a server render writes', () => {
             'profile',
           ],
     );
-    expect(transfer?.['profile']).toBe('equator-transfer-state/1');
+    expect(transfer?.['profile']).toBe('thoth-transfer-state/1');
     expect(transfer?.participants).toHaveLength(1);
     for (const record of transfer?.participants ?? []) {
       expect(
@@ -152,6 +152,6 @@ describe('the transfer a server render writes', () => {
 
     TestBed.inject(Localization).dispose();
     TestBed.resetTestingModule();
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

@@ -1,5 +1,5 @@
 /**
- * The capability matrix: every capability Equator ships as a row, every context the gate verifies
+ * The capability matrix: every capability Thoth ships as a row, every context the gate verifies
  * in as a column, and in each cell the claims that exercised it or the reason it cannot be.
  *
  * `specs/12-verification.spec.md` section 3 is what this answers to. Rows and columns are derived
@@ -72,7 +72,7 @@ export interface BindingToken {
 /** Requirements that must all hold, each met by any one of its tokens. */
 export type Binding = readonly (readonly BindingToken[])[];
 
-/** A capability Equator ships. */
+/** A capability Thoth ships. */
 export interface Row {
   readonly id: string;
   readonly category: string;
@@ -203,7 +203,7 @@ function valueNames(text: string): Set<string> {
  * The runtime's declarations with every string in one quote.
  *
  * The readers below match a literal type and an import specifier between single quotes, and which
- * quote a declaration file is written with is the packager's choice. No name or literal Equator
+ * quote a declaration file is written with is the packager's choice. No name or literal Thoth
  * publishes contains a quote of either kind, so respelling them loses nothing a reader asks for.
  */
 function runtimeDeclarationsInOneQuote(): Declaration[] {
@@ -406,7 +406,7 @@ function renderColumns(renderModes: readonly string[]): Column[] {
  */
 function relayedRenderModes(runtime: readonly Declaration[]): string[] {
   const ssr =
-    runtime.find((entry) => entry.entryPoint === 'neolorn-equator-ssr')?.text ??
+    runtime.find((entry) => entry.entryPoint === 'neolorn-thoth-ssr')?.text ??
     '';
   assert.ok(
     /import \{[^}]*\bRenderMode\b[^}]*\} from '@angular\/ssr';/u.test(ssr),
@@ -641,7 +641,7 @@ const REGISTRY: readonly RegistryEntry[] = Object.freeze([
     resolves: { export: 'DEFAULT_ROUTE_INDEXING_FIELD' },
     binding: [
       [
-        ...named('equatorIndexing', 'DEFAULT_ROUTE_INDEXING_FIELD'),
+        ...named('thothIndexing', 'DEFAULT_ROUTE_INDEXING_FIELD'),
         declaredField('indexing'),
       ],
     ],
@@ -651,7 +651,7 @@ const REGISTRY: readonly RegistryEntry[] = Object.freeze([
     resolves: { export: 'DEFAULT_ROUTE_CACHING_FIELD' },
     binding: [
       [
-        ...named('equatorCaching', 'DEFAULT_ROUTE_CACHING_FIELD'),
+        ...named('thothCaching', 'DEFAULT_ROUTE_CACHING_FIELD'),
         declaredField('caching'),
       ],
     ],
@@ -786,7 +786,7 @@ const MEMBER_PLACEMENTS: Readonly<
 
 /** The commands the built CLI lists in its own help, run where it acts on nothing. */
 function cliCommands(): string[] {
-  const elsewhere = mkdtempSync(join(tmpdir(), 'equator-matrix-help-'));
+  const elsewhere = mkdtempSync(join(tmpdir(), 'thoth-matrix-help-'));
   try {
     const help = execFileSync(
       process.execPath,
@@ -841,9 +841,9 @@ export function rowsFrom({
 }: Published): { rows: Row[]; resolveFailures: string[] } {
   const text = (entryPoint: string) =>
     runtime.find((entry) => entry.entryPoint === entryPoint)?.text ?? '';
-  const primary = text('neolorn-equator');
-  const core = text('neolorn-equator-core');
-  const testing = text('neolorn-equator-testing');
+  const primary = text('neolorn-thoth');
+  const core = text('neolorn-thoth-core');
+  const testing = text('neolorn-thoth-testing');
   const everything = [...runtime.map((entry) => entry.text), toolkit];
   const allValues = new Set(
     everything.flatMap((each) => [...valueNames(each)]),
@@ -975,7 +975,7 @@ export function rowsFrom({
     add('cli', command, [
       [
         ...literal(command),
-        ...named(`equator ${command}`),
+        ...named(`thoth ${command}`),
         ...named(...toolkitValues.filter((name) => name.startsWith(command))),
       ],
     ]);
@@ -1057,7 +1057,7 @@ export function rowsFrom({
   for (const row of rows) if (!unique.has(row.id)) unique.set(row.id, row);
 
   for (const anchor of [
-    'entry:@neolorn/equator/http',
+    'entry:@neolorn/thoth/http',
     'feature:withRouting',
     'pipe:localizedMoney',
     'directive:LocalizedInput',
@@ -1108,8 +1108,8 @@ export function columnsFrom({
   renderModes,
 }: Declared): Column[] {
   const core =
-    runtime.find((entry) => entry.entryPoint === 'neolorn-equator-core')
-      ?.text ?? '';
+    runtime.find((entry) => entry.entryPoint === 'neolorn-thoth-core')?.text ??
+    '';
   return [
     ...renderColumns(renderModes),
     ...policyColumns(core).map(({ id, group, name, matches }) => ({

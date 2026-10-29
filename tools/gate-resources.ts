@@ -5,7 +5,7 @@
  * machine unresponsive, or takes it down, costs more than a slower run does. So it takes a share
  * rather than all of it:
  *
- * - **Processors.** One setting, `EQUATOR_VERIFY_PROCESSORS`, defaulting to two thirds of the
+ * - **Processors.** One setting, `THOTH_VERIFY_PROCESSORS`, defaulting to two thirds of the
  *   logical processors the machine reports, so it scales with the machine. It counts the stages
  *   that run at once and the workers each stage's runners start, together: a stage declares how many
  *   processors it occupies (`processors` in `verify-stages.ts`, one when it says nothing), the
@@ -30,7 +30,7 @@
 import { readFileSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 
-export const PROCESSORS_VARIABLE = 'EQUATOR_VERIFY_PROCESSORS';
+export const PROCESSORS_VARIABLE = 'THOTH_VERIFY_PROCESSORS';
 
 /** The share of physical memory that must be free before another stage starts. */
 export const MEMORY_FLOOR = 0.25;
@@ -111,7 +111,7 @@ export function largestMinimum(steps: readonly ScheduledStage[]): {
   return largest;
 }
 
-export const PRIORITY_FILE_VARIABLE = 'EQUATOR_VERIFY_PRIORITY_FILE';
+export const PRIORITY_FILE_VARIABLE = 'THOTH_VERIFY_PRIORITY_FILE';
 
 const readText = (path: string): string => readFileSync(path, 'utf8');
 
@@ -120,7 +120,7 @@ const readText = (path: string): string => readFileSync(path, 'utf8');
  *
  * A run takes hours, and the machine it shares with someone's work by day is often left to it
  * overnight. A level fixed when the run starts fits one of the two, so it can be changed while the
- * run goes: `EQUATOR_VERIFY_PRIORITY_FILE` names a file, and while its text is `normal` every
+ * run goes: `THOTH_VERIFY_PRIORITY_FILE` names a file, and while its text is `normal` every
  * stage runs at normal priority. Any other text, and a file that is missing or cannot be read,
  * leaves each stage at its own level, so a fault in the file never raises anything.
  */
@@ -168,14 +168,14 @@ export const stageProcessors = (
  *
  * `VITEST_MAX_WORKERS` is read by Vitest when it resolves its configuration, `NG_BUILD_MAX_WORKERS`
  * by `@angular/build`, and `GOMAXPROCS` by the Go runtime inside esbuild. A tool of this
- * repository that runs work in parallel reads `EQUATOR_STAGE_PROCESSORS`.
+ * repository that runs work in parallel reads `THOTH_STAGE_PROCESSORS`.
  *
  * `NG_BUILD_MAX_WORKERS` sizes the transform pool the Angular build keeps for each bundle it builds,
  * three for a server-rendered application, and the build keeps a compilation worker beside them
  * (`ParallelCompilation`), so the pools are handed a third of the share left after that worker.
  */
 export const runnerEnvironment = (processors: number) => ({
-  EQUATOR_STAGE_PROCESSORS: String(processors),
+  THOTH_STAGE_PROCESSORS: String(processors),
   VITEST_MAX_WORKERS: String(processors),
   NG_BUILD_MAX_WORKERS: String(Math.max(1, Math.floor((processors - 1) / 3))),
   GOMAXPROCS: String(processors),
@@ -186,7 +186,7 @@ export type RunnerSettings = Readonly<Record<string, string>>;
 
 /** The settings among them that are worker counts, each drawn from the stage's share. */
 export const WORKER_COUNT_SETTINGS = [
-  'EQUATOR_STAGE_PROCESSORS',
+  'THOTH_STAGE_PROCESSORS',
   'VITEST_MAX_WORKERS',
   'NG_BUILD_MAX_WORKERS',
   'GOMAXPROCS',
@@ -255,7 +255,7 @@ export function stageProcessorShare(
   fallback: number,
   environment: Environment = process.env,
 ): number {
-  const value = Number(environment['EQUATOR_STAGE_PROCESSORS']);
+  const value = Number(environment['THOTH_STAGE_PROCESSORS']);
   return Number.isInteger(value) && value >= 1 ? value : fallback;
 }
 

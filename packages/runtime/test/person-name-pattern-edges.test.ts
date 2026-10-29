@@ -4,7 +4,7 @@ import {
   type FormattingResult,
   type PersonNameProfileSet,
   type PersonNameValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { formatPersonName, personName } from '../src/formatting.js';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
@@ -74,7 +74,7 @@ function profileSet(rows: readonly Row[]): PersonNameProfileSet {
     ] as const;
   });
   return {
-    profile: 'cldr-48.2/equator-person-names-1',
+    profile: 'cldr-48.2/thoth-person-names-1',
     patterns,
     rows: encoded,
   } as PersonNameProfileSet;

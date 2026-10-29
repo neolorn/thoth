@@ -9,7 +9,7 @@ import {
   type FormattingContext,
   type LocalizedInputProfile,
   type PlainDateValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A date field under the Gregorian calendar reads and writes only dates that exist.

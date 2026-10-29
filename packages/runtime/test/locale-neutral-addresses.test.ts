@@ -13,7 +13,7 @@ import {
   type LocalizationSetup,
   type RouteParameterCodec,
   type RouteParameterContext,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -45,7 +45,7 @@ const SLUG: RouteParameterCodec<string> = Object.freeze({
 /** A route every locale spells alike, one with its own Arabic path, and one with an Arabic slug. */
 const SHAPES = defineRouteProjection({
   generated: Object.freeze({
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-LocaleNeutralAddressesTestIdentity012345678',
     routes: Object.freeze([
       Object.freeze({
@@ -232,7 +232,7 @@ describe('the preference a request handler reads', () => {
     policy,
     projection: SHAPES,
     cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
-    cookie: { name: 'equator-locale' },
+    cookie: { name: 'thoth-locale' },
     render: () => new Response('<!doctype html>'),
   });
 
@@ -246,11 +246,11 @@ describe('the preference a request handler reads', () => {
   it('passes over a remembered locale the site does not have to the next signal', async () => {
     expect(
       await answer({
-        cookie: 'equator-locale=fr-FR',
+        cookie: 'thoth-locale=fr-FR',
         'accept-language': 'ar-EG',
       }),
     ).toStrictEqual([200, 'ar-EG']);
-    expect(await answer({ cookie: 'equator-locale=fr-FR' })).toStrictEqual([
+    expect(await answer({ cookie: 'thoth-locale=fr-FR' })).toStrictEqual([
       200,
       'en-US',
     ]);
@@ -271,7 +271,7 @@ function configurationFor(
   pseudoLocales?: readonly string[],
 ): GeneratedConfiguration {
   return {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
     locales,

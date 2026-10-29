@@ -6,7 +6,7 @@ import {
   createPathPrefixLocalePolicy,
   resolveLocalizedRoute,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A slash and a question mark inside a query or a fragment.
@@ -18,7 +18,7 @@ import {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-QueryAndFragmentSeparatorsTestIdentity01234',
     routes: [
       { id: 'home', path: '', parameterNames: [] },

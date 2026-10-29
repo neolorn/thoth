@@ -10,7 +10,7 @@ import {
   type RouteParameterCodec,
   type RouteParameterContext,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The segments an address is built from, one route in one locale.
@@ -46,7 +46,7 @@ const TEXT: RouteParameterCodec = {
 
 const projectionWith = (slug: RouteParameterCodec): RouteRuntimeProjection => ({
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: IDENTITY,
     routes: [
       { id: 'article', path: 'articles/:slug', parameterNames: ['slug'] },
@@ -58,7 +58,7 @@ const projectionWith = (slug: RouteParameterCodec): RouteRuntimeProjection => ({
 describe('the static segments of a built address', () => {
   const projection: RouteRuntimeProjection = {
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: IDENTITY,
       routes: [
         { id: 'home', path: '', parameterNames: [] },
@@ -286,7 +286,7 @@ describe('a parameter of a built address', () => {
 describe('a spelling declared for one parameter of several', () => {
   const projection: RouteRuntimeProjection = {
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: IDENTITY,
       routes: [
         {

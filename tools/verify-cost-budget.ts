@@ -8,21 +8,21 @@
  *
  * Every check here asserts the *shape* of a cost, never a wall-clock number. These run on whatever
  * machine CI provides, which is never the production host, so an absolute millisecond limit
- * measures the runner and not Equator: flaky where the runner is slow, and once padded enough to
+ * measures the runner and not Thoth: flaky where the runner is slow, and once padded enough to
  * stop being flaky, unable to fail. Complexity transfers across machines; milliseconds do not.
  *
  * `specs/12-verification.spec.md` section 10 states that as a rule: assert the shape of a cost
- * rather than an absolute duration wherever the measurement runs on a machine Equator does not
+ * rather than an absolute duration wherever the measurement runs on a machine Thoth does not
  * control. Section 11 is the other half of it: no recorded timing figure is kept as a threshold a
  * later run is compared against, so a growth curve is judged by the shape its own measurements
  * take.
  *
  * What this deliberately does not do is size a consumer's server. How much concurrency one host
  * sustains depends on its cores, its memory and what else runs on it. That is consumer capacity
- * planning. Equator's job is to guarantee the curve is the right shape.
+ * planning. Thoth's job is to guarantee the curve is the right shape.
  *
  * `specs/12-verification.spec.md` section 12 keeps that boundary: capacity, budgets and traffic
- * objectives belong to the application, and Equator supplies the instrument rather than the
+ * objectives belong to the application, and Thoth supplies the instrument rather than the
  * target.
  */
 import { spawnSync } from 'node:child_process';
@@ -47,7 +47,7 @@ await import(pathToFileURL(require_.resolve('@angular/compiler')).href);
 // both the working import and the more faithful one.
 const consumerToolkit = resolve(
   repositoryRoot,
-  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/equator-toolkit/index.js',
+  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/thoth-toolkit/index.js',
 );
 if (!existsSync(consumerToolkit)) {
   process.stderr.write(
@@ -57,7 +57,7 @@ if (!existsSync(consumerToolkit)) {
 }
 const tk = await import(pathToFileURL(consumerToolkit).href);
 // The modules rather than the package entry. The compiler's own machinery is not published:
-// nothing outside Equator calls it, so it is not part of the toolkit's surface, and a gate that
+// nothing outside Thoth calls it, so it is not part of the toolkit's surface, and a gate that
 // exercises it reaches the module that declares it.
 const { compileLocalArtifacts } = await import(
   pathToFileURL(resolve(dirname(consumerToolkit), 'compiled-artifacts.js')).href
@@ -70,7 +70,7 @@ const { analyzeCatalogSet } = await import(
 // resolves none of its dependencies.
 const rt = await import(
   pathToFileURL(
-    resolve(inputsRoot(), 'dist/runtime/fesm2022/neolorn-equator.mjs'),
+    resolve(inputsRoot(), 'dist/runtime/fesm2022/neolorn-thoth.mjs'),
   ).href
 );
 
@@ -169,7 +169,7 @@ record(
  * Parsed by the toolkit, not written out here.
  *
  * This was an object literal, and it drifted: `personNameLocales` became a required field of
- * the loaded configuration (optional in `equator.config.json`, defaulted by the loader) and
+ * the loaded configuration (optional in `thoth.config.json`, defaulted by the loader) and
  * this literal never gained it. `analyzeCatalogSet` spreads that field unconditionally,
  * correctly, because every configuration it is meant to receive has been through the loader.
  * So the whole gate died on a value only this file could produce, while no consumer could hit
@@ -348,7 +348,7 @@ function contextOver(
   return rt.createLocalizationContext({
     setup: {
       configuration: Object.freeze({
-        generatedAbi: 'equator-generated/1',
+        generatedAbi: 'thoth-generated/1',
         sourceLocale: 'en-US',
         defaultLocale: 'en-US',
         locales: Object.freeze(locales),
@@ -966,7 +966,7 @@ async function evaluationMs(variants: number) {
   const localization = contextOver(set);
   await localization.initialize();
   const handle = Object.freeze({
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     providerId: 'p0',
     scopeId: 's0',
     messageId: 'm.k',
@@ -1008,11 +1008,11 @@ record(
  * not an artefact any other stage can see.
  */
 const generationRoot = resolve(repositoryRoot, 'tmp/cost-budget-generation');
-const equatorCli = resolve(dirname(consumerToolkit), 'cli.js');
+const thothCli = resolve(dirname(consumerToolkit), 'cli.js');
 function generated(cwd: string): number {
   const finished: SpawnedText = spawnSync(
     process.execPath,
-    [equatorCli, 'generate', '--json'],
+    [thothCli, 'generate', '--json'],
     { cwd, encoding: 'utf8' },
   );
   const result = JSON.parse(
@@ -1023,7 +1023,7 @@ function generated(cwd: string): number {
   };
   if (result.status !== 'success') {
     throw new Error(
-      `equator generate did not succeed in ${cwd}: ${spawnedOutput(finished)}`,
+      `thoth generate did not succeed in ${cwd}: ${spawnedOutput(finished)}`,
     );
   }
   return result.result.written.length;
@@ -1049,7 +1049,7 @@ async function generationWrites(scopes: number) {
   spawnSync(
     process.execPath,
     [
-      equatorCli,
+      thothCli,
       'init',
       '--source-locale',
       'en-US',
@@ -1122,7 +1122,7 @@ record(
  * transfer bytes as one rendered alone: state from another request in flight is the first thing
  * concurrency would add to it.
  */
-const TRANSFER_KEY = '@neolorn/equator:localization-state/1';
+const TRANSFER_KEY = '@neolorn/thoth:localization-state/1';
 const consumerServer = await import(
   pathToFileURL(
     resolve(
@@ -1135,7 +1135,7 @@ const consumerServer = await import(
 // bury this budget's lines; everything else still reaches the console.
 const consoleInfo = console.info;
 console.info = (...lines) => {
-  if (typeof lines[0] === 'string' && lines[0].startsWith('equator-event '))
+  if (typeof lines[0] === 'string' && lines[0].startsWith('thoth-event '))
     return;
   consoleInfo(...lines);
 };

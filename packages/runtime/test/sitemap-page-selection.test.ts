@@ -12,7 +12,7 @@ import {
   type RouteParameterContext,
   type RouteRuntimeProjection,
   type SitemapRouteDeclaration,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Which pages a sitemap lists, and what it writes where there are none.
@@ -48,7 +48,7 @@ function projectionWith(
 ): RouteRuntimeProjection {
   return {
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: 'sha256-SitemapPageSelectionTestIdentity0123456789a',
       routes: [
         second,
@@ -60,7 +60,7 @@ function projectionWith(
 }
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],

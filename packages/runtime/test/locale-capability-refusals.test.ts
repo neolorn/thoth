@@ -8,14 +8,14 @@ import {
   selectPlural,
 } from '../src/formatting.js';
 import { RUNTIME_LIMITS } from '../src/runtime-safety.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 /**
  * What a plural selection, a comparison, a segmentation and a locale's metadata hand back when
  * they have no answer.
  *
  * Each answers with a result and never with a throw. A refusal names the locale that was asked
- * for, and carries a reason only where the platform was asked and refused: an input Equator
+ * for, and carries a reason only where the platform was asked and refused: an input Thoth
  * turned away itself, for its length or its precision, never reached the platform, so it names
  * none.
  */

@@ -6,7 +6,7 @@ import {
   Localization,
   provideLocalizationSetup,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -23,7 +23,7 @@ import { runtimeExtensions } from './runtime-extensions';
  * element the application did not write is not touched.
  */
 
-const OWNED = '[data-equator-document]';
+const OWNED = '[data-thoth-document]';
 
 const projection = {
   title: 'Second page',
@@ -94,7 +94,7 @@ describe('the head after its application is gone', () => {
     return foreign;
   }
 
-  it('carries nothing Equator wrote once the head is disposed of', async () => {
+  it('carries nothing Thoth wrote once the head is disposed of', async () => {
     document.title = 'As the document loaded';
     const kept = authored();
     const head = await configured();

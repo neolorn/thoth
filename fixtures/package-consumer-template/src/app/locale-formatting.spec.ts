@@ -6,7 +6,7 @@ import {
   Localization,
   provideLocalizationSetup,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -27,7 +27,7 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
  * context, then the locale's own entry in the generated configuration, then, for whatever neither
  * sets, CLDR's answer for that locale.
  *
- * **The table is built here rather than declared in `equator.config.json`, and that is
+ * **The table is built here rather than declared in `thoth.config.json`, and that is
  * deliberate.** Nine specs in this lab assert digits in `en-US` or `ar-EG`; a declaration in the
  * shared configuration would have made every one of them pass or fail for a reason it was not
  * written for, including the two that pin `ar-EG` precisely: one with no context at all, one with

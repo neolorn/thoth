@@ -135,7 +135,7 @@ function advisories(result: {
   }));
 }
 
-const CACHE = '.equator/cache/compiler-state.json';
+const CACHE = '.thoth/cache/compiler-state.json';
 
 describe('an incremental cache that cannot be used', () => {
   it('is ignored and recomputed when it is past its size', async () => {
@@ -147,10 +147,10 @@ describe('an incremental cache that cannot be used', () => {
     expect(again.ok).toBe(true);
     expect(advisories(again)).toEqual([
       {
-        code: 'EQ1703',
+        code: 'TH1703',
         severity: 'info',
         summary:
-          'Equator ignored an oversized incremental compiler cache and will recompute it.',
+          'Thoth ignored an oversized incremental compiler cache and will recompute it.',
       },
     ]);
     // The generation wrote the cache again, so the next one reads it and says nothing.
@@ -176,10 +176,10 @@ describe('an incremental cache that cannot be used', () => {
       expect(checked.ok).toBe(true);
       expect(advisories(checked)).toEqual([
         {
-          code: 'EQ1703',
+          code: 'TH1703',
           severity: 'info',
           summary:
-            'Equator ignored an incompatible incremental compiler cache and will recompute it.',
+            'Thoth ignored an incompatible incremental compiler cache and will recompute it.',
         },
       ]);
     },
@@ -187,24 +187,24 @@ describe('an incremental cache that cannot be used', () => {
 
   it('is ignored by a check and refused by a generation when it lies behind a link', async () => {
     const root = await generated();
-    await linkInPlaceOf(root, '.equator/cache');
+    await linkInPlaceOf(root, '.thoth/cache');
 
     const checked = await checkProject({ project: root });
     expect(checked.ok).toBe(true);
     expect(advisories(checked)).toEqual([
       {
-        code: 'EQ1703',
+        code: 'TH1703',
         severity: 'info',
         summary:
-          'Equator ignored a linked incremental compiler cache and will recompute it.',
+          'Thoth ignored a linked incremental compiler cache and will recompute it.',
       },
     ]);
 
     // A generation writes in the work root, and a work root holding a link is not one it owns.
     const refused = await generateProject({ project: root });
     expect(refused.ok).toBe(false);
-    expect(refused.diagnostics.map(({ code }) => code)).toEqual(['EQ1602']);
-    expect(await readdir(resolve(root, '.equator'))).not.toContain(
+    expect(refused.diagnostics.map(({ code }) => code)).toEqual(['TH1602']);
+    expect(await readdir(resolve(root, '.thoth'))).not.toContain(
       'generation.lock',
     );
   });
@@ -222,10 +222,10 @@ describe('a source directory that is a link', () => {
       expect(result.ok).toBe(false);
       expect(advisories(result)).toEqual([
         {
-          code: 'EQ1702',
+          code: 'TH1702',
           severity: 'error',
           summary:
-            'The selected TypeScript graph contains root "src/app.ts" behind the link "src", and Equator reads no linked project content.',
+            'The selected TypeScript graph contains root "src/app.ts" behind the link "src", and Thoth reads no linked project content.',
         },
       ]);
     }
@@ -240,15 +240,13 @@ describe('a generation lock another run holds', () => {
       'i18n/shell/en-US.yaml',
       'messages:\n  app-title: Moved\n',
     );
-    await write(root, '.equator/generation.lock', '');
+    await write(root, '.thoth/generation.lock', '');
 
     const refused = await generateProject({ project: root });
 
     expect(refused.ok).toBe(false);
-    expect(refused.diagnostics.map(({ code }) => code)).toEqual(['EQ1602']);
-    expect(await readdir(resolve(root, '.equator'))).toContain(
-      'generation.lock',
-    );
+    expect(refused.diagnostics.map(({ code }) => code)).toEqual(['TH1602']);
+    expect(await readdir(resolve(root, '.thoth'))).toContain('generation.lock');
   });
 });
 

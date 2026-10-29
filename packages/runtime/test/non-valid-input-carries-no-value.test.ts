@@ -6,7 +6,7 @@ import {
   type FormattingContext,
   type LocalizedInputProfile,
   type LocalizedInputStatus,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Only a valid reading carries a value. A caller that reads `value` off a result without checking

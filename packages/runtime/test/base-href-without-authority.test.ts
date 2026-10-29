@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 
-import { routeCacheHeaders, withBasePath } from '@neolorn/equator/core';
+import { routeCacheHeaders, withBasePath } from '@neolorn/thoth/core';
 
 // A base that reads as absolute and names no authority has no path to take a prefix from.
 it('reads a base of slashes alone as no prefix', () => {

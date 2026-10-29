@@ -30,7 +30,7 @@ const runtimeTypesPath = resolve(projectRoot, 'src/runtime-types.d.ts');
 // The runtime's types as an installed application has them, declared here because the overlay's
 // declaration modules import them by the package's name.
 const runtimeTypes = [
-  "declare module '@neolorn/equator' {",
+  "declare module '@neolorn/thoth' {",
   '  export interface CatalogLoaders {',
   "    readonly loaders: 'loaders';",
   '  }',
@@ -148,7 +148,7 @@ describe('an application importing a module the overlay declares', () => {
       'export const read: unknown = absent;',
     ]);
 
-    expect(findings.map(({ code }) => code)).toEqual(['EQ1401']);
+    expect(findings.map(({ code }) => code)).toEqual(['TH1401']);
   });
 });
 
@@ -171,7 +171,7 @@ describe('the recovery roots the overlay declares', () => {
   it('name nothing when the request selected nothing', () => {
     expect(
       findingsInTheApplication(readsOneRoot).map(({ code }) => code),
-    ).toEqual(['EQ1401']);
+    ).toEqual(['TH1401']);
   });
 });
 
@@ -185,7 +185,7 @@ describe('a recovery selection the overlay cannot be built from', () => {
     expect(
       compiled.diagnostics.map(({ code, path }) => ({ code, path })),
     ).toEqual([
-      { code: 'EQ1501', path: ['recovery', '@example/app:shell:absent'] },
+      { code: 'TH1501', path: ['recovery', '@example/app:shell:absent'] },
     ]);
   });
 });

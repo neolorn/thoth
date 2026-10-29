@@ -11,7 +11,7 @@ import { createOutputPlan } from '../src/output-plan.js';
  * A generated root that holds a link.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 9 has a linked root reported, and the freshness
- * inspection documents a failure as an `EQ1601` diagnostic. The inventory walk is where the link is
+ * inspection documents a failure as an `TH1601` diagnostic. The inventory walk is where the link is
  * met, after the roots were validated and, for a generation, after the lock was taken. So the
  * refusal is a result on both paths, and a generation that is refused leaves no lock behind it.
  */
@@ -39,7 +39,7 @@ async function publishedWithLink() {
   const request = {
     ownerRoot: owner,
     generatedRoot: resolve(owner, 'src/generated/i18n'),
-    workRoot: resolve(owner, '.equator'),
+    workRoot: resolve(owner, '.thoth'),
     ownerId: OWNER_ID,
     plan: plan('export const first = 1;\n'),
   };
@@ -60,9 +60,9 @@ describe('a generated root that holds a link', () => {
     const inspected = await inspectOutputFreshness(request);
 
     expect(inspected.ok).toBe(false);
-    expect(inspected.diagnostics.map(({ code }) => code)).toEqual(['EQ1601']);
+    expect(inspected.diagnostics.map(({ code }) => code)).toEqual(['TH1601']);
     expect(inspected.diagnostics[0]?.summary).toContain(
-      'Equator refuses linked content in an owned root',
+      'Thoth refuses linked content in an owned root',
     );
   });
 
@@ -73,7 +73,7 @@ describe('a generated root that holds a link', () => {
     const refused = await applyOutputPlan(next);
 
     expect(refused.ok).toBe(false);
-    expect(refused.diagnostics.map(({ code }) => code)).toEqual(['EQ1601']);
+    expect(refused.diagnostics.map(({ code }) => code)).toEqual(['TH1601']);
     expect(await readdir(request.workRoot)).not.toContain('generation.lock');
 
     // With the link gone the same generation goes through, which a lock left held would refuse.

@@ -5,7 +5,7 @@ import {
   resolveLocalizedRoute,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The sizes a request target is read within, each at its limit and one past it.
@@ -28,7 +28,7 @@ const SLUG: RouteParameterCodec<string> = Object.freeze({
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: `sha256-${'RequestTargetBoundsIdentity'.padEnd(43, '0')}`,
     routes: [
       { id: 'home', path: '', parameterNames: [] },

@@ -95,7 +95,7 @@ function analyze(entry: readonly string[]): Analysis {
 
 function refusedAt(...path: readonly string[]): Analysis {
   return {
-    refusals: [{ code: 'EQ1302', path: ['messages', 'subject', ...path] }],
+    refusals: [{ code: 'TH1302', path: ['messages', 'subject', ...path] }],
   };
 }
 

@@ -26,7 +26,7 @@ import {
  * values against what the packages declare, so it is a copy that cannot drift silently.
  */
 export const HOST_COMPATIBILITY_PROFILE = Object.freeze({
-  profile: 'equator-host-compatibility/1' as const,
+  profile: 'thoth-host-compatibility/1' as const,
   node: '^22.22.3 || ^24.15.0 || ^26.0.0' as const,
   typescript: '>=6.0.2 <6.1.0' as const,
   angularCompiler: '>=22.0.0 <23.0.0' as const,
@@ -39,7 +39,7 @@ export interface HostVersions {
 }
 
 export interface HostCompatibilityAdmission {
-  readonly profile: 'equator-host-compatibility/1';
+  readonly profile: 'thoth-host-compatibility/1';
   readonly versions: HostVersions;
 }
 
@@ -120,8 +120,8 @@ export function admitHostCompatibility(
   if (node === undefined || !supportedNode(node)) {
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1806',
-        `Unsupported Node.js host version ${JSON.stringify(versions.node)}; Equator requires ${HOST_COMPATIBILITY_PROFILE.node}. Install a supported Node.js version before running Equator compiler work.`,
+        'TH1806',
+        `Unsupported Node.js host version ${JSON.stringify(versions.node)}; Thoth requires ${HOST_COMPATIBILITY_PROFILE.node}. Install a supported Node.js version before running Thoth compiler work.`,
         { path: ['host', 'node'] },
       ),
     );
@@ -130,8 +130,8 @@ export function admitHostCompatibility(
   if (typescript === undefined || !supportedTypeScript(typescript)) {
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1806',
-        `Unsupported TypeScript host version ${JSON.stringify(versions.typescript)}; Equator requires ${HOST_COMPATIBILITY_PROFILE.typescript}. Install a supported TypeScript version before running Equator compiler work.`,
+        'TH1806',
+        `Unsupported TypeScript host version ${JSON.stringify(versions.typescript)}; Thoth requires ${HOST_COMPATIBILITY_PROFILE.typescript}. Install a supported TypeScript version before running Thoth compiler work.`,
         { path: ['host', 'typescript'] },
       ),
     );
@@ -140,8 +140,8 @@ export function admitHostCompatibility(
   if (angular === undefined || !supportedAngularCompiler(angular)) {
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1806',
-        `Unsupported Angular compiler host version ${JSON.stringify(versions.angularCompiler)}; Equator requires ${HOST_COMPATIBILITY_PROFILE.angularCompiler}. Install a supported @angular/compiler version before running Equator compiler work.`,
+        'TH1806',
+        `Unsupported Angular compiler host version ${JSON.stringify(versions.angularCompiler)}; Thoth requires ${HOST_COMPATIBILITY_PROFILE.angularCompiler}. Install a supported @angular/compiler version before running Thoth compiler work.`,
         { path: ['host', 'angularCompiler'] },
       ),
     );

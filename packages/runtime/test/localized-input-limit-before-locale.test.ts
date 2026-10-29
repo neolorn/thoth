@@ -4,7 +4,7 @@ import { parseLocalizedInput } from '../src/localized-input.js';
 import {
   type FormattingContext,
   type LocalizedInputProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A field's character limit is asked before anything about its locale.

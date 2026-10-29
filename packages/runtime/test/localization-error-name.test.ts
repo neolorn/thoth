@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { LocalizationError } from '@neolorn/equator/core';
+import { LocalizationError } from '@neolorn/thoth/core';
 
 /**
- * How a handler recognizes what Equator throws.
+ * How a handler recognizes what Thoth throws.
  *
  * The class documents its `name` as the way to recognize it without an `instanceof`, which is what
  * a handler on the far side of a serialization boundary, or one holding another copy of the class,

@@ -7,78 +7,78 @@
 export type ToolkitDiagnosticSeverity = 'error' | 'warning' | 'info';
 
 /**
- * Every diagnostic Equator can report, as its stable code.
+ * Every diagnostic Thoth can report, as its stable code.
  *
  * Grouped by the hundred: the first two digits of a code's number are its band, and each band is one
  * section of `DIAGNOSTICS.md`. A code is never reused and never changes meaning, which is what lets
  * a build script suppress one particular warning without matching on its wording.
  */
 export type ToolkitDiagnosticCode =
-  | 'EQ1001'
-  | 'EQ1002'
-  | 'EQ1003'
-  | 'EQ1004'
-  | 'EQ1005'
-  | 'EQ1006'
-  | 'EQ1007'
-  | 'EQ1008'
-  | 'EQ1101'
-  | 'EQ1102'
-  | 'EQ1103'
-  | 'EQ1104'
-  | 'EQ1105'
-  | 'EQ1201'
-  | 'EQ1202'
-  | 'EQ1203'
-  | 'EQ1204'
-  | 'EQ1205'
-  | 'EQ1206'
-  | 'EQ1301'
-  | 'EQ1302'
-  | 'EQ1303'
-  | 'EQ1304'
-  | 'EQ1305'
-  | 'EQ1306'
-  | 'EQ1307'
-  | 'EQ1308'
-  | 'EQ1309'
-  | 'EQ1310'
-  | 'EQ1311'
-  | 'EQ1401'
-  | 'EQ1402'
-  | 'EQ1403'
-  | 'EQ1404'
-  | 'EQ1405'
-  | 'EQ1406'
-  | 'EQ1407'
-  | 'EQ1408'
-  | 'EQ1409'
-  | 'EQ1410'
-  | 'EQ1411'
-  | 'EQ1412'
-  | 'EQ1413'
-  | 'EQ1414'
-  | 'EQ1415'
-  | 'EQ1416'
-  | 'EQ1417'
-  | 'EQ1501'
-  | 'EQ1502'
-  | 'EQ1503'
-  | 'EQ1601'
-  | 'EQ1602'
-  | 'EQ1603'
-  | 'EQ1701'
-  | 'EQ1702'
-  | 'EQ1703'
-  | 'EQ1704'
-  | 'EQ1705'
-  | 'EQ1706'
-  | 'EQ1801'
-  | 'EQ1802'
-  | 'EQ1803'
-  | 'EQ1804'
-  | 'EQ1805'
-  | 'EQ1806';
+  | 'TH1001'
+  | 'TH1002'
+  | 'TH1003'
+  | 'TH1004'
+  | 'TH1005'
+  | 'TH1006'
+  | 'TH1007'
+  | 'TH1008'
+  | 'TH1101'
+  | 'TH1102'
+  | 'TH1103'
+  | 'TH1104'
+  | 'TH1105'
+  | 'TH1201'
+  | 'TH1202'
+  | 'TH1203'
+  | 'TH1204'
+  | 'TH1205'
+  | 'TH1206'
+  | 'TH1301'
+  | 'TH1302'
+  | 'TH1303'
+  | 'TH1304'
+  | 'TH1305'
+  | 'TH1306'
+  | 'TH1307'
+  | 'TH1308'
+  | 'TH1309'
+  | 'TH1310'
+  | 'TH1311'
+  | 'TH1401'
+  | 'TH1402'
+  | 'TH1403'
+  | 'TH1404'
+  | 'TH1405'
+  | 'TH1406'
+  | 'TH1407'
+  | 'TH1408'
+  | 'TH1409'
+  | 'TH1410'
+  | 'TH1411'
+  | 'TH1412'
+  | 'TH1413'
+  | 'TH1414'
+  | 'TH1415'
+  | 'TH1416'
+  | 'TH1417'
+  | 'TH1501'
+  | 'TH1502'
+  | 'TH1503'
+  | 'TH1601'
+  | 'TH1602'
+  | 'TH1603'
+  | 'TH1701'
+  | 'TH1702'
+  | 'TH1703'
+  | 'TH1704'
+  | 'TH1705'
+  | 'TH1706'
+  | 'TH1801'
+  | 'TH1802'
+  | 'TH1803'
+  | 'TH1804'
+  | 'TH1805'
+  | 'TH1806';
 
 /** One point in a source file, given three ways so a caller can use whichever it needs. */
 export interface SourcePosition {
@@ -101,7 +101,7 @@ export interface SourceSpan {
 }
 
 /**
- * One thing Equator has to say about what it was given: what it is, how much it matters, and where.
+ * One thing Thoth has to say about what it was given: what it is, how much it matters, and where.
  *
  * The text is sanitized and bounded before it reaches here, because a diagnostic is printed to a
  * terminal and read by a machine, and neither should be steerable by the file that caused it.
@@ -120,7 +120,7 @@ export interface ToolkitDiagnostic {
    * names the scope and the message.
    */
   readonly path: readonly (string | number)[];
-  /** Where in the source text, when the input was text Equator parsed. */
+  /** Where in the source text, when the input was text Thoth parsed. */
   readonly span?: SourceSpan;
 }
 
@@ -223,7 +223,7 @@ export function toolkitFailure(
   diagnostics: readonly ToolkitDiagnostic[],
 ): ToolkitFailure {
   if (diagnostics.length === 0) {
-    throw new TypeError('An Equator failure requires at least one diagnostic.');
+    throw new TypeError('A Thoth failure requires at least one diagnostic.');
   }
 
   return Object.freeze({
@@ -241,7 +241,7 @@ export function toolkitFailure(
  * joining a list somewhere else.
  *
  * A hardcoded blocking-codes list is a second register that every new error-severity diagnostic has
- * to be added to, and the one nobody remembers to add passes silently: `equator check
+ * to be added to, and the one nobody remembers to add passes silently: `thoth check
  * --require-complete` would report `"status": "success"` and exit 0 while carrying an error.
  */
 export function diagnosticsBlock(
@@ -275,7 +275,7 @@ export function toolkitDiagnostic(
   return Object.freeze({
     code,
     severity: options.severity ?? 'error',
-    summary: safeSummary.length === 0 ? 'Equator diagnostic.' : safeSummary,
+    summary: safeSummary.length === 0 ? 'Thoth diagnostic.' : safeSummary,
     path: Object.freeze([...(safePath ?? [])]),
     ...(options.span === undefined ? {} : { span: boundedSpan(options.span) }),
   });

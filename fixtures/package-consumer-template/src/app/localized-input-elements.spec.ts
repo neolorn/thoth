@@ -10,8 +10,8 @@ import {
   provideLocalizationSetup,
   type LocalizedInputProfile,
   withFormattingContext,
-} from '@neolorn/equator';
-import { LocalizedInput } from '@neolorn/equator/forms';
+} from '@neolorn/thoth';
+import { LocalizedInput } from '@neolorn/thoth/forms';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -158,6 +158,6 @@ describe('a write that arrives before the profile binding does', () => {
     expect(input.value.replace(/[^0-9.]/gu, '')).toBe('1234.5');
     const platform = TestBed.inject(PLATFORM_ID) as string;
     claimCapability('directive:LocalizedInput', { platform });
-    claimCapability('entry:@neolorn/equator/forms', { platform });
+    claimCapability('entry:@neolorn/thoth/forms', { platform });
   });
 });

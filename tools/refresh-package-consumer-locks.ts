@@ -138,11 +138,11 @@ const refreshTemplateLock = async (
 
   const manifestPath = resolve(stagingRoot, 'package.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  manifest.dependencies['@neolorn/equator'] = packageLocator(
+  manifest.dependencies['@neolorn/thoth'] = packageLocator(
     stagingRoot,
     'dist/runtime',
   );
-  manifest.devDependencies['@neolorn/equator-toolkit'] = packageLocator(
+  manifest.devDependencies['@neolorn/thoth-toolkit'] = packageLocator(
     stagingRoot,
     'dist/toolkit',
   );
@@ -171,7 +171,7 @@ await refreshTemplateLock(
 
 // The document gate proves the documents on the development row, so the scaffold carries that
 // row's version of every package it installs rather than whatever `ng new` resolved on the day it
-// was made. Equator's own two are the build under test.
+// was made. Thoth's own two are the build under test.
 const scaffoldManifestPath = resolve(documentScaffoldRoot, 'package.json');
 const scaffoldManifest = JSON.parse(
   await readFile(scaffoldManifestPath, 'utf8'),
@@ -245,7 +245,7 @@ const packedVersion = JSON.parse(
 const npmStagingRoot = resolve(temporaryRoot, 'npm-package-consumer-lock');
 assertContained(npmStagingRoot, temporaryRoot);
 await rm(npmStagingRoot, { force: true, recursive: true });
-await mkdir(resolve(npmStagingRoot, 'equator'), { recursive: true });
+await mkdir(resolve(npmStagingRoot, 'thoth'), { recursive: true });
 await cp(npmManifestPath, resolve(npmStagingRoot, 'package.json'));
 for (const name of ['runtime', 'toolkit']) {
   const folder = resolve(workspaceRoot, 'release', name, packedVersion);
@@ -257,7 +257,7 @@ for (const name of ['runtime', 'toolkit']) {
   }
   await cp(
     resolve(folder, packed[0]!),
-    resolve(npmStagingRoot, 'equator', `${name}.tgz`),
+    resolve(npmStagingRoot, 'thoth', `${name}.tgz`),
   );
 }
 run(

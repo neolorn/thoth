@@ -65,18 +65,18 @@ import { compareCodeUnit, frozenRecord } from './sorted-records.js';
 /**
  * The version stamp on the interface between generated code and the runtime.
  *
- * It changes when that interface changes, so generated code from one version of Equator and a
+ * It changes when that interface changes, so generated code from one version of Thoth and a
  * runtime from another refuse each other rather than half working.
  */
-export const GENERATED_ABI_PROFILE = 'equator-generated/1' as const;
+export const GENERATED_ABI_PROFILE = 'thoth-generated/1' as const;
 export const APPLICATION_CONTRACT_PROFILE =
-  'equator-application-contract/1' as const;
-export const SEMANTIC_REGISTRY_PROFILE = 'equator-semantic-registry/1' as const;
+  'thoth-application-contract/1' as const;
+export const SEMANTIC_REGISTRY_PROFILE = 'thoth-semantic-registry/1' as const;
 
 /**
  * The five value types a message input can have, as they cross the boundary into generated code.
  *
- * Deliberately few and deliberately portable: these are the types every host Equator targets can
+ * Deliberately few and deliberately portable: these are the types every host Thoth targets can
  * represent the same way, so a contract means the same thing on a server and in a browser.
  */
 export type PortableTypeId =
@@ -168,8 +168,8 @@ export interface SemanticMessage {
 export interface SemanticFamilySegment {
   /** What this part is called in the template. */
   readonly name: string;
-  /** What kind of value it holds, either Equator's own message part or an extension's type. */
-  readonly type: 'equator:native-message-part' | string;
+  /** What kind of value it holds, either Thoth's own message part or an extension's type. */
+  readonly type: 'thoth:native-message-part' | string;
   /** Which spelling a value must follow, which is what keeps generated names predictable. */
   readonly syntax: 'lower-kebab' | 'ascii-token' | 'unicode-token';
   /** The longest a value may be. */
@@ -287,7 +287,7 @@ export interface CatalogSetAnalysisRequest {
    *
    * Off by default because English lands before Arabic in ordinary authoring order, so erroring
    * during development would break the dev loop on every new message and train a team to bypass
-   * the check. Release is where completeness is required, which is what `equator check
+   * the check. Release is where completeness is required, which is what `thoth check
    * --require-complete` turns on.
    */
   readonly requireCompleteTargets?: boolean;
@@ -330,7 +330,7 @@ function validateCustomSlotOptions(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1805',
+          'TH1805',
           `Rich slot ${JSON.stringify(slotName)} uses undeclared or nonportable option ${JSON.stringify(name)}.`,
           ['messages', messageId, 'slots', slotName],
         ),
@@ -414,7 +414,7 @@ function semanticDiagnostic(
   //
   // Falling back to `spanAt('', 0, 0, catalog.sourcePath)` when the pointer does not
   // resolve gives offset zero of an empty string, which renders `file:1:1`. Every diagnostic
-  // reporting that something is *absent* takes that path by definition, EQ1307 always, and a
+  // reporting that something is *absent* takes that path by definition, TH1307 always, and a
   // reader sent to line 1 column 1 looks at a line that has nothing to do with it. **A wrong
   // location is worse than no location**, and one expression would produce one fifty times over.
   //
@@ -625,7 +625,7 @@ function validateMessageFunctions(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1805',
+          'TH1805',
           `Message function ${JSON.stringify(reference.name)} has no registered application-local descriptor.`,
           ['messages', messageId],
         ),
@@ -636,7 +636,7 @@ function validateMessageFunctions(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1805',
+          'TH1805',
           `Custom message function ${JSON.stringify(reference.name)} requires an operand.`,
           ['messages', messageId],
         ),
@@ -650,7 +650,7 @@ function validateMessageFunctions(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'EQ1805',
+            'TH1805',
             `Custom message function ${JSON.stringify(reference.name)} does not declare option ${JSON.stringify(authored)}.`,
             ['messages', messageId],
           ),
@@ -662,7 +662,7 @@ function validateMessageFunctions(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'EQ1805',
+            'TH1805',
             `Custom message function option ${JSON.stringify(authored)} is incompatible with its portable descriptor.`,
             ['messages', messageId],
           ),
@@ -674,7 +674,7 @@ function validateMessageFunctions(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'EQ1805',
+            'TH1805',
             `Custom message function ${JSON.stringify(reference.name)} requires option ${JSON.stringify(name)}.`,
             ['messages', messageId],
           ),
@@ -704,7 +704,7 @@ export function recoveryRootRefusal(
     return undefined;
   }
   return toolkitDiagnostic(
-    'EQ1501',
+    'TH1501',
     `Recovery identity ${JSON.stringify(identity)} must resolve to one plain message without inputs or slots.`,
     { path: ['recovery', identity] },
   );
@@ -751,7 +751,7 @@ function refinementType(
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'EQ1302',
+        'TH1302',
         `Input ${JSON.stringify(inputName)} uses unknown portable type ${JSON.stringify(refinement.type)}.`,
         ['messages', messageId, 'inputs', inputName, 'type'],
       ),
@@ -764,7 +764,7 @@ function refinementType(
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'EQ1302',
+        'TH1302',
         `Input ${JSON.stringify(inputName)} cannot refine inferred ${inferred} input to ${refined}.`,
         ['messages', messageId, 'inputs', inputName, 'type'],
       ),
@@ -787,7 +787,7 @@ function effectiveInputs(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1302',
+          'TH1302',
           'An explicit-empty message cannot declare inputs because it has no inferred input set.',
           ['messages', messageId, 'inputs'],
         ),
@@ -803,7 +803,7 @@ function effectiveInputs(
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'EQ1302',
+        'TH1302',
         `Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.inputsPerMessage}-input implementation ceiling.`,
         ['messages', messageId],
       ),
@@ -814,7 +814,7 @@ function effectiveInputs(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1302',
+          'TH1302',
           `Input refinement ${JSON.stringify(name)} does not match an inferred external input.`,
           ['messages', messageId, 'inputs', name],
         ),
@@ -830,7 +830,7 @@ function effectiveInputs(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1302',
+          'TH1302',
           `Input ${JSON.stringify(name)} has incompatible MessageFormat operand uses: ${explicitTypes.join(', ')}.`,
           ['messages', messageId],
         ),
@@ -857,7 +857,7 @@ function effectiveInputs(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1302',
+          'TH1302',
           `Input ${JSON.stringify(name)} has an enum value incompatible with ${type}.`,
           ['messages', messageId, 'inputs', name, 'enum'],
         ),
@@ -905,7 +905,7 @@ function patternSlotSummary(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'EQ1303',
+            'TH1303',
             `Rich slot ${JSON.stringify(part.name)} closes ${JSON.stringify(opened ?? 'no open slot')}.`,
             ['messages', messageId],
           ),
@@ -956,7 +956,7 @@ function patternSlotSummary(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1303',
+          'TH1303',
           `Interactive rich slot ${JSON.stringify(part.name)} cannot be nested inside another interactive slot.`,
           ['messages', messageId],
         ),
@@ -973,7 +973,7 @@ function patternSlotSummary(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1303',
+          'TH1303',
           `Rich slot ${JSON.stringify(part.name)} cannot be nested inside code.`,
           ['messages', messageId],
         ),
@@ -988,7 +988,7 @@ function patternSlotSummary(
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'EQ1303',
+        'TH1303',
         `Rich slot ${JSON.stringify(stack.at(-1))} is not closed.`,
         ['messages', messageId],
       ),
@@ -1033,7 +1033,7 @@ function effectiveSlots(
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'EQ1303',
+        'TH1303',
         `Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.slotsPerMessage}-slot implementation ceiling.`,
         ['messages', messageId],
       ),
@@ -1053,7 +1053,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1303',
+          'TH1303',
           `Rich slot ${JSON.stringify(name)} is used as both paired and standalone.`,
           ['messages', messageId, 'slots', name],
         ),
@@ -1073,7 +1073,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1303',
+          'TH1303',
           `Rich slot ${JSON.stringify(name)} references unregistered semantic kind ${JSON.stringify(kind)}.`,
           ['messages', messageId, 'slots', name, 'kind'],
         ),
@@ -1088,7 +1088,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1303',
+          'TH1303',
           `Unused declared rich slot ${JSON.stringify(name)} requires a determinable kind and shape.`,
           ['messages', messageId, 'slots', name],
         ),
@@ -1099,7 +1099,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1303',
+          'TH1303',
           `Built-in rich slot ${JSON.stringify(name)} must be paired.`,
           ['messages', messageId, 'slots', name, 'shape'],
         ),
@@ -1109,7 +1109,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1303',
+          'TH1303',
           `Rich slot ${JSON.stringify(name)} must use the ${customKind.shape} shape declared by ${JSON.stringify(kind)}.`,
           ['messages', messageId, 'slots', name, 'shape'],
         ),
@@ -1122,7 +1122,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1303',
+          'TH1303',
           `Rich slot ${JSON.stringify(name)} is present in every source variant and cannot be made optional by refinement.`,
           ['messages', messageId, 'slots', name, 'optional'],
         ),
@@ -1132,7 +1132,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1303',
+          'TH1303',
           `Rich slot ${JSON.stringify(name)} is not repeated by the source and cannot be made repeatable by refinement.`,
           ['messages', messageId, 'slots', name, 'repeatable'],
         ),
@@ -1147,7 +1147,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1303',
+          'TH1303',
           `Rich slot ${JSON.stringify(name)} is authored outside its declared within constraint.`,
           ['messages', messageId, 'slots', name, 'within'],
         ),
@@ -1174,7 +1174,7 @@ function effectiveSlots(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'EQ1303',
+            'TH1303',
             `Rich slot ${JSON.stringify(name)} cannot be permitted within ${JSON.stringify(parent)}, because it cannot be nested inside ${forbidden}.`,
             ['messages', messageId, 'slots', name, 'within'],
           ),
@@ -1215,7 +1215,7 @@ interface PluralSelector {
 /**
  * Which categories a locale's grammar requires for one `select` kind, from the pinned CLDR release.
  *
- * Derived from the release Equator pins rather than from the host `Intl`, so the answer does not
+ * Derived from the release Thoth pins rather than from the host `Intl`, so the answer does not
  * change with the Node version the build happens to run on.
  *
  * The two tables are not variants of one another, so reading the wrong one is wrong in both
@@ -1297,7 +1297,7 @@ export function pluralCategoriesForLocale(
  *
  * `select=exact` selects on the number itself and has no categories to be missing, so it is not
  * returned. An absent option means `plural`, which is MF2's default. No other value can reach here:
- * `parseMessageSemanticModel` rejects it (`EQ1204`).
+ * `parseMessageSemanticModel` rejects it (`TH1204`).
  */
 function pluralSelectorPositions(
   semantics: MessageSemanticModel,
@@ -1398,7 +1398,7 @@ function validateTargetPluralCoverage(
     diagnostics.push(
       semanticDiagnostic(
         targetCatalog,
-        'EQ1308',
+        'TH1308',
         `Target catalog ${targetCatalog.locale} omits ${kind === 'ordinal' ? 'ordinal' : 'plural'} ${missing.length === 1 ? 'category' : 'categories'} ${missing
           .map((category) => JSON.stringify(category))
           .join(
@@ -1425,7 +1425,7 @@ function validateTarget(
 ): SemanticTargetMessage | undefined {
   const targetMessage = targetCatalog.messages[messageId];
   if (targetMessage === undefined) {
-    // A target that *invents* a message was already an error (EQ1304). A target that *omits* one
+    // A target that *invents* a message was already an error (TH1304). A target that *omits* one
     // returned silently, so a locale could be incomplete and look finished: check exited 0,
     // generation succeeded, and the message fell back to the source locale in a production build
     // with nothing said. Being missing is at least as reportable as being extra.
@@ -1443,7 +1443,7 @@ function validateTarget(
     diagnostics.push(
       semanticDiagnostic(
         targetCatalog,
-        'EQ1307',
+        'TH1307',
         `Target catalog ${targetCatalog.locale} omits message ${JSON.stringify(messageId)}; ${sourceCatalog.locale} is used in its place.${policy.suffix}`,
         ['messages', messageId],
         policy.severity,
@@ -1485,7 +1485,7 @@ function validateTarget(
       diagnostics.push(
         semanticDiagnostic(
           targetCatalog,
-          'EQ1304',
+          'TH1304',
           `Target message ${JSON.stringify(messageId)} changes or invents input ${JSON.stringify(input.name)}.`,
           ['messages', messageId],
         ),
@@ -1514,7 +1514,7 @@ function validateTarget(
       diagnostics.push(
         semanticDiagnostic(
           targetCatalog,
-          'EQ1304',
+          'TH1304',
           `Target message ${JSON.stringify(messageId)} changes or invents rich slot ${JSON.stringify(target.name)}.`,
           ['messages', messageId],
         ),
@@ -1526,7 +1526,7 @@ function validateTarget(
       diagnostics.push(
         semanticDiagnostic(
           targetCatalog,
-          'EQ1304',
+          'TH1304',
           `Target message ${JSON.stringify(messageId)} omits required rich slot ${JSON.stringify(source.name)}.`,
           ['messages', messageId],
         ),
@@ -1599,7 +1599,7 @@ function parseFamilyTemplate(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'EQ1305',
+            'TH1305',
             `Open family ${JSON.stringify(familyName)} repeats placeholder ${JSON.stringify(name)}.`,
             ['families', familyName, 'template'],
           ),
@@ -1615,7 +1615,7 @@ function parseFamilyTemplate(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1305',
+          'TH1305',
           `Open family ${JSON.stringify(familyName)} has an invalid literal or placeholder part.`,
           ['families', familyName, 'template'],
         ),
@@ -1627,7 +1627,7 @@ function parseFamilyTemplate(
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'EQ1305',
+        'TH1305',
         `Open family ${JSON.stringify(familyName)} requires at least one fixed part and one placeholder.`,
         ['families', familyName, 'template'],
       ),
@@ -1639,7 +1639,7 @@ function parseFamilyTemplate(
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'EQ1305',
+        'TH1305',
         `Open family ${JSON.stringify(familyName)} declares a segment that is absent from its template.`,
         ['families', familyName, 'segments'],
       ),
@@ -1653,7 +1653,7 @@ function parseFamilyTemplate(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1805',
+          'TH1805',
           `Open family segment ${JSON.stringify(name)} references unregistered identifier type ${JSON.stringify(type)}.`,
           ['families', familyName, 'segments', name],
         ),
@@ -1729,7 +1729,7 @@ function analyzeFamilies(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1305',
+          'TH1305',
           existingTemplate !== undefined
             ? `Open families ${JSON.stringify(existingTemplate)} and ${JSON.stringify(name)} duplicate one template.`
             : `Open families ${JSON.stringify(existingProjection)} and ${JSON.stringify(name)} collide at generated name ${JSON.stringify(projectedName)}.`,
@@ -1760,7 +1760,7 @@ function analyzeFamilies(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1305',
+          'TH1305',
           `Open family ${JSON.stringify(name)} has no current source member.`,
           ['families', name],
         ),
@@ -1780,7 +1780,7 @@ function analyzeFamilies(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1305',
+          'TH1305',
           `Open family ${JSON.stringify(name)} has heterogeneous current message contracts.`,
           ['families', name],
         ),
@@ -1793,7 +1793,7 @@ function analyzeFamilies(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'EQ1305',
+            'TH1305',
             `Message ${JSON.stringify(member.messageId)} ambiguously matches open families ${JSON.stringify(previous)} and ${JSON.stringify(name)}.`,
             ['families', name],
           ),
@@ -1820,7 +1820,7 @@ function analyzeFamilies(
             : extensionDescriptor(extensions, 'identifier-segment', type);
         return Object.freeze({
           name: segmentName,
-          type: type ?? ('equator:native-message-part' as const),
+          type: type ?? ('thoth:native-message-part' as const),
           syntax: descriptor?.syntax ?? ('lower-kebab' as const),
           maximumLength: descriptor?.maximumLength ?? 128,
         });
@@ -1885,7 +1885,7 @@ function referencedExtensions(
   }
   for (const family of families) {
     for (const segment of family.segments) {
-      if (segment.type !== 'equator:native-message-part') {
+      if (segment.type !== 'thoth:native-message-part') {
         keys.add(`identifier-segment\u0000${segment.type}`);
       }
     }
@@ -1920,7 +1920,7 @@ export function analyzeCatalogSet(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'EQ1301',
+          'TH1301',
           `${catalogInScope(catalog)} is for locale ${JSON.stringify(catalog.locale)}, which the project does not declare.`,
           [],
         ),
@@ -1947,7 +1947,7 @@ export function analyzeCatalogSet(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'EQ1301',
+            'TH1301',
             // Both files in one order, so the sentence is the same whichever was read first.
             `Scope ${catalog.providerId}/${catalog.scopeId} has two catalogs for locale ${JSON.stringify(catalog.locale)}: ${[catalogFile(first), catalogFile(catalog)].sort(compareCodeUnit).join(' and ')}.`,
             [],
@@ -1963,7 +1963,7 @@ export function analyzeCatalogSet(
       diagnostics.push(
         semanticDiagnostic(
           exemplar,
-          'EQ1301',
+          'TH1301',
           `Scope ${exemplar.providerId}/${exemplar.scopeId} requires one source catalog for ${request.configuration.sourceLocale}, and has ${catalogs.map(catalogFile).join(', ')}.`,
           [],
         ),
@@ -1974,8 +1974,8 @@ export function analyzeCatalogSet(
       diagnostics.push(
         semanticDiagnostic(
           sourceCatalog,
-          'EQ1301',
-          'Empty scopes do not produce Equator registries or generated output.',
+          'TH1301',
+          'Empty scopes do not produce Thoth registries or generated output.',
           ['messages'],
         ),
       );
@@ -1989,7 +1989,7 @@ export function analyzeCatalogSet(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'EQ1301',
+            'TH1301',
             `${catalogInScope(catalog)} is for locale ${JSON.stringify(catalog.locale)} and must use role ${expectedRole}.`,
             [],
           ),
@@ -2008,7 +2008,7 @@ export function analyzeCatalogSet(
           diagnostics.push(
             semanticDiagnostic(
               target,
-              'EQ1304',
+              'TH1304',
               `Target catalog invents message ${JSON.stringify(messageId)}.`,
               ['messages', messageId],
             ),
@@ -2062,7 +2062,7 @@ export function analyzeCatalogSet(
           diagnostics.push(
             semanticDiagnostic(
               sourceCatalog,
-              'EQ1302',
+              'TH1302',
               `Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.selectorsPerMessage}-selector implementation ceiling.`,
               ['messages', messageId],
             ),
@@ -2075,7 +2075,7 @@ export function analyzeCatalogSet(
           diagnostics.push(
             semanticDiagnostic(
               sourceCatalog,
-              'EQ1302',
+              'TH1302',
               `Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.variantsPerMessage}-variant implementation ceiling.`,
               ['messages', messageId],
             ),
@@ -2129,17 +2129,14 @@ export function analyzeCatalogSet(
         inputs: inputs.map(inputJson),
         slots: slots.map(slotJson),
       } satisfies CanonicalJsonValue;
-      const sourceFingerprint = digestCanonicalJson(
-        'equator-source-message/1',
-        {
-          ...contract,
-          source:
-            sourceMessage.kind === 'message'
-              ? sourceMessage.semantics.canonicalSource
-              : null,
-          empty: sourceMessage.kind === 'empty',
-        },
-      );
+      const sourceFingerprint = digestCanonicalJson('thoth-source-message/1', {
+        ...contract,
+        source:
+          sourceMessage.kind === 'message'
+            ? sourceMessage.semantics.canonicalSource
+            : null,
+        empty: sourceMessage.kind === 'empty',
+      });
       semanticMessages.push(
         Object.freeze({
           providerId: sourceCatalog.providerId,
@@ -2191,7 +2188,7 @@ export function analyzeCatalogSet(
         diagnostics.push(
           semanticDiagnostic(
             sourceCatalog,
-            'EQ1306',
+            'TH1306',
             `Scope ${sourceCatalog.scopeId} has no ${locale} catalog; source-locale fallback remains available.${policy.suffix}`,
             [],
             policy.severity,
@@ -2205,7 +2202,7 @@ export function analyzeCatalogSet(
     // the fingerprint alone. The registry domain is what the runtime has to provide, so it carries
     // descriptor identities and never the implementations behind them.
     const applicationContractFingerprint = digestCanonicalJson(
-      'equator-scope-application-contract/1',
+      'thoth-scope-application-contract/1',
       {
         messages: semanticMessages.map(messageContractJson),
         families: semanticFamilies.map(familyContractJson),
@@ -2219,7 +2216,7 @@ export function analyzeCatalogSet(
       ),
     ].sort(compareCodeUnit);
     const semanticRegistryFingerprint = digestCanonicalJson(
-      'equator-scope-semantic-registry/1',
+      'thoth-scope-semantic-registry/1',
       {
         builtInKinds: referencedKinds,
         extensions: requiredExtensions.map(({ kind, id, fingerprint }) => ({
@@ -2264,7 +2261,7 @@ export function analyzeCatalogSet(
   }
 
   const applicationContractFingerprint = digestCanonicalJson(
-    'equator-application-contract/1',
+    'thoth-application-contract/1',
     scopes.map((scope) => ({
       providerId: scope.providerId,
       scopeId: scope.scopeId,
@@ -2272,7 +2269,7 @@ export function analyzeCatalogSet(
     })),
   );
   const semanticRegistryFingerprint = digestCanonicalJson(
-    'equator-semantic-registry/1',
+    'thoth-semantic-registry/1',
     scopes.map((scope) => ({
       providerId: scope.providerId,
       scopeId: scope.scopeId,

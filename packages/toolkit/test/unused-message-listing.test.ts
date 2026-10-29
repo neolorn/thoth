@@ -54,7 +54,7 @@ function advisory(count: number): string {
   });
   if (!compiled.ok) throw new Error(JSON.stringify(compiled.diagnostics));
   const advisories = compiled.diagnostics.filter(
-    ({ code }) => code === 'EQ1311',
+    ({ code }) => code === 'TH1311',
   );
   expect(advisories).toHaveLength(1);
   expect(advisories[0]?.severity).toBe('info');

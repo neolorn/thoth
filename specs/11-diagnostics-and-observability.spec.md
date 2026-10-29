@@ -1,6 +1,6 @@
 # Diagnostics and observability
 
-What Equator says when something fails, what it says while it works, and what neither is allowed to
+What Thoth says when something fails, what it says while it works, and what neither is allowed to
 carry.
 
 The severities and exit codes the command line applies to a diagnostic are

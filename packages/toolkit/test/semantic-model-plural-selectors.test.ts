@@ -47,7 +47,7 @@ function coverageFindings(
   });
   expect(result.ok).toBe(true);
   return result.diagnostics
-    .filter(({ code }) => code === 'EQ1308')
+    .filter(({ code }) => code === 'TH1308')
     .map(({ path }) => path);
 }
 

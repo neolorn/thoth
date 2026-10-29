@@ -9,7 +9,7 @@
  * every entry point each one exports.
  *
  * Offline, from a cache staged by `pnpm run stage:npm-cache`, so an upstream publish cannot change
- * what this installs. The committed lock pins every third-party package, and its two Equator
+ * what this installs. The committed lock pins every third-party package, and its two Thoth
  * entries carry the digest and the dependencies of whatever was packed when it was refreshed, which
  * every build can change. Those two entries are dropped from the copy, so npm reads the tarballs'
  * manifests as they are now, and the lock it writes may differ from the committed one in their two
@@ -35,7 +35,7 @@ interface NpmLock {
 }
 
 const cache =
-  process.env['EQUATOR_NPM_CACHE'] ??
+  process.env['THOTH_NPM_CACHE'] ??
   resolve(repositoryRoot, '.runtimes/npm-cache');
 const fixtureRoot = resolve(root, 'fixtures/npm-package-consumer');
 const consumerRoot = resolve(root, 'tmp/npm-package-consumer-verification');
@@ -79,12 +79,12 @@ function npm(args: readonly string[]) {
 
 await rm(consumerRoot, { recursive: true, force: true });
 await cp(fixtureRoot, consumerRoot, { recursive: true });
-await mkdir(resolve(consumerRoot, 'equator'), { recursive: true });
-await cp(tarball('runtime'), resolve(consumerRoot, 'equator/runtime.tgz'));
-await cp(tarball('toolkit'), resolve(consumerRoot, 'equator/toolkit.tgz'));
+await mkdir(resolve(consumerRoot, 'thoth'), { recursive: true });
+await cp(tarball('runtime'), resolve(consumerRoot, 'thoth/runtime.tgz'));
+await cp(tarball('toolkit'), resolve(consumerRoot, 'thoth/toolkit.tgz'));
 const lockPath = resolve(consumerRoot, 'package-lock.json');
 const copied = JSON.parse(await readFile(lockPath, 'utf8'));
-for (const name of ['@neolorn/equator', '@neolorn/equator-toolkit']) {
+for (const name of ['@neolorn/thoth', '@neolorn/thoth-toolkit']) {
   assert.ok(
     copied.packages[`node_modules/${name}`],
     `The committed npm lock has no entry for ${name}.`,
@@ -111,7 +111,7 @@ assert.equal(
   `npm ${npmVersion} did not install the two tarballs offline:\n${installed.stdout}${installed.stderr}`,
 );
 
-// Everything but Equator's own entries, which name the tarballs and carry their digests.
+// Everything but Thoth's own entries, which name the tarballs and carry their digests.
 const pinned = (lock: NpmLock) =>
   Object.fromEntries(
     Object.entries(lock.packages).filter(
@@ -140,16 +140,15 @@ assert.deepEqual(
 // Every subpath both installed packages open, imported by the specifier a consumer writes. The
 // installed manifests are read here, by the reader every tool shares, so the probe only imports.
 // The compiler first, as an application's own build loads it before the toolkit's analysis does.
-const opened = ['@neolorn/equator', '@neolorn/equator-toolkit'].flatMap(
-  (name) =>
-    openSubpaths(
-      JSON.parse(
-        readFileSync(
-          resolve(consumerRoot, 'node_modules', name, 'package.json'),
-          'utf8',
-        ),
-      ) as { readonly name: string; readonly exports: unknown },
-    ).map(({ specifier, json }) => ({ specifier, json })),
+const opened = ['@neolorn/thoth', '@neolorn/thoth-toolkit'].flatMap((name) =>
+  openSubpaths(
+    JSON.parse(
+      readFileSync(
+        resolve(consumerRoot, 'node_modules', name, 'package.json'),
+        'utf8',
+      ),
+    ) as { readonly name: string; readonly exports: unknown },
+  ).map(({ specifier, json }) => ({ specifier, json })),
 );
 const probe = `
 await import('@angular/compiler');
@@ -179,9 +178,9 @@ assert.equal(
 );
 const imported = JSON.parse(probed.stdout);
 for (const anchor of [
-  '@neolorn/equator',
-  '@neolorn/equator/http',
-  '@neolorn/equator-toolkit',
+  '@neolorn/thoth',
+  '@neolorn/thoth/http',
+  '@neolorn/thoth-toolkit',
 ]) {
   assert.ok(
     imported.includes(anchor),

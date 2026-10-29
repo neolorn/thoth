@@ -9,7 +9,7 @@ import { checkProject, generateProject } from '../src/index.js';
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
 /**
- * A consumer mid-refactor must not have its Equator build fail because of its own TypeScript
+ * A consumer mid-refactor must not have its Thoth build fail because of its own TypeScript
  * errors.
  *
  * The 100-diagnostic cap region was unreachable because every fixture compiled clean, so nothing
@@ -20,7 +20,7 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
  * a consumer under its own compiler configuration was never exercised from the CLI-facing API.
  *
  * Every project below is built with deliberate errors that belong to the consumer, never to a
- * generated `#i18n` module. Equator's own generated defects must still block, and that distinction
+ * generated `#i18n` module. Thoth's own generated defects must still block, and that distinction
  * is the point of the severity split in `static-analysis.ts`.
  */
 
@@ -67,7 +67,7 @@ async function consumerProject(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -79,16 +79,8 @@ async function consumerProject(options: ProjectOptions): Promise<string> {
       2,
     )}\n`,
   );
-  await write(
-    root,
-    'i18n/shell/en-US.yaml',
-    'messages:\n  app-title: Equator\n',
-  );
-  await write(
-    root,
-    'i18n/shell/ar-EG.yaml',
-    'messages:\n  app-title: Equator\n',
-  );
+  await write(root, 'i18n/shell/en-US.yaml', 'messages:\n  app-title: Thoth\n');
+  await write(root, 'i18n/shell/ar-EG.yaml', 'messages:\n  app-title: Thoth\n');
   await write(
     root,
     'tsconfig.app.json',
@@ -112,7 +104,7 @@ async function consumerProject(options: ProjectOptions): Promise<string> {
   );
   if (options.paths === true) {
     // The alias has to be used, not merely declared. A tsconfig carrying `paths` that no source
-    // imports through proves nothing: Equator could discard the consumer's paths entirely and the
+    // imports through proves nothing: Thoth could discard the consumer's paths entirely and the
     // project would still analyse cleanly.
     await write(root, 'src/toolbox.ts', 'export const toolboxLabel = "t";\n');
   }
@@ -134,7 +126,7 @@ async function consumerProject(options: ProjectOptions): Promise<string> {
   if (options.escapingTemplate === true) {
     // Component detection resolves the @Component symbol and requires its declaration to come
     // from a path containing '/@angular/core/'. A stub declaration is enough: this exercises
-    // Equator's containment rule, not Angular.
+    // Thoth's containment rule, not Angular.
     await write(
       root,
       'node_modules/@angular/core/index.d.ts',
@@ -160,7 +152,7 @@ async function consumerProject(options: ProjectOptions): Promise<string> {
       )}\n`,
     );
 
-    // The secret lives beside the owner, not inside it. Equator must never open it.
+    // The secret lives beside the owner, not inside it. Thoth must never open it.
     await write(
       resolve(root, '..'),
       `outside-${basename(root)}.html`,
@@ -230,7 +222,7 @@ describe("a consumer's own TypeScript errors", () => {
   it('refuses to read a component template that escapes the owner', async () => {
     // B2. The project host filtered escaping paths out of suppliedSources by containment, and the
     // analysis fallback then read them from disk anyway, so a templateUrl of
-    // '../../secret/leak.html' was opened and parsed. Equator analyses the selected owner and
+    // '../../secret/leak.html' was opened and parsed. Thoth analyses the selected owner and
     // nothing else.
     const root = await consumerProject({
       consumerErrors: 0,
@@ -240,7 +232,7 @@ describe("a consumer's own TypeScript errors", () => {
 
     const diagnostics = generated.diagnostics;
     const refusal = diagnostics.filter((d) =>
-      d.summary.includes('resolves outside the selected Equator owner'),
+      d.summary.includes('resolves outside the selected Thoth owner'),
     );
 
     expect(refusal).toHaveLength(1);
@@ -253,8 +245,8 @@ describe("a consumer's own TypeScript errors", () => {
   });
 
   it('analyses a consumer that configures compilerOptions.paths', async () => {
-    // No fixture tsconfig carried `paths`, so nothing proved Equator analyses a consumer
-    // under the consumer's own compiler configuration rather than one Equator invents.
+    // No fixture tsconfig carried `paths`, so nothing proved Thoth analyses a consumer
+    // under the consumer's own compiler configuration rather than one Thoth invents.
     const root = await consumerProject({ consumerErrors: 3, paths: true });
     const generated = await generateProject({ project: root });
 

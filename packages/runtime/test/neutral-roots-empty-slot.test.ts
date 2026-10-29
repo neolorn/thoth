@@ -9,7 +9,7 @@ import {
   resolveLocalizedRoute,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A list of locale-neutral roots with an empty slot in it.
@@ -22,7 +22,7 @@ import {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-NeutralRootsEmptySlotTestIdentity0123456789',
     routes: [{ id: 'route:_index', path: '', parameterNames: [] }],
   },

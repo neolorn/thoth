@@ -8,11 +8,11 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ROUTES, type Routes } from '@angular/router';
-import { createPathPrefixLocalePolicy } from '@neolorn/equator';
+import { createPathPrefixLocalePolicy } from '@neolorn/thoth';
 import {
   provideLocalizedServerRendering,
   type LocalizedServerRenderingOptions,
-} from '@neolorn/equator/ssr';
+} from '@neolorn/thoth/ssr';
 import { configuration } from '#i18n';
 import { firstValueFrom } from 'rxjs';
 
@@ -21,7 +21,7 @@ import { appRouteProjection } from './localization.routes';
 /**
  * The two things `provideLocalizedServerRendering` hands on to Angular's server rendering.
  *
- * `appShell` and `rendering` are Angular's own, and Equator reads neither. What an application is
+ * `appShell` and `rendering` are Angular's own, and Thoth reads neither. What an application is
  * owed is that each one arrives: a shell it names is a route Angular can render, and a bound it
  * sets on a fetched response is the bound that response is held to. Both are read here through
  * what Angular publishes, the `ROUTES` token and `HttpClient`, in an injector built from the

@@ -23,7 +23,7 @@ interface AddressTable {
  *
  * `src/app/addresses.json` is written out by hand for the URL policy the consumer runs, one address
  * per page per locale. Reading it here makes the files a build must write, the addresses a browser
- * pass visits and the addresses the specs expect one statement. Computing them through Equator
+ * pass visits and the addresses the specs expect one statement. Computing them through Thoth
  * would derive each check from the thing it checks.
  *
  * The table's `policy` names the policy it was written for, and `address-table.spec.ts` holds it to
@@ -64,7 +64,7 @@ export async function readConsumerAddresses(consumerRoot: string) {
     /** Every locale the page has an address in. */
     locales: (page: string) => Object.keys(table.pages[page] ?? {}),
     /**
-     * The address as Equator writes it for a link: absolute where the table writes the origin,
+     * The address as Thoth writes it for a link: absolute where the table writes the origin,
      * because the locale is the origin, and a path otherwise.
      */
     address: (page: string, locale: string) => {

@@ -39,14 +39,14 @@ describe('configuration discovery', () => {
   it('fails with both candidates when a package and a directory inside it each carry one', async () => {
     const root = await temporary();
     await write(root, 'package.json', '{ "name": "@example/discovery" }\n');
-    await write(root, 'equator.config.json', '{}\n');
-    await write(root, 'application/equator.config.json', '{}\n');
+    await write(root, 'thoth.config.json', '{}\n');
+    await write(root, 'application/thoth.config.json', '{}\n');
     const nested = resolve(root, 'application', 'src');
     await mkdir(nested, { recursive: true });
 
     const discovered = await discoverProject({ cwd: nested });
     expect(discovered.ok).toBe(false);
-    expect(discovered.diagnostics.map(({ code }) => code)).toEqual(['EQ1702']);
+    expect(discovered.diagnostics.map(({ code }) => code)).toEqual(['TH1702']);
     const summary = discovered.diagnostics[0]?.summary ?? '';
     expect(summary).toContain(JSON.stringify(root));
     expect(summary).toContain(JSON.stringify(resolve(root, 'application')));
@@ -60,9 +60,9 @@ describe('configuration discovery', () => {
     const root = await temporary();
     await write(root, 'package.json', '{ "name": "@example/discovery" }\n');
     for (const name of [
-      'equator.config.mjs',
-      'equator.config.js',
-      'equator.config.ts',
+      'thoth.config.mjs',
+      'thoth.config.js',
+      'thoth.config.ts',
     ]) {
       await write(
         root,
@@ -73,7 +73,7 @@ describe('configuration discovery', () => {
 
     const discovered = await discoverProject({ cwd: root });
     expect(discovered.ok).toBe(false);
-    expect(discovered.diagnostics.map(({ code }) => code)).toEqual(['EQ1702']);
+    expect(discovered.diagnostics.map(({ code }) => code)).toEqual(['TH1702']);
     expect(await readdir(root)).not.toContain('executed');
   });
 });

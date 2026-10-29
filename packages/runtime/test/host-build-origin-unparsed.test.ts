@@ -6,7 +6,7 @@ import {
   localizedServerRoutes,
   type GeneratedConfiguration,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The origin a build under a host policy is told it answers at, when it is not an origin at all.
@@ -20,14 +20,14 @@ import {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-HostBuildOriginUnparsedTestIdentity01234567',
     routes: [{ id: 'second', path: 'second', parameterNames: [] }],
   },
 };
 
 const CONFIGURATION = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],

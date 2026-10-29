@@ -59,7 +59,7 @@ import {
   type RouteResolution,
   type RouteSeoProjection,
   type RouteRuntimeProjection,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 import { LocalizedAddressSync } from './address-sync.js';
 import {
@@ -98,7 +98,7 @@ export interface RouteLocalizationContext {
    *
    * Present so a document callback can answer for the page it actually is: a route whose entity
    * turned out to be absent wants the wording of a missing page rather than the wording of the
-   * article it was going to be. Equator withdraws the canonical address and the alternates on its
+   * article it was going to be. Thoth withdraws the canonical address and the alternates on its
    * own, under section 12 of `specs/07-routing-rendering-and-seo.spec.md`; the sentences are the
    * application's.
    *
@@ -164,8 +164,8 @@ export interface RouteLocalizationOptions {
    * A route's title and description are *sentences a visitor reads*, so they belong in a catalog
    * like every other sentence: unlike a route's path spelling, which is an address. Authoring
    * them as `MessageHandle`s rather than as a bespoke metadata format is what makes
-   * `equator check --require-complete` answer for them: a title missing from a target catalog is
-   * EQ1307, at `error` severity under that flag, with no new diagnostic and no second
+   * `thoth check --require-complete` answer for them: a title missing from a target catalog is
+   * TH1307, at `error` severity under that flag, with no new diagnostic and no second
    * completeness mechanism to keep in step with the first.
    *
    * Keyed by the route ids in the projection, which is also what makes a typo visible: a key
@@ -181,7 +181,7 @@ export interface RouteLocalizationOptions {
    * whatever the previous page left in it, which is a missing page wearing the title of the page
    * before it.
    *
-   * Authored as messages for the reason `documentMetadata` is: `equator check --require-complete`
+   * Authored as messages for the reason `documentMetadata` is: `thoth check --require-complete`
    * answers for a missing translation here under the same diagnostic as every other message, rather
    * than under a second completeness mechanism.
    */
@@ -225,7 +225,7 @@ export interface RouteDocumentMessages {
   readonly title?: RouteDocumentField;
   /** The page's own summary of itself, written for a reader rather than for a crawler. */
   readonly description?: RouteDocumentField;
-  /** Social copy, for the fields Equator cannot derive and a catalog can hold. */
+  /** Social copy, for the fields Thoth cannot derive and a catalog can hold. */
   readonly imageAlt?: RouteDocumentField;
   /**
    * What the site calls itself in this locale, for the social card.
@@ -438,7 +438,7 @@ export class RouteLocalization {
    * Where this application is mounted, read once from the same resolution the locale source reads.
    *
    * Read here rather than passed in as an option, and that is the whole of the design: the
-   * deployment tells Angular its mount point once, and every part of Equator that needs it asks the
+   * deployment tells Angular its mount point once, and every part of Thoth that needs it asks the
    * same question of the same injector. An option would let an application answer twice, and the
    * two answers would disagree the first time one of them was edited, with the head advertising
    * addresses this build refuses to resolve, which is the failure hardest to see from inside the
@@ -777,7 +777,7 @@ export class RouteLocalization {
       if (this.responseInit !== null) {
         this.responseInit.status = resolution.httpStatus;
         // Entry is private and revalidated whatever the deployment chose, so its directives are
-        // Equator's to write, and the render read the language field that chose it. A correction's
+        // Thoth's to write, and the render read the language field that chose it. A correction's
         // lifetime is the deployment's, and section 16 leaves it to the host.
         if (resolution.reason === 'locale-entry') {
           setHeader(this.responseInit, 'cache-control', 'private, no-cache');
@@ -1019,7 +1019,7 @@ export class RouteLocalization {
     if (this.untitledRoutes.has(routeId)) return;
     this.untitledRoutes.add(routeId);
     console.warn(
-      `[Equator] Route ${JSON.stringify(routeId)} rendered with no document title. Declare one in documentMetadata, or return one from the document callback. The page keeps whatever title the previous one left, which reads as a navigation that did not happen.`,
+      `[Thoth] Route ${JSON.stringify(routeId)} rendered with no document title. Declare one in documentMetadata, or return one from the document callback. The page keeps whatever title the previous one left, which reads as a navigation that did not happen.`,
     );
   }
 
@@ -1250,7 +1250,7 @@ export class RouteLocalization {
     const seo = withdrawnForOutcome(projected, outcome);
     this.document.apply({
       ...documentProjection,
-      // The locale is supplied here, not by the application. It is the locale Equator has just
+      // The locale is supplied here, not by the application. It is the locale Thoth has just
       // committed, and a projection that carried its own would be a second answer able to disagree
       // with the head, the URL and the catalogs at once.
       locale: context.resolution.locale,
@@ -1490,7 +1490,7 @@ export class RouteLocalization {
     if (this.undeclaredOutcomes.has(outcomeClass)) return;
     this.undeclaredOutcomes.add(outcomeClass);
     console.warn(
-      `[Equator] A response classed ${JSON.stringify(outcomeClass)} was answered with no title. Declare one in outcomeDocuments, keyed by that class. The page keeps whatever title the previous one left, which tells a reader and a crawler that they are somewhere they are not.`,
+      `[Thoth] A response classed ${JSON.stringify(outcomeClass)} was answered with no title. Declare one in outcomeDocuments, keyed by that class. The page keeps whatever title the previous one left, which tells a reader and a crawler that they are somewhere they are not.`,
     );
   }
 

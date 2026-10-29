@@ -96,7 +96,7 @@ describe('two identities at one generated path', () => {
       expected.diagnostics.map(({ code }) => code),
     );
     expect(compiled.diagnostics.map(({ code }) => code)).not.toContain(
-      'EQ1305',
+      'TH1305',
     );
   });
 
@@ -106,7 +106,7 @@ describe('two identities at one generated path', () => {
     expect(generated.ok).toBe(false);
     expect(refusals(generated)).toEqual([
       {
-        code: 'EQ1305',
+        code: 'TH1305',
         summary:
           'Message identities "cart.line-items" and "cart.lineItems" collide at generated path "cart.lineItems".',
         path: ['messages', 'cart.lineItems'],
@@ -120,7 +120,7 @@ describe('two identities at one generated path', () => {
     expect(generated.ok).toBe(false);
     expect(refusals(generated)).toEqual([
       {
-        code: 'EQ1305',
+        code: 'TH1305',
         summary: 'Generated message path "cart.lineItems" is duplicated.',
         path: ['messages', 'cart.line-items'],
       },

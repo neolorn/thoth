@@ -7,7 +7,7 @@ import {
   type RouteParameterCodec,
   type RouteRuntimeProjection,
   type SitemapDocument,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The size limit of one sitemap file, to the byte, and what the parts are called past it.
@@ -48,7 +48,7 @@ const LONGEST = IDENTIFIER + BODY_NAMES.length * SEGMENT;
 function projectionWith(fraction: string): RouteRuntimeProjection {
   return {
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: 'sha256-SitemapByteLimitTestIdentity0123456789abcde',
       routes: [
         {
@@ -78,7 +78,7 @@ const POLICY = createLocaleNeutralPolicy({
 });
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US'],

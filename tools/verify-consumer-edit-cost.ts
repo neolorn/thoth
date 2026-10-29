@@ -1,14 +1,14 @@
 /**
  * What three data edits cost in the file that composes the application.
  *
- * The requirement is that an application configures Equator once. Measuring that as "one provider
+ * The requirement is that an application configures Thoth once. Measuring that as "one provider
  * configuration" is a line count, and a line count is the wrong instrument twice over: it passes
  * while the requirement fails, three lines that each need editing per route is still three lines,
  * and it fails while the requirement holds, so deleting something a consumer needs reads as an
  * improvement.
  *
  * The requirement is about **cost of change**, so that is what this measures. Each of the three
- * edits is applied to the materialized consumer, `equator generate` is run, and `app.config.ts` is
+ * edits is applied to the materialized consumer, `thoth generate` is run, and `app.config.ts` is
  * required to come back byte for byte identical:
  *
  *   1. adding a route
@@ -45,7 +45,7 @@ const appRoot = resolve(consumerRoot, 'src/app');
 const pnpmCommand = process.platform === 'win32' ? 'cmd' : 'pnpm';
 
 const generate = () => {
-  const args = ['run', 'equator:generate'];
+  const args = ['run', 'thoth:generate'];
   const result = spawnSync(
     pnpmCommand,
     process.platform === 'win32' ? ['/d', '/s', '/c', 'pnpm', ...args] : args,
@@ -58,7 +58,7 @@ const generate = () => {
   assert.equal(
     result.status,
     0,
-    ['equator generate failed', result.stdout, result.stderr]
+    ['thoth generate failed', result.stdout, result.stderr]
       .filter(Boolean)
       .join('\n'),
   );
@@ -93,7 +93,7 @@ const edit = async (path: string, replace: (source: string) => string) => {
 const catalogFiles = async () => {
   const root = resolve(consumerRoot, 'i18n');
   const sourceLocale = JSON.parse(
-    await readFile(resolve(consumerRoot, 'equator.config.json'), 'utf8'),
+    await readFile(resolve(consumerRoot, 'thoth.config.json'), 'utf8'),
   ).sourceLocale;
   const found = [];
   for (const entry of await readdir(root, { withFileTypes: true })) {
@@ -127,7 +127,7 @@ const EDITS = [
       return edit(resolve(appRoot, 'app.routes.ts'), (source) =>
         source.replace(
           "  {\n    path: 'second',",
-          "  {\n    path: 'edit-cost-probe',\n    component: FeatureLabSecondRoute,\n    data: { equatorIndexing: 'indexable' },\n  },\n  {\n    path: 'second',",
+          "  {\n    path: 'edit-cost-probe',\n    component: FeatureLabSecondRoute,\n    data: { thothIndexing: 'indexable' },\n  },\n  {\n    path: 'second',",
         ),
       );
     },
@@ -142,7 +142,7 @@ const EDITS = [
       // locale has an address without an edit there, which is what spec 03 section 2 asks of a
       // declaration made once.
       const undoConfiguration = await edit(
-        resolve(consumerRoot, 'equator.config.json'),
+        resolve(consumerRoot, 'thoth.config.json'),
         (source) => {
           const configuration = JSON.parse(source);
           configuration.locales = [...configuration.locales, 'fr-FR'];
@@ -210,6 +210,6 @@ assert.equal(
 generate();
 
 process.stdout.write(
-  `Equator consumer edit cost verified: ${results.length} edit(s) cost no line in app.config.ts.\n`,
+  `Thoth consumer edit cost verified: ${results.length} edit(s) cost no line in app.config.ts.\n`,
 );
 for (const label of results) process.stdout.write(`  ${label}\n`);

@@ -16,7 +16,7 @@ import { initializeProject } from '../src/project-host.js';
  * without a trace is one that read the code rather than ran it.
  */
 
-const TRACE = 'equatorAnalysisTrace';
+const TRACE = 'thothAnalysisTrace';
 
 const roots: string[] = [];
 
@@ -115,7 +115,7 @@ describe('static analysis', () => {
     expect(generated.ok, JSON.stringify(generated.diagnostics)).toBe(true);
     if (!generated.ok) return;
     // The use was found, so the module was analyzed; only the unreached message is reported unused.
-    const unused = generated.diagnostics.find(({ code }) => code === 'EQ1311');
+    const unused = generated.diagnostics.find(({ code }) => code === 'TH1311');
     expect(unused?.summary).toContain('unused');
     expect(unused?.summary).not.toContain('app-title');
     expect((globalThis as Record<string, unknown>)[TRACE]).toBeUndefined();

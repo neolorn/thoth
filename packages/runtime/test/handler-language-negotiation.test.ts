@@ -4,7 +4,7 @@ import { createLocaleRequestHandler } from '../http/src/handler.js';
 import type {
   LocaleUrlPolicy,
   RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The request handler reads `Accept-Language` as the runtime does.
@@ -29,7 +29,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [{ id: 'route:_index', path: '', parameterNames: [] }],
   },

@@ -12,7 +12,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { LocalizationError } from '@neolorn/equator/core';
+import { LocalizationError } from '@neolorn/thoth/core';
 
 import {
   externalDestination,

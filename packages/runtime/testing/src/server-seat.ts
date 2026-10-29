@@ -17,11 +17,11 @@ import {
   type LocaleRequestHandler,
   type LocaleRequestHandlerOptions,
   type ɵAnsweredRequest,
-} from '@neolorn/equator/http';
+} from '@neolorn/thoth/http';
 import type {
   PageOutcomeDeclaration,
   RouteResolution,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * One `<link>` the answered head carried.
@@ -102,7 +102,7 @@ export interface AnsweredAddress {
   readonly locale: string | undefined;
   /** What the page or the renderer declared, absent where neither did. */
   readonly pageOutcome: AnsweredPageOutcome | undefined;
-  /** Whether Equator declined the address, which is a static asset or a locale-neutral root. */
+  /** Whether Thoth declined the address, which is a static asset or a locale-neutral root. */
   readonly declined: boolean;
 }
 

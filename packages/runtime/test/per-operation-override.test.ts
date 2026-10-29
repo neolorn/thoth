@@ -6,7 +6,7 @@ import {
   formatNumber,
   instant,
 } from '../src/formatting.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 /**
  * The standalone functions share one formatter store across every call in the process, so an

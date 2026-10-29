@@ -8,7 +8,7 @@ import type {
   RuntimeFormattingAdapterDescriptor,
   RuntimeParsingAdapterBinding,
   RuntimeParsingAdapterDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { defineExtensionRegistry } from '../../toolkit/src/extensions.js';
 import { RuntimeExtensions } from '../src/extensions.js';
 import { FormattingSurface } from '../src/formatting-runtime.js';

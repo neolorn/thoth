@@ -5,7 +5,7 @@ import {
   languagePresentation,
   resolveTypography,
 } from '../src/locale-presentation.js';
-import { LocalizationError, localeProfile } from '@neolorn/equator/core';
+import { LocalizationError, localeProfile } from '@neolorn/thoth/core';
 
 /**
  * A tag handed to a function that describes it, and that it cannot describe.

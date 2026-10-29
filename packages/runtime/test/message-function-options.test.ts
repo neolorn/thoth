@@ -167,7 +167,7 @@ describe('the option table', () => {
     );
     expect(digitRules.length).toBeGreaterThan(0);
     for (const [option, rule] of digitRules) {
-      // `add`, `subtract` and `fractionDigits` are Equator's or the specification's own names; only
+      // `add`, `subtract` and `fractionDigits` are Thoth's or the specification's own names; only
       // the five that reach `Intl` under their own name can be probed against it.
       if (!(option in new Intl.NumberFormat().resolvedOptions())) continue;
       expect(accepts(option, rule.minimum), `${option} minimum`).toBe(true);
@@ -214,7 +214,7 @@ describe('the option table', () => {
    * Every value the date half of the table declares, through the mapping, into the constructor that
    * will receive it. This is the check the compiler runs on one written expression, asked of the
    * whole vocabulary at once: a declared value that `Intl.DateTimeFormat` will not take is a
-   * message Equator accepts and throws on, which is the failure the specification's *"What
+   * message Thoth accepts and throws on, which is the failure the specification's *"What
    * compiles, renders"* clause exists to make impossible.
    */
   it('builds a formatter for every value of every date option', () => {
@@ -287,7 +287,7 @@ describe('the option table', () => {
   /**
    * The `roundingIncrement` list is fifteen values the specification spells out, and this asks
    * `Intl` whether they are the fifteen it takes. If CLDR ever adds one, this fails rather than
-   * Equator quietly refusing an increment the platform supports.
+   * Thoth quietly refusing an increment the platform supports.
    */
   it('lists exactly the rounding increments Intl accepts', () => {
     const rule = MESSAGE_OPTION_RULES['roundingIncrement'];
@@ -331,7 +331,7 @@ describe('numeric options at render', () => {
   });
 
   it('fixes currency fraction digits with the option the specification gives it', () => {
-    // `fractionDigits` sets both ends at once. Equator ignored it and took the two names :currency
+    // `fractionDigits` sets both ends at once. Thoth ignored it and took the two names :currency
     // does not have, so `fractionDigits=0` printed the cents it was asked to drop.
     expect(
       render('{42.5 :currency currency=USD fractionDigits=0}', NONE, {}),

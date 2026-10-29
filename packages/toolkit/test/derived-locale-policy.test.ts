@@ -10,7 +10,7 @@ import { generateProject } from '../src/index.js';
 /**
  * What the build reads of a locale URL policy, by how the policy is written.
  *
- * EQ1408 compares the policy's locales with the configuration's, and EQ1409 compares the segments
+ * TH1408 compares the policy's locales with the configuration's, and TH1409 compares the segments
  * the policy claims with each route's leading segment. Both read the argument of the policy factory
  * as source text: `specs/10-compiler-and-tooling.spec.md` section 5 forbids calling a function or
  * evaluating an expression, so a value the application computes is not available to them.
@@ -83,7 +83,7 @@ async function project(policySource: string): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -140,7 +140,7 @@ async function project(policySource: string): Promise<string> {
   );
   await write(
     root,
-    'node_modules/@neolorn/equator/index.d.ts',
+    'node_modules/@neolorn/thoth/index.d.ts',
     [
       'export declare function createPathPrefixLocalePolicy(options: unknown): unknown;',
       'export declare function createLocaleNeutralPolicy(options: unknown): unknown;',
@@ -149,8 +149,8 @@ async function project(policySource: string): Promise<string> {
   );
   await write(
     root,
-    'node_modules/@neolorn/equator/package.json',
-    manifest('@neolorn/equator'),
+    'node_modules/@neolorn/thoth/package.json',
+    manifest('@neolorn/thoth'),
   );
   await write(
     root,
@@ -174,7 +174,7 @@ async function project(policySource: string): Promise<string> {
     'src/app.ts',
     [
       "import { messages } from '#i18n/shell';",
-      "import { createLocaleNeutralPolicy, createPathPrefixLocalePolicy } from '@neolorn/equator';",
+      "import { createLocaleNeutralPolicy, createPathPrefixLocalePolicy } from '@neolorn/thoth';",
       '',
       'export const title = messages.appTitle.messageId;',
       '',
@@ -209,7 +209,7 @@ async function reading(policySource: string): Promise<Reading> {
     generated.diagnostics
       .filter(({ code }) => code === wanted)
       .map(({ summary }) => summary);
-  const agreement = summaries('EQ1408');
+  const agreement = summaries('TH1408');
   const listed = (marker: string): string[] =>
     agreement
       .filter((summary) => summary.includes(marker))
@@ -224,14 +224,14 @@ async function reading(policySource: string): Promise<Reading> {
     defaultLocale: agreement.some((summary) =>
       summary.includes(' the default locale and its locale URL policy makes '),
     ),
-    claimed: summaries('EQ1409')
+    claimed: summaries('TH1409')
       .flatMap((summary) =>
         [...COLLIDING_ROUTES].filter(([address]) => summary.includes(address)),
       )
       .map(([, kind]) => kind)
       .sort(),
     unread: generated.diagnostics
-      .filter(({ code }) => code === 'EQ1417')
+      .filter(({ code }) => code === 'TH1417')
       .flatMap(({ summary }) =>
         [
           ...(summary.split(' from something')[0] ?? '').matchAll(
@@ -352,7 +352,7 @@ describe('options the call does not spell out are not read at all', () => {
 describe('one option the call does not spell out is the part that goes unread', () => {
   it('a locale table held in a constant silences the whole locale comparison and the prefixes', async () => {
     // With no locale read there is nothing to compare, and the default locale is compared only
-    // where a locale was read, so all three halves of EQ1408 go together.
+    // where a locale was read, so all three halves of TH1408 go together.
     const expected: Reading = {
       ...NOTHING,
       claimed: ['alias', 'neutral root'],
@@ -629,12 +629,12 @@ describe('a policy the build did not read whole is said to be unchecked', () => 
       ),
     });
     const advisories = generated.diagnostics.filter(
-      ({ code }) => code === 'EQ1417',
+      ({ code }) => code === 'TH1417',
     );
     expect(advisories).toHaveLength(1);
     expect(advisories[0]?.severity).toBe('info');
-    expect(advisories[0]?.summary).toContain('EQ1408');
-    expect(advisories[0]?.summary).toContain('EQ1409');
+    expect(advisories[0]?.summary).toContain('TH1408');
+    expect(advisories[0]?.summary).toContain('TH1409');
     expect(JSON.stringify(advisories[0])).toContain('src/app.ts');
     expect(diagnosticsBlock(advisories)).toBe(false);
   });
@@ -646,7 +646,7 @@ describe('a policy the build did not read whole is said to be unchecked', () => 
       ),
     });
     expect(
-      generated.diagnostics.filter(({ code }) => code === 'EQ1417'),
+      generated.diagnostics.filter(({ code }) => code === 'TH1417'),
     ).toEqual([]);
   });
 });

@@ -25,11 +25,11 @@ import { writtenCatalog } from './fixtures.js';
  *   value hardcoded to `translated` makes an untranslated placeholder import as finished work and
  *   report success.
  *
- * What Equator does *not* do is absorb notes it did not write. XLIFF is an interchange artifact and
+ * What Thoth does *not* do is absorb notes it did not write. XLIFF is an interchange artifact and
  * never an authoring format under `specs/01-standards-profile.spec.md` section 10; a translator's
  * own commentary belongs in the document and the translation-management system, not in a catalog
  * field with no way to edit it.
- * It is reported rather than dropped, which is what that mapping requires of a note Equator did not
+ * It is reported rather than dropped, which is what that mapping requires of a note Thoth did not
  * write.
  */
 
@@ -84,10 +84,10 @@ describe('guidance reaching the translator', () => {
     const document = exported();
 
     expect(document).toContain(
-      '<note id="equator-source-description" category="equator:description" appliesTo="source">Button that submits the cart</note>',
+      '<note id="thoth-source-description" category="thoth:description" appliesTo="source">Button that submits the cart</note>',
     );
     expect(document).toContain(
-      '<note id="equator-source-context" category="equator:context" appliesTo="source">Checkout page, primary action</note>',
+      '<note id="thoth-source-context" category="thoth:context" appliesTo="source">Checkout page, primary action</note>',
     );
   });
 
@@ -135,7 +135,7 @@ describe('guidance reaching the translator', () => {
     if (!result.ok) throw new Error('export failed');
 
     expect(result.value).toContain(
-      '<note id="equator-target-description" category="equator:description" appliesTo="target">صيغة رسمية</note>',
+      '<note id="thoth-target-description" category="thoth:description" appliesTo="target">صيغة رسمية</note>',
     );
     expect(result.value).toContain('appliesTo="source">Button that submits');
     claimCapability('capability:xliff');
@@ -172,7 +172,7 @@ describe('guidance reaching the translator', () => {
   });
 });
 
-describe('notes Equator did not write', () => {
+describe('notes Thoth did not write', () => {
   it('reports a translator note instead of dropping it', () => {
     const document = exported().replace(
       '</notes>',
@@ -186,7 +186,7 @@ describe('notes Equator did not write', () => {
     // The translation still imports: a note is commentary rather than a defect in it.
     expect(imported.value.messages['checkout']).toBeDefined();
     expect(imported.diagnostics).toMatchObject([
-      { code: 'EQ1803', severity: 'warning' },
+      { code: 'TH1803', severity: 'warning' },
     ]);
     expect(imported.diagnostics[0]?.summary).toContain('tms:comment');
     claimCapability('capability:xliff');
@@ -206,7 +206,7 @@ describe('notes Equator did not write', () => {
   });
 
   it('reports a note attached to the whole file', () => {
-    // Equator writes no file-level notes, so one that arrives came from a translator or a tool, and
+    // Thoth writes no file-level notes, so one that arrives came from a translator or a tool, and
     // the same rule applies one level up: not absorbed, not dropped quietly.
     const document = exported().replace(
       '    <unit',
@@ -229,12 +229,12 @@ describe('notes Equator did not write', () => {
   });
 
   it('refuses a note that is not plain text', () => {
-    // XLIFF 2.2 Core §3.2.2.9 makes <note> text only. Anything else is a document Equator cannot
+    // XLIFF 2.2 Core §3.2.2.9 makes <note> text only. Anything else is a document Thoth cannot
     // read faithfully, and guessing at its meaning is what "MUST fail actionably rather than
     // approximate" forbids.
     const document = exported().replace(
       '</notes>',
-      '  <note category="equator:context"><pc id="1">markup</pc></note>\n      </notes>',
+      '  <note category="thoth:context"><pc id="1">markup</pc></note>\n      </notes>',
     );
 
     const imported = importXliff22({ document, source });
@@ -255,7 +255,7 @@ describe('notes Equator did not write', () => {
     // Not applied, because the authoring catalog owns it. Said out loud all the same, because a
     // translator who rewrote the explanation is reporting that the original was unclear.
     expect(imported.diagnostics).toMatchObject([
-      { code: 'EQ1803', severity: 'warning' },
+      { code: 'TH1803', severity: 'warning' },
     ]);
     expect(imported.diagnostics[0]?.summary).toContain('source description');
     expect(source.messages['checkout']).toMatchObject({
@@ -270,7 +270,7 @@ describe('target state', () => {
     const document = exported();
 
     expect(document).toContain('<segment state="translated">');
-    // XLIFF 2.2 does not allow state on <target>, so writing it there makes every document Equator
+    // XLIFF 2.2 does not allow state on <target>, so writing it there makes every document Thoth
     // produces non-conformant against its own pinned profile.
     expect(document).not.toContain('<target xml:space="preserve" state=');
   });
@@ -295,8 +295,8 @@ describe('target state', () => {
     const imported = importXliff22({ document, source });
     expect(imported.ok).toBe(false);
     expect(imported.diagnostics).toMatchObject([
-      { code: 'EQ1803', severity: 'warning' },
-      { code: 'EQ1803' },
+      { code: 'TH1803', severity: 'warning' },
+      { code: 'TH1803' },
     ]);
     expect(imported.diagnostics[0]?.summary).toContain('initial state');
     claimCapability('capability:xliff');

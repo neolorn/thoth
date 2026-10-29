@@ -2,7 +2,7 @@ import {
   LocalizationError,
   type LocalizationDiagnostic,
   type TrustedDestination,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { RUNTIME_LIMITS, containsUrlSpoofingControl } from './runtime-safety';
 
 function unsafeUrlText(value: unknown, maximum: number): boolean {

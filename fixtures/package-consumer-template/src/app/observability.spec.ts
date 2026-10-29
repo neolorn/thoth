@@ -13,7 +13,7 @@ import {
   type LocalizationObservabilityEvent,
   type LocalizationObservabilitySink,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -114,7 +114,7 @@ describe('runtime observability contract', () => {
     });
     expect(JSON.stringify(failure)).not.toContain('secret-catalog-body');
     localization.dispose();
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('contains sink exceptions without changing localization semantics', async () => {
@@ -200,7 +200,7 @@ describe('Angular observability boundaries', () => {
     const events: LocalizationObservabilityEvent[] = [];
     const transferState = new TransferState();
     transferState.set(
-      makeStateKey<unknown>('@neolorn/equator:localization-state/1'),
+      makeStateKey<unknown>('@neolorn/thoth:localization-state/1'),
       {
         profile: 'hostile-transfer-secret',
         primaryLocale: 'ar-EG',
@@ -244,7 +244,7 @@ describe('Angular observability boundaries', () => {
     TestBed.resetTestingModule();
     claimCapability('feature:withObservability', { platform });
     claimCapability('extension:observability-sink', { platform });
-    claimCapability('entry:@neolorn/equator', { platform });
+    claimCapability('entry:@neolorn/thoth', { platform });
   });
 
   it('reports integration failure after rollback at the commit boundary', async () => {
@@ -298,6 +298,6 @@ describe('Angular observability boundaries', () => {
     claimCapability('feature:withObservability', { platform });
     claimCapability('feature:withOverlayLocale', { platform });
     claimCapability('extension:overlay-adapter', { platform });
-    claimCapability('entry:@neolorn/equator', { platform });
+    claimCapability('entry:@neolorn/thoth', { platform });
   });
 });

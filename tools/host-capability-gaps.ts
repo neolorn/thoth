@@ -34,7 +34,7 @@ export const reportedCapabilities = Object.freeze({
 });
 
 /**
- * The probe's optional capabilities Equator formats nothing with, so a host without one returns no
+ * The probe's optional capabilities Thoth formats nothing with, so a host without one returns no
  * unsupported result and the page has nothing to say about it.
  */
 export const unreportedCapabilities = Object.freeze([

@@ -77,9 +77,9 @@ describe('a catalog set', () => {
         (diagnostic) => `${diagnostic.severity} ${located(diagnostic)}`,
       ),
     ).toEqual([
-      'error EQ1301 / (no span)',
-      'error EQ1304 /messages/extra i18n/@example/app/shell/ja.yaml',
-      'warning EQ1307 /messages/note i18n/@example/app/shell/ja.yaml',
+      'error TH1301 / (no span)',
+      'error TH1304 /messages/extra i18n/@example/app/shell/ja.yaml',
+      'warning TH1307 /messages/note i18n/@example/app/shell/ja.yaml',
     ]);
   });
 
@@ -91,12 +91,12 @@ describe('a catalog set', () => {
         catalog('target', 'de', note),
         catalog('target', 'fr', note, '@example/app', 'orders'),
       ]),
-    ).toEqual(['EQ1301 / (no span)']);
+    ).toEqual(['TH1301 / (no span)']);
   });
 
   it('is refused once, and the scope left unread, when the catalog for the source locale declares the target role', () => {
     expect(findings([catalog('target', 'en-US', note)])).toEqual([
-      'EQ1301 / (no span)',
+      'TH1301 / (no span)',
     ]);
   });
 
@@ -113,7 +113,7 @@ describe('a catalog set', () => {
         configuration: testProjectConfiguration(['en-US']),
         catalogs: [empty],
       }).diagnostics.map(located),
-    ).toEqual(['EQ1301 /messages (no span)']);
+    ).toEqual(['TH1301 /messages (no span)']);
   });
 
   it('refuses a catalog of another locale that declares the source role, and does not read it as a target', () => {
@@ -123,7 +123,7 @@ describe('a catalog set', () => {
         catalog('source', 'fr', [...note, ...extra]),
         catalog('target', 'de', note),
       ]),
-    ).toEqual(['EQ1301 / (no span)']);
+    ).toEqual(['TH1301 / (no span)']);
   });
 });
 
@@ -186,8 +186,8 @@ describe('the targets of a message', () => {
         catalog('target', 'de', invented),
       ]),
     ).toEqual([
-      'EQ1304 /messages/extra i18n/@example/app/shell/de.yaml',
-      'EQ1304 /messages/extra i18n/@example/app/shell/fr.yaml',
+      'TH1304 /messages/extra i18n/@example/app/shell/de.yaml',
+      'TH1304 /messages/extra i18n/@example/app/shell/fr.yaml',
     ]);
   });
 });
@@ -206,7 +206,7 @@ describe('the source fingerprint of a message with a pattern', () => {
     ]);
 
     expect(scope?.messages[0]?.sourceFingerprint).toBe(
-      digestCanonicalJson('equator-source-message/1', {
+      digestCanonicalJson('thoth-source-message/1', {
         identity: '@example/app:shell:note',
         resultKind: 'plain',
         inputs: [],
@@ -219,7 +219,7 @@ describe('the source fingerprint of a message with a pattern', () => {
 });
 
 describe('the semantic-registry fingerprint of a scope', () => {
-  const expected = digestCanonicalJson('equator-scope-semantic-registry/1', {
+  const expected = digestCanonicalJson('thoth-scope-semantic-registry/1', {
     builtInKinds: ['link:paired', 'strong:paired'],
     extensions: [],
   });

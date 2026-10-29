@@ -1,7 +1,7 @@
 # Formatting, parsing, and domain values
 
 How a domain value is held, how it is rendered for a reader, how a reader's typing is read back into
-one, and where the boundary between Equator and an application's own data sits.
+one, and where the boundary between Thoth and an application's own data sits.
 
 The standards edition behind every capability here, and the rule that the host's own implementation
 is the engine, are `01-standards-profile.spec.md` sections 5 and 6. The formatting context travels

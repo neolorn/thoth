@@ -90,7 +90,7 @@ function refusals(
 
 const message = (text: string): string =>
   `    message: ${JSON.stringify(text)}`;
-const onTheMessage = [{ code: 'EQ1303', path: ['messages', 'subject'] }];
+const onTheMessage = [{ code: 'TH1303', path: ['messages', 'subject'] }];
 
 describe('a closing markup element', () => {
   it('is accepted when it closes the slot opened last', () => {
@@ -164,7 +164,7 @@ describe('a target that nests a slot inside one the source does not have', () =>
         [message('Read {#link}the terms{/link}')],
         [message('{#aside}{#link}the terms{/link}{/aside}')],
       ).map(({ code }) => code),
-    ).toEqual(['EQ1304', 'EQ1304']);
+    ).toEqual(['TH1304', 'TH1304']);
   });
 });
 
@@ -177,7 +177,7 @@ describe('an option the kind of a slot does not admit', () => {
         '      badge: demo:badge',
       ]),
     ).toEqual([
-      { code: 'EQ1805', path: ['messages', 'subject', 'slots', 'badge'] },
+      { code: 'TH1805', path: ['messages', 'subject', 'slots', 'badge'] },
     ]);
   });
 });

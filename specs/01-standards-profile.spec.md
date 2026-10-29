@@ -1,6 +1,6 @@
 # Standards profile
 
-Equator rests on published standards at exact editions, and this document declares which ones. It
+Thoth rests on published standards at exact editions, and this document declares which ones. It
 covers the text and locale-data baseline, the sources that data is derived from, how the host
 platform's own internationalization is used, what may not differ between runtimes, the MessageFormat
 and XLIFF profiles, how generated data is serialized and fingerprinted, and which packages a
@@ -31,7 +31,7 @@ The profile covers:
 - a release's own schemas and durable formats;
 - the compiler-host, runtime, and browser ranges, which `02-packages-and-platform.spec.md` owns.
 
-The profile of this release line is `equator-1`. Its standards editions, and every data source
+The profile of this release line is `thoth-1`. Its standards editions, and every data source
 behind them, are recorded in `standards/sources.lock.json`.
 
 A release MUST NOT resolve any part of the profile from an unpinned latest revision at build
@@ -68,7 +68,7 @@ regenerated from its pinned source and required to agree with it.
 A locale identity is a language tag: RFC 5646 for its syntax, and the language identifier grammar of
 UTS #35 Part 1 for the subset a release accepts.
 
-An Equator release MUST canonicalize a locale identity from the pinned CLDR release and the recorded
+A Thoth release MUST canonicalize a locale identity from the pinned CLDR release and the recorded
 IANA Language Subtag Registry snapshot, and MUST NOT let a host runtime's own registry decide an
 identity that is stored, compared, or exchanged.
 
@@ -89,7 +89,7 @@ What resolution does with a match, and in what order, is
 
 ## 4. Locked data sources
 
-An Equator release MUST record every source it derives data from, or verifies conformance against,
+A Thoth release MUST record every source it derives data from, or verifies conformance against,
 in `standards/sources.lock.json`, with the exact release, the acquisition URL, the role, the
 license, and a digest.
 
@@ -209,8 +209,8 @@ option vocabularies are implemented and verified.
 
 A release MAY accept explicitly registered custom MessageFormat functions. Standard functions
 remain preferred, and an extension MUST name its functions in a namespace its provider owns so that
-one cannot collide with Unicode's or with another extension's. The `equator` namespace is the library's own:
-a registry that registers any descriptor in it is refused with `EQ1805`.
+one cannot collide with Unicode's or with another extension's. The `thoth` namespace is the library's own:
+a registry that registers any descriptor in it is refused with `TH1805`.
 
 A custom function has two projections, and a release MUST keep them separate. The descriptor
 is versioned JSON data carrying identity, operand, option, result, selector, capability,
@@ -287,7 +287,7 @@ The mapping MUST preserve:
 - notes, context, and segment state.
 
 Authored guidance maps to Core notes. A message description and its context are written as `<note>`
-elements carrying the `equator:description` and `equator:context` categories, with `appliesTo`
+elements carrying the `thoth:description` and `thoth:context` categories, with `appliesTo`
 separating guidance about the source message from guidance about the translation. A release MUST
 read back only its own categories: a note written by a translator or by a translation-management
 system is reported and left in the document rather than absorbed into a catalog, and source guidance
@@ -378,7 +378,7 @@ The toolkit package depends on `tslib` and four packages, each bounded to one re
 - `ajv` 8.20.0 validates the toolkit's own closed JSON Schema Draft 2020-12 contracts. It compiles
   the toolkit's schemas only, resolves nothing over the network, and never enters a browser bundle.
 - `jsonc-parser` 3.3.1 supplies the syntax tree and source locations that admit
-  `equator.config.json` strictly, detect duplicate keys before construction, and place diagnostics.
+  `thoth.config.json` strictly, detect duplicate keys before construction, and place diagnostics.
   Comment syntax is disabled and the toolkit constructs its own prototype-safe configuration value.
 - `messageformat` 4.0.0 supplies the LDML 48 MessageFormat 2 parser, its data model, its validation
   and traversal, and its reference function surface. A release owns the normalized semantic model,

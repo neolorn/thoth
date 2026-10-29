@@ -22,7 +22,7 @@ import {
   type LocalizationLocaleSource,
   type LocalizationPersistenceStoreFactory,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -94,11 +94,11 @@ function setup(environment: Environment): Localization {
               }),
             },
           ]),
-      // The address, supplied the way Equator reads it on the server.
+      // The address, supplied the way Thoth reads it on the server.
       //
       // Not `REQUEST_CONTEXT`. `@angular/ssr` provides that token only when the render mode is
       // `Server`, so a prerendered page has no address at all and resolves to the default locale:
-      // Arabic addresses rendered in English and written to disk. Equator derives the address from
+      // Arabic addresses rendered in English and written to disk. Thoth derives the address from
       // `PlatformLocation`, which the server platform initializes from the address being rendered
       // under both prerendering and SSR.
       //
@@ -252,7 +252,7 @@ describe('the declared order', () => {
     },
   );
 
-  it("honours the order, not Equator's opinion of it", async () => {
+  it("honours the order, not Thoth's opinion of it", async () => {
     // Storage ahead of the URL is unusual and legitimate: an application that deliberately pins a
     // signed-in user's language regardless of the link they followed.
     const localization = setup({
@@ -325,7 +325,7 @@ describe('the declared order', () => {
       sources: ['stored', 'url', 'default'],
       stores: [cookieStore()],
       url: pageUrl('second', 'en-US'),
-      cookie: 'equator-locale=ar-EG',
+      cookie: 'thoth-locale=ar-EG',
     });
 
     expect(
@@ -399,13 +399,13 @@ describe('the declared order', () => {
     // The test's process has a storage holding a choice, as a browser would. A server render
     // belongs to no reader, so the store must not read the process's storage as though it were
     // theirs, and the choice the request carries in a cookie is not this store's to read either.
-    localStorage.setItem('equator-locale', 'ar-EG');
+    localStorage.setItem('thoth-locale', 'ar-EG');
     try {
       const localization = setup({
         sources: ['stored', 'default'],
         stores: [localStorageStore()],
         url: pageUrl('second', 'en-US'),
-        cookie: 'equator-locale=ar-EG',
+        cookie: 'thoth-locale=ar-EG',
       });
 
       expect(
@@ -417,7 +417,7 @@ describe('the declared order', () => {
         platform: TestBed.inject(PLATFORM_ID) as string,
       });
     } finally {
-      localStorage.removeItem('equator-locale');
+      localStorage.removeItem('thoth-locale');
     }
   });
 
@@ -452,7 +452,7 @@ describe('the declared order', () => {
  * The order an application gets when it declares none.
  *
  * `app.config.ts` declares no sources. Writing `withLocaleSources('url', 'stored', 'browser',
- * 'default')` there restates Equator's default, which says nothing and creates a second place to
+ * 'default')` there restates Thoth's default, which says nothing and creates a second place to
  * maintain; leaving it out puts this application's behaviour on a constant, and every test above
  * passes an explicit `sources` rather than exercising it.
  *
@@ -525,7 +525,7 @@ describe('a configuration that cannot mean anything', () => {
   it('refuses an empty source list', () => {
     expect(() => withLocaleSources()).toThrow();
     claimCapability('feature:withLocaleSources');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('refuses a source declared twice', () => {
@@ -533,6 +533,6 @@ describe('a configuration that cannot mean anything', () => {
     // second is unreachable. Silently keeping the first would hide the contradiction.
     expect(() => withLocaleSources('url', 'stored', 'url')).toThrow();
     claimCapability('feature:withLocaleSources');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

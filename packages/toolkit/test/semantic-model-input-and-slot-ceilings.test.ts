@@ -67,7 +67,7 @@ describe('the input ceiling', () => {
 
   it('refuses a message with one more', () => {
     expect(refusals(withInputs(RESOURCE_LIMITS.inputsPerMessage + 1))).toEqual([
-      'EQ1302 messages/subject',
+      'TH1302 messages/subject',
     ]);
   });
 });
@@ -82,7 +82,7 @@ describe('the slot ceiling', () => {
   it('refuses a message that uses one more', () => {
     expect(
       refusals(withUsedSlots(RESOURCE_LIMITS.slotsPerMessage + 1)),
-    ).toEqual(['EQ1303 messages/subject']);
+    ).toEqual(['TH1303 messages/subject']);
   });
 
   it('admits an entry that declares exactly that many slots', () => {
@@ -94,6 +94,6 @@ describe('the slot ceiling', () => {
   it('refuses an entry that declares one more', () => {
     expect(
       refusals(withDeclaredSlots(RESOURCE_LIMITS.slotsPerMessage + 1)),
-    ).toEqual(['EQ1303 messages/subject']);
+    ).toEqual(['TH1303 messages/subject']);
   });
 });

@@ -47,7 +47,7 @@ describe('the local-storage store', () => {
 
     expect(store.id).toBe('local-storage');
     expect(await store.read()).toBe('ar-EG');
-    expect(asked).toStrictEqual(['equator-locale']);
+    expect(asked).toStrictEqual(['thoth-locale']);
   });
 
   it('reads under the key it is handed, where it is handed one', async () => {

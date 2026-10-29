@@ -6,20 +6,20 @@ import {
   LocalizationError,
   createLocalizationContext,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   ControllableLocalizationParticipant,
   LocalizationTestingController,
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
 import { messages, providerId, scopeId } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
 
 /**
- * The holds of `@neolorn/equator/testing`, ended the ways a test ends them.
+ * The holds of `@neolorn/thoth/testing`, ended the ways a test ends them.
  *
  * `specs/06-runtime-and-angular.spec.md` section 12 gives a consumer's suite a controller over
  * deferred catalog loads and participant attempts. A hold that is released is what the other spec
@@ -79,7 +79,7 @@ describe('a held catalog load', () => {
       },
     });
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
-    expect(localization.text(messages.appTitle)).toBe('Equator feature lab');
+    expect(localization.text(messages.appTitle)).toBe('Thoth feature lab');
   });
 
   it('rejects the wrapped loader itself with a catalog load failure', async () => {
@@ -198,10 +198,10 @@ describe('a controllable participant', () => {
 
 describe('resetLocalizationTestEnvironment', () => {
   it('expires a cookie a store wrote at the root path', () => {
-    document.cookie = 'equator-locale=ar-EG; Path=/';
+    document.cookie = 'thoth-locale=ar-EG; Path=/';
     document.cookie = 'another=1; Path=/';
     // The cookie has to be there first, or its absence afterwards says nothing about the reset.
-    expect(document.cookie).toContain('equator-locale=ar-EG');
+    expect(document.cookie).toContain('thoth-locale=ar-EG');
     expect(document.cookie).toContain('another=1');
 
     resetLocalizationTestEnvironment();

@@ -161,21 +161,21 @@ const familySchema = {
 } as const;
 
 /**
- * The JSON Schema for `equator.config.json`.
+ * The JSON Schema for `thoth.config.json`.
  *
  * Published so an editor can validate and complete the file as it is typed, and so a build script
  * can check one before running anything. It is the same schema the parser uses, so what an editor
- * accepts and what Equator accepts cannot drift apart.
+ * accepts and what Thoth accepts cannot drift apart.
  */
 export const CONFIGURATION_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Equator project configuration',
+  title: 'Thoth project configuration',
   type: 'object',
   additionalProperties: false,
   required: ['schemaVersion', 'sourceLocale', 'defaultLocale', 'locales'],
   // Every settable property carries a `description`, and it is not decoration.
   //
-  // `equator init`'s option table is generated from this schema by
+  // `thoth init`'s option table is generated from this schema by
   // `tools/generate-cli-options.ts`, and `--help` prints these lines. A settable property without
   // one fails that generator, so the install line states what the configuration accepts because it
   // is reading the thing that decides rather than a second list of it. They ship too, this constant
@@ -195,7 +195,7 @@ export const CONFIGURATION_SCHEMA = Object.freeze({
     defaultLocale: {
       ...localeTextSchema,
       description:
-        'The locale served when a request asks for none Equator supports.',
+        'The locale served when a request asks for none Thoth supports.',
     },
     locales: {
       type: 'array',
@@ -254,7 +254,7 @@ export const CONFIGURATION_SCHEMA = Object.freeze({
     // A time zone is not a fact about a locale at all (it belongs to the reader or to the
     // business, and Cairo is Cairo in both languages) so it stays application-wide, where a
     // consumer sets it once and per-request. Putting it here would let a configuration say
-    // "Arabic means Egypt", which is a market model Equator would then have to defend.
+    // "Arabic means Egypt", which is a market model Thoth would then have to defend.
     //
     // The values are checked for well-formedness and not for availability. `latn` and `zzzz` are
     // both well-formed `-u-` type subtags; whether this runtime has data for one is a question only
@@ -294,7 +294,7 @@ export const CONFIGURATION_SCHEMA = Object.freeze({
     },
     // Which locales are still being translated, and why.
     //
-    // The release completeness gate (`equator check --require-complete`) requires every locale this
+    // The release completeness gate (`thoth check --require-complete`) requires every locale this
     // project ships to carry every source message. The default is that every locale is required,
     // because a locale nobody has said anything about is one somebody expects to be finished. A
     // locale named here is exempt: its findings are still reported, at `warning`, and they no
@@ -346,7 +346,7 @@ export const CONFIGURATION_SCHEMA = Object.freeze({
     //
     // The four CLDR parents that change the language are the reason this key exists: `hi-Latn`
     // inherits from `en-IN`, `ht` from `fr-HT`, and `nb` and `nn` from `no`. Leaving those out of
-    // the chain would be Equator overriding pinned data on taste, so they are followed, and this is
+    // the chain would be Thoth overriding pinned data on taste, so they are followed, and this is
     // where a project that disagrees says so.
     parentLocales: {
       type: 'object',
@@ -380,7 +380,7 @@ export const CONFIGURATION_SCHEMA = Object.freeze({
  */
 export const SOURCE_CATALOG_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Equator source catalog',
+  title: 'Thoth source catalog',
   type: 'object',
   additionalProperties: false,
   required: ['messages'],
@@ -419,7 +419,7 @@ export const SOURCE_CATALOG_SCHEMA = Object.freeze({
  */
 export const TARGET_CATALOG_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Equator target catalog',
+  title: 'Thoth target catalog',
   type: 'object',
   additionalProperties: false,
   required: ['messages'],
@@ -469,12 +469,12 @@ const extensionValueTypeSchema = {
  */
 export const EXTENSION_REGISTRY_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Equator application-local extension registry',
+  title: 'Thoth application-local extension registry',
   type: 'object',
   additionalProperties: false,
   required: ['profile', 'descriptors'],
   properties: {
-    profile: { const: 'equator-extension-registry/1' },
+    profile: { const: 'thoth-extension-registry/1' },
     descriptors: {
       type: 'array',
       maxItems: RESOURCE_LIMITS.extensionDescriptors,
@@ -640,7 +640,7 @@ const cliDiagnosticSchema = {
   additionalProperties: false,
   required: ['code', 'severity', 'summary', 'path'],
   properties: {
-    code: { type: 'string', pattern: '^EQ[0-9]{4}$' },
+    code: { type: 'string', pattern: '^TH[0-9]{4}$' },
     severity: { enum: ['error', 'warning', 'info'] },
     summary: {
       type: 'string',
@@ -694,12 +694,12 @@ const cliResultValueSchema = {
  */
 export const CLI_RESULT_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Equator CLI machine result',
+  title: 'Thoth CLI machine result',
   type: 'object',
   additionalProperties: false,
   required: ['profile', 'command', 'status', 'diagnostics', 'result'],
   properties: {
-    profile: { const: 'equator-cli-result/1' },
+    profile: { const: 'thoth-cli-result/1' },
     // Read from the list the executable accepts, so a command it gains is one this schema names.
     command: { enum: [...CLI_COMMANDS, 'unknown'] },
     status: cliStatusSchema,
@@ -737,7 +737,7 @@ export const CLI_RESULT_SCHEMA = Object.freeze({
  */
 export const CLI_WATCH_EVENT_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Equator CLI watch machine event',
+  title: 'Thoth CLI watch machine event',
   type: 'object',
   additionalProperties: false,
   required: [
@@ -749,7 +749,7 @@ export const CLI_WATCH_EVENT_SCHEMA = Object.freeze({
     'result',
   ],
   properties: {
-    profile: { const: 'equator-cli-watch-event/1' },
+    profile: { const: 'thoth-cli-watch-event/1' },
     command: { const: 'watch' },
     sequence: { type: 'integer', minimum: 1 },
     status: cliStatusSchema,

@@ -72,7 +72,7 @@ describe('a slot refinement', () => {
     ]);
     expect(result.ok).toBe(false);
     expect(result.diagnostics.map(({ code, path }) => [code, path])).toEqual([
-      ['EQ1303', ['messages', 'subject', 'slots', 'note', 'within']],
+      ['TH1303', ['messages', 'subject', 'slots', 'note', 'within']],
     ]);
   });
 });

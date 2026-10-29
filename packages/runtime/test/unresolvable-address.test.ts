@@ -13,7 +13,7 @@ import {
   type GeneratedConfiguration,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -26,10 +26,10 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
  * leading segment spells one of them is not a route at a free address. It is an address this
  * library reads as a locale, and the route behind it is unreachable at the address it declared.
  *
- * Equator built such addresses and handed them out: `buildLocalizedRoute` returned `/ar-eg` for a
+ * Thoth built such addresses and handed them out: `buildLocalizedRoute` returned `/ar-eg` for a
  * route its own resolver answered not-found for, and `localizedServerRoutes` scheduled a rendered
  * file there. That is the same class of defect as a codec that cannot parse its own serialization,
- * one layer up, and it gets the same answer: what Equator writes, Equator reads back.
+ * one layer up, and it gets the same answer: what Thoth writes, Thoth reads back.
  *
  * The property asserted here is that one sentence and not a list of cases: **for every route, in
  * every locale, under every policy, either the address is refused or the resolver answers it.**
@@ -50,7 +50,7 @@ const IDENTITY = 'sha256-RouteProjectionTestIdentity012345678901234_';
  */
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: IDENTITY,
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -85,7 +85,7 @@ const ORDINARY = ['route:_index', 'tools', 'article'] as const;
  */
 const VALID: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: IDENTITY,
     routes: PROJECTION.generated.routes.filter(({ id }) =>
       [...ORDINARY, 'page'].includes(id),
@@ -140,7 +140,7 @@ const POLICIES: readonly (readonly [string, LocaleUrlPolicy])[] = [
 ];
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],
@@ -177,7 +177,7 @@ function pathOf(address: string): string {
   return address.startsWith('http') ? new URL(address).pathname : address;
 }
 
-describe('every address Equator emits, Equator resolves', () => {
+describe('every address Thoth emits, Thoth resolves', () => {
   /**
    * The whole item in one assertion, run over every route, locale and policy.
    *

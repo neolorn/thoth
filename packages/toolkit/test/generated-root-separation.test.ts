@@ -48,8 +48,8 @@ describe('the generated root and the work root', () => {
     ]);
     if (!plan.ok) throw new Error(JSON.stringify(plan.diagnostics));
     for (const [generatedRoot, workRoot] of [
-      ['.equator', '.equator'],
-      ['.equator/generated', '.equator'],
+      ['.thoth', '.thoth'],
+      ['.thoth/generated', '.thoth'],
       ['src/generated/i18n', 'src/generated/i18n/.work'],
     ] as const) {
       const applied = await applyOutputPlan({
@@ -60,7 +60,7 @@ describe('the generated root and the work root', () => {
         plan: plan.value,
       });
       expect(applied.ok, `${generatedRoot} and ${workRoot}`).toBe(false);
-      expect(applied.diagnostics[0]?.code).toBe('EQ1601');
+      expect(applied.diagnostics[0]?.code).toBe('TH1601');
     }
     expect(await readdir(owner)).toEqual([]);
   });
@@ -121,11 +121,11 @@ describe('the generated root and the work root', () => {
       });
       expect(initialized.ok, applicationRoot).toBe(false);
       expect(initialized.diagnostics.map(({ code }) => code)).toContain(
-        'EQ1601',
+        'TH1601',
       );
       await write(
         owner,
-        'equator.config.json',
+        'thoth.config.json',
         `${JSON.stringify({ schemaVersion: 1, sourceLocale: 'en-US', defaultLocale: 'en-US', locales: ['en-US'] }, null, 2)}\n`,
       );
       await write(
@@ -136,7 +136,7 @@ describe('the generated root and the work root', () => {
 
       const generated = await generateProject({ project: owner });
       expect(generated.ok, applicationRoot).toBe(false);
-      expect(generated.diagnostics.map(({ code }) => code)).toContain('EQ1601');
+      expect(generated.diagnostics.map(({ code }) => code)).toContain('TH1601');
       await expect(
         readdir(resolve(owner, applicationRoot, 'src/generated/i18n')),
         applicationRoot,

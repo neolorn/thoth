@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { generateProject } from '../src/index.js';
 
 /**
- * Messages a running program selects, and whether Equator can see them being selected.
+ * Messages a running program selects, and whether Thoth can see them being selected.
  *
  * A backend failure code pairs with its message by name rather than through a table an
  * application maintains, which means the code that picks the message is a string from a service
@@ -56,7 +56,7 @@ async function project(body: readonly string[]): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -111,7 +111,7 @@ async function unreachedMessages(
     project: await project(body),
   });
   expect(generated.ok).toBe(true);
-  const advisory = generated.diagnostics.find(({ code }) => code === 'EQ1311');
+  const advisory = generated.diagnostics.find(({ code }) => code === 'TH1311');
   if (advisory === undefined) return [];
   return [...advisory.summary.matchAll(/"([^"]+)"/gu)].map(
     ([, name]) => name as string,

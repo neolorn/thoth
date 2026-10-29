@@ -81,7 +81,7 @@ describe('a snapshot whose catalogs name a registered segment type', () => {
     expect(
       result.diagnostics.map(({ code, path }) => ({ code, path })),
     ).toEqual([
-      { code: 'EQ1805', path: ['families', 'status', 'segments', 'state'] },
+      { code: 'TH1805', path: ['families', 'status', 'segments', 'state'] },
     ]);
   });
 

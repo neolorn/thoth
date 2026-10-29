@@ -8,7 +8,7 @@ import {
   resolveInitialRouteLocale,
   resolveLocalizedRoute,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -23,10 +23,10 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
  * default, and `localeFromRoute` declined to answer at all.
  *
  * *How it surfaces, and it is not a hypothetical.* Routes discovered inside a module reached by
- * `loadChildren` are not in Equator's projection: the generator never saw them. The build still
+ * `loadChildren` are not in Thoth's projection: the generator never saw them. The build still
  * prerenders their localized addresses, because Angular's own router does follow `loadChildren`, so
  * `/ar-eg/<arabic>/detail` is emitted, matches no projected route, and rendered in `en-US`. The
- * projection's coverage is a separate item, `EQ1406`. This is the half that stops a gap in coverage
+ * projection's coverage is a separate item, `TH1406`. This is the half that stops a gap in coverage
  * from also losing the locale, and it is the general fix rather than the `loadChildren` one,
  * because a route table assembled at runtime or spread in from another module hides routes the same
  * way.
@@ -43,7 +43,7 @@ const IDENTITY = 'sha256-RouteProjectionTestIdentity012345678901234_';
 /** A projection that knows about `tools` and nothing else, as one that never saw a lazy child. */
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: IDENTITY,
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },

@@ -8,7 +8,7 @@ import {
 import {
   type FormattingContext,
   type LocalizedInputProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A measurement field reads the unit the way the locale writes it beside a number, and a locale

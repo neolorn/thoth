@@ -13,7 +13,7 @@ export const injections = Object.freeze([
   {
     id: 'consumer-paths-discarded',
     invariant:
-      "Equator overlays its #i18n specifiers on the consumer's own paths instead of replacing them.",
+      "Thoth overlays its #i18n specifiers on the consumer's own paths instead of replacing them.",
     source: 'packages/toolkit/src/static-analysis.ts',
     find: PATHS_OVERLAY,
     replace: `    paths: {
@@ -35,7 +35,7 @@ export const injections = Object.freeze([
   {
     id: 'strictness-imposed',
     invariant:
-      "Equator analyzes under the consumer's compiler options and never adds strictness of its own.",
+      "Thoth analyzes under the consumer's compiler options and never adds strictness of its own.",
     source: 'packages/toolkit/src/static-analysis.ts',
     find: PATHS_OVERLAY,
     replace: `${PATHS_OVERLAY}
@@ -45,7 +45,7 @@ export const injections = Object.freeze([
   {
     id: 'missing-plural-categories-unreported',
     invariant:
-      'A target locale that omits a plural category its rules require is reported (EQ1308).',
+      'A target locale that omits a plural category its rules require is reported (TH1308).',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '    if (missing.length === 0) continue;',
     replace: '    if (missing.length >= 0) continue;',
@@ -54,10 +54,10 @@ export const injections = Object.freeze([
   {
     id: 'omitted-target-message-unreported',
     invariant:
-      'A target catalog that omits a required message is reported (EQ1307).',
+      'A target catalog that omits a required message is reported (TH1307).',
     source: 'packages/toolkit/src/semantic-model.ts',
-    find: `        'EQ1307',`,
-    replace: `        'EQ1306',`,
+    find: `        'TH1307',`,
+    replace: `        'TH1306',`,
     caughtBy: 'packages/toolkit/test/target-completeness.test.ts',
   },
   {
@@ -122,7 +122,7 @@ export const injections = Object.freeze([
       'An owner identity whose provider is outside the provider grammar is refused, with or without catalogs.',
     source: 'packages/toolkit/src/compiler.ts',
     find: '  const provider = parseProviderId(request.owner.providerId);',
-    replace: "  const provider = parseProviderId('equator');",
+    replace: "  const provider = parseProviderId('thoth');",
     caughtBy: 'packages/toolkit/test/compile-project-owner-identity.test.ts',
   },
   {
@@ -176,7 +176,7 @@ export const injections = Object.freeze([
   {
     id: 'build-command-authors-manifest',
     invariant:
-      'Only equator init creates an owner manifest; build commands never author files.',
+      'Only thoth init creates an owner manifest; build commands never author files.',
     source: 'packages/toolkit/src/project-host.ts',
     find: '  const packageManifest = await readPackageManifest(location.value);',
     replace:
@@ -186,7 +186,7 @@ export const injections = Object.freeze([
   {
     id: 'unknowable-route-subtree-named-from-the-root',
     invariant:
-      'Routes below an address Equator cannot know are left unnamed, never named as if they sat at the top of the application.',
+      'Routes below an address Thoth cannot know are left unnamed, never named as if they sat at the top of the application.',
     source: 'packages/toolkit/src/static-analysis.ts',
     find: `    parentPath: string | undefined,
     parentLazyEntries: readonly string[],`,
@@ -240,7 +240,7 @@ export const injections = Object.freeze([
   {
     id: 'consumer-route-field-ignored',
     invariant:
-      "Route indexing reads the field the consumer named through withRouting, not one of Equator's invention.",
+      "Route indexing reads the field the consumer named through withRouting, not one of Thoth's invention.",
     source: 'packages/toolkit/src/static-analysis.ts',
     find: '  const field = policy?.field ?? DEFAULT_ROUTE_INDEXING_FIELD;',
     replace: '  const field = DEFAULT_ROUTE_INDEXING_FIELD;',
@@ -280,8 +280,8 @@ export const injections = Object.freeze([
     id: 'success-path-never-inspects-severity',
     invariant:
       'A command that did what it was asked still fails when it found something at error severity.',
-    // The success path returned 0 unconditionally, so `equator check --require-complete` reported
-    // `"status": "success"` while carrying EQ1310 at `severity: error`, and every later change
+    // The success path returned 0 unconditionally, so `thoth check --require-complete` reported
+    // `"status": "success"` while carrying TH1310 at `severity: error`, and every later change
     // was verified by a gate that could not fail on the things it depended on.
     //
     // Returning false is the mutation because it is the shape the defect actually had: not a wrong
@@ -313,7 +313,7 @@ export const injections = Object.freeze([
     // `localization.ts` or the router's public API.
     //
     // Dropping the numbering system is the regression that would actually happen, and it is
-    // invisible to a self-consistent round trip: Equator would render `1234` where `١٢٣٤` was asked
+    // invisible to a self-consistent round trip: Thoth would render `1234` where `١٢٣٤` was asked
     // for, parse it back to 1234, and be wrong for every reader.
     source: 'packages/runtime/src/formatting.ts',
     //
@@ -343,7 +343,7 @@ export const injections = Object.freeze([
       'A number range and a duration are rendered in the numbering system the context asked for.',
     // `NumberFormat.formatRange`, `formatRangeToParts` and `DurationFormat.format` accept
     // a `numberingSystem` option, ignore it, and then report through `resolvedOptions()` that they
-    // honoured it. Equator builds a `-u-nu-` tag instead; this mutation hands back the bare locale,
+    // honoured it. Thoth builds a `-u-nu-` tag instead; this mutation hands back the bare locale,
     // which is what passing the option amounted to.
     //
     // The validation is deliberately left intact, so what this removes is only the delivery. A test
@@ -406,7 +406,7 @@ export const injections = Object.freeze([
     // Taking the pattern out does not make the codec accept everything, which is what makes this
     // the honest injection rather than a strawman. `Number.isSafeInteger` still holds, so what gets
     // through is narrower and worse: `1e3`, ` 1`, `0x10` and `''` become valid spellings of 1000,
-    // 1, 16 and 0. Each is a second address for a record that already has one, and Equator's own
+    // 1, 16 and 0. Each is a second address for a record that already has one, and Thoth's own
     // canonicalizer will not redirect them: the codec it asks says they are correct.
     source: 'packages/runtime/core/src/routing.ts',
     find: [
@@ -422,7 +422,7 @@ export const injections = Object.freeze([
     invariant:
       'A catalog locale identity carries no extension or private-use subtag, so one locale cannot become two catalogs.',
     // `en-US` and `en-US-u-ca-islamic` name the same language to every reader and different
-    // catalogs to Equator. The check is one line and nothing had ever watched it fail; the property
+    // catalogs to Thoth. The check is one line and nothing had ever watched it fail; the property
     // file that now does generates the tags rather than listing four of them, because the failure
     // is a class, any singleton subtag, and not a spelling.
     source: 'packages/toolkit/src/locales.ts',
@@ -433,7 +433,7 @@ export const injections = Object.freeze([
   {
     id: 'uninstall-reverts-an-edited-entry',
     invariant:
-      'Uninstall takes back only what Equator wrote; an edited script or a repointed #i18n specifier is left alone and named.',
+      'Uninstall takes back only what Thoth wrote; an edited script or a repointed #i18n specifier is left alone and named.',
     source: 'packages/toolkit/src/project-host.ts',
     find: '      if (entries[specifier] === target) delete entries[specifier];',
     replace: '      if (true) delete entries[specifier];',
@@ -1297,7 +1297,7 @@ export const injections = Object.freeze([
     invariant:
       'A project that names no indexing field has its routes read under the documented default field.',
     source: 'packages/toolkit/src/static-analysis.ts',
-    find: "const DEFAULT_ROUTE_INDEXING_FIELD = 'equatorIndexing';",
+    find: "const DEFAULT_ROUTE_INDEXING_FIELD = 'thothIndexing';",
     replace: "const DEFAULT_ROUTE_INDEXING_FIELD = 'indexing';",
     caughtBy: 'packages/toolkit/test/route-identity.test.ts',
   },
@@ -1586,9 +1586,9 @@ export const injections = Object.freeze([
     invariant:
       'The project configuration is closed: a property outside the declared set, such as a remote catalog source, is refused.',
     source: 'packages/toolkit/src/schemas.ts',
-    find: "  title: 'Equator project configuration',\n  type: 'object',\n  additionalProperties: false,",
+    find: "  title: 'Thoth project configuration',\n  type: 'object',\n  additionalProperties: false,",
     replace:
-      "  title: 'Equator project configuration',\n  type: 'object',\n  additionalProperties: true,",
+      "  title: 'Thoth project configuration',\n  type: 'object',\n  additionalProperties: true,",
     caughtBy: 'packages/toolkit/test/authoring.test.ts',
   },
   {
@@ -1602,11 +1602,11 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/hardcoded-locale-template.test.ts',
   },
   {
-    id: 'consumer-withrouting-read-as-equator',
+    id: 'consumer-withrouting-read-as-thoth',
     invariant:
       'A routing declaration is read only from the withRouting the package exports, never from a consumer function spelled the same.',
     source: 'packages/toolkit/src/static-analysis.ts',
-    find: "    resolved.name !== 'withRouting' ||\n    !declaredIn(resolved, '/@neolorn/equator/')",
+    find: "    resolved.name !== 'withRouting' ||\n    !declaredIn(resolved, '/@neolorn/thoth/')",
     replace: "    resolved.name !== 'withRouting'",
     caughtBy: 'packages/toolkit/test/route-identity.test.ts',
   },
@@ -1759,7 +1759,7 @@ export const injections = Object.freeze([
   {
     id: 'manifest-indentation-not-kept',
     invariant:
-      'A package.json Equator rewrites keeps the indentation it was written in.',
+      'A package.json Thoth rewrites keeps the indentation it was written in.',
     source: 'packages/toolkit/src/project-host.ts',
     find: "    style !== null ? (style[2] ?? '') : source.trim() === '{}' ? '  ' : '';",
     replace: "    '  ';",
@@ -1827,8 +1827,8 @@ export const injections = Object.freeze([
     invariant:
       "A YAML parser failure reaches the diagnostic as its sentence, without the parser's code frame.",
     source: 'packages/toolkit/src/catalog.ts',
-    find: '        `Equator catalog YAML is invalid: ${yamlErrorSentence(error.message)}`,',
-    replace: '        `Equator catalog YAML is invalid: ${error.message}`,',
+    find: '        `Thoth catalog YAML is invalid: ${yamlErrorSentence(error.message)}`,',
+    replace: '        `Thoth catalog YAML is invalid: ${error.message}`,',
     caughtBy: 'packages/toolkit/test/diagnostic-wording.test.ts',
   },
   {
@@ -1982,8 +1982,8 @@ export const injections = Object.freeze([
     invariant:
       'Refusing an invisible control says what the character does to the text around it.',
     source: 'packages/toolkit/src/unicode-safety.ts',
-    find: "      'Equator catalog text contains a directional override or embedding (U+202A-U+202E), which reorders the text around it and cannot be seen while reading the file.',",
-    replace: "      'Equator catalog text contains a forbidden character.',",
+    find: "      'Thoth catalog text contains a directional override or embedding (U+202A-U+202E), which reorders the text around it and cannot be seen while reading the file.',",
+    replace: "      'Thoth catalog text contains a forbidden character.',",
     caughtBy: 'packages/toolkit/test/bidi-policy.test.ts',
   },
   {
@@ -2357,7 +2357,7 @@ export const injections = Object.freeze([
   {
     id: 'unknown-message-function-accepted',
     invariant:
-      'A message that calls a function outside the standard set and the registered extensions is refused when it is compiled (EQ1203).',
+      'A message that calls a function outside the standard set and the registered extensions is refused when it is compiled (TH1203).',
     source: 'packages/toolkit/src/message-format.ts',
     find: '  if (unsupportedFunctions.length > 0) {',
     replace: '  if (false) {',
@@ -2404,7 +2404,7 @@ export const injections = Object.freeze([
   {
     id: 'xliff-elements-matched-by-local-name',
     invariant:
-      "Interchange elements are recognised by namespace as well as name, so content from another module or vendor is never read as Equator's own.",
+      "Interchange elements are recognised by namespace as well as name, so content from another module or vendor is never read as Thoth's own.",
     source: 'packages/toolkit/src/xliff.ts',
     find: '      child.namespace === namespace &&\n      child.localName === localName,',
     replace: '      child.localName === localName,',
@@ -2413,7 +2413,7 @@ export const injections = Object.freeze([
   {
     id: 'foreign-note-absorbed-into-catalog',
     invariant:
-      "Only notes in Equator's own categories are read back into a catalog; a translator's or tool's note is reported instead.",
+      "Only notes in Thoth's own categories are read back into a catalog; a translator's or tool's note is reported instead.",
     source: 'packages/toolkit/src/xliff.ts',
     find: '    if (category !== NOTE_DESCRIPTION && category !== NOTE_CONTEXT) {',
     replace: '    if (category === undefined) {',
@@ -2432,7 +2432,7 @@ export const injections = Object.freeze([
   {
     id: 'foreign-note-dropped-silently',
     invariant:
-      'A note Equator does not store is reported by its category, never passed over without a word.',
+      'A note Thoth does not store is reported by its category, never passed over without a word.',
     source: 'packages/toolkit/src/xliff.ts',
     find: '    if (notes.foreign.length > 0) {',
     replace: '    if (false) {',
@@ -2603,7 +2603,7 @@ export const injections = Object.freeze([
   {
     id: 'shadowing-alias-admitted',
     invariant:
-      'An alias spelled as a supported locale is refused (EQ1006) rather than read as one of the two.',
+      'An alias spelled as a supported locale is refused (TH1006) rather than read as one of the two.',
     source: 'packages/toolkit/src/configuration.ts',
     find: '    if (aliasAsLocale.ok && localeSet.has(aliasAsLocale.value)) {',
     replace: '    if (false && aliasAsLocale.ok) {',
@@ -2612,7 +2612,7 @@ export const injections = Object.freeze([
   {
     id: 'alias-to-unsupported-locale-admitted',
     invariant:
-      'An alias that names a locale the configuration does not support is refused (EQ1006).',
+      'An alias that names a locale the configuration does not support is refused (TH1006).',
     source: 'packages/toolkit/src/configuration.ts',
     find: '    } else if (!localeSet.has(canonicalTarget.value)) {',
     replace: '    } else if (false) {',
@@ -2687,9 +2687,9 @@ export const injections = Object.freeze([
     invariant:
       'Context and description reach the translator as two notes of different categories, never one standing in for the other.',
     source: 'packages/toolkit/src/xliff.ts',
-    find: "            'equator-source-context',\n            NOTE_CONTEXT,",
+    find: "            'thoth-source-context',\n            NOTE_CONTEXT,",
     replace:
-      "            'equator-source-context',\n            NOTE_DESCRIPTION,",
+      "            'thoth-source-context',\n            NOTE_DESCRIPTION,",
     caughtBy: 'packages/toolkit/test/translator-guidance.test.ts',
   },
   {
@@ -2865,7 +2865,7 @@ export const injections = Object.freeze([
   {
     id: 'unsupported-angular-host-admitted',
     invariant:
-      'An Angular compiler outside the supported major is refused with EQ1806 rather than admitted.',
+      'An Angular compiler outside the supported major is refused with TH1806 rather than admitted.',
     source: 'packages/toolkit/src/host-compatibility.ts',
     find: '  return !version.prerelease && version.major === 22;',
     replace: '  return !version.prerelease;',
@@ -2973,8 +2973,8 @@ export const injections = Object.freeze([
     invariant:
       'A cookie configuration that is refused is refused as an invalid-configuration failure.',
     source: 'packages/runtime/core/src/cookie-attributes.ts',
-    find: "    throw new LocalizationError(\n      Object.freeze({\n        code: 'invalid-configuration',\n        outcome: 'operational-failure',\n        message: `Equator ${owner}: ${rule}`,\n        reason: 'malformed-input',\n      }),\n    );",
-    replace: '    throw new Error(`Equator ${owner}: ${rule}`);',
+    find: "    throw new LocalizationError(\n      Object.freeze({\n        code: 'invalid-configuration',\n        outcome: 'operational-failure',\n        message: `Thoth ${owner}: ${rule}`,\n        reason: 'malformed-input',\n      }),\n    );",
+    replace: '    throw new Error(`Thoth ${owner}: ${rule}`);',
     caughtBy: 'packages/runtime/test/locale-cookie-defaults.test.ts',
   },
   {
@@ -3981,7 +3981,7 @@ export const injections = Object.freeze([
   {
     id: 'unserved-policy-kind-narrowed-anyway',
     invariant:
-      'A locale URL policy of a kind Equator does not serve is refused where it is narrowed, naming the kinds that are served.',
+      'A locale URL policy of a kind Thoth does not serve is refused where it is narrowed, naming the kinds that are served.',
     source: 'packages/runtime/core/src/routing.ts',
     find: "    kind !== 'locale-host'\n  ) {\n    routeError(",
     replace: "    kind !== 'locale-host' &&\n    false\n  ) {\n    routeError(",
@@ -4104,9 +4104,9 @@ export const injections = Object.freeze([
   {
     id: 'descriptor-admits-another-standards-profile',
     invariant:
-      'A generated set whose descriptor names a standards profile other than equator-1 is refused when the catalog store is built.',
+      'A generated set whose descriptor names a standards profile other than thoth-1 is refused when the catalog store is built.',
     source: 'packages/runtime/src/catalog-runtime.ts',
-    find: "        address.standardsProfile !== 'equator-1' ||",
+    find: "        address.standardsProfile !== 'thoth-1' ||",
     replace: '        false ||',
     caughtBy: 'packages/runtime/test/artifact-standards-profile.test.ts',
   },
@@ -4397,7 +4397,7 @@ export const injections = Object.freeze([
   {
     id: 'xliff-unit-identity-trusted',
     invariant:
-      "An XLIFF unit whose contract carries an identity other than the source catalog's for that message is reported with EQ1803 and not imported.",
+      "An XLIFF unit whose contract carries an identity other than the source catalog's for that message is reported with TH1803 and not imported.",
     source: 'packages/toolkit/src/xliff.ts',
     find: '      contract.identity !== messageIdentity(request.source, contract.messageId)',
     replace: '      false',
@@ -4406,7 +4406,7 @@ export const injections = Object.freeze([
   {
     id: 'ambiguous-discovery-picks-the-nearest',
     invariant:
-      'Upward configuration discovery that finds more than one candidate within the package fails with EQ1702 naming every candidate.',
+      'Upward configuration discovery that finds more than one candidate within the package fails with TH1702 naming every candidate.',
     source: 'packages/toolkit/src/project-host.ts',
     find: "  if (within.length > 1) return { outcome: 'many', candidates: within };",
     replace:
@@ -4430,7 +4430,7 @@ export const injections = Object.freeze([
     source: 'packages/toolkit/src/catalog.ts',
     find: '      const violation = inspectAuthoredBidi(value);',
     replace:
-      "      const violation = inspectAuthoredBidi(value);\n      if (/\\p{Nd}{3,}/u.test(value)) {\n        diagnostics.push(\n          yamlDiagnostic(\n            source,\n            sourcePath,\n            'EQ1103',\n            'Equator catalog text carries digits a locale would render in its own numbering system.',\n            { node, path },\n          ),\n        );\n      }",
+      "      const violation = inspectAuthoredBidi(value);\n      if (/\\p{Nd}{3,}/u.test(value)) {\n        diagnostics.push(\n          yamlDiagnostic(\n            source,\n            sourcePath,\n            'TH1103',\n            'Thoth catalog text carries digits a locale would render in its own numbering system.',\n            { node, path },\n          ),\n        );\n      }",
     caughtBy: 'packages/toolkit/test/authored-digits.test.ts',
   },
   {
@@ -4448,9 +4448,9 @@ export const injections = Object.freeze([
     invariant:
       'Catalogs are discovered only in the owner catalog directory; catalog-shaped files in build output, dependencies or a nested project are never read.',
     source: 'packages/toolkit/src/project-host.ts',
-    find: '  const scopeEntries = await readdir(catalogRoot, { withFileTypes: true });\n  scopeEntries.sort((left, right) => compareCodeUnit(left.name, right.name));\n  for (const scopeEntry of scopeEntries) {\n    if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {\n      diagnostics.push(\n        projectDiagnostic(\n          `Equator catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,\n        ),\n      );\n      continue;\n    }\n    const scopeRoot = resolve(catalogRoot, scopeEntry.name);',
+    find: '  const scopeEntries = await readdir(catalogRoot, { withFileTypes: true });\n  scopeEntries.sort((left, right) => compareCodeUnit(left.name, right.name));\n  for (const scopeEntry of scopeEntries) {\n    if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {\n      diagnostics.push(\n        projectDiagnostic(\n          `Thoth catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,\n        ),\n      );\n      continue;\n    }\n    const scopeRoot = resolve(catalogRoot, scopeEntry.name);',
     replace:
-      "  const scopeEntries = (\n    await Promise.all(\n      ['i18n', 'dist/i18n', 'dist/browser/i18n'].map((root) =>\n        readdir(resolve(location.ownerRoot, ...root.split('/')), {\n          withFileTypes: true,\n        }).catch(() => []),\n      ),\n    )\n  ).flat();\n  scopeEntries.sort((left, right) => compareCodeUnit(left.name, right.name));\n  for (const scopeEntry of scopeEntries) {\n    if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {\n      diagnostics.push(\n        projectDiagnostic(\n          `Equator catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,\n        ),\n      );\n      continue;\n    }\n    const scopeRoot = resolve(scopeEntry.parentPath, scopeEntry.name);",
+      "  const scopeEntries = (\n    await Promise.all(\n      ['i18n', 'dist/i18n', 'dist/browser/i18n'].map((root) =>\n        readdir(resolve(location.ownerRoot, ...root.split('/')), {\n          withFileTypes: true,\n        }).catch(() => []),\n      ),\n    )\n  ).flat();\n  scopeEntries.sort((left, right) => compareCodeUnit(left.name, right.name));\n  for (const scopeEntry of scopeEntries) {\n    if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {\n      diagnostics.push(\n        projectDiagnostic(\n          `Thoth catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,\n        ),\n      );\n      continue;\n    }\n    const scopeRoot = resolve(scopeEntry.parentPath, scopeEntry.name);",
     caughtBy: 'packages/toolkit/test/catalog-discovery-exclusions.test.ts',
   },
   {
@@ -4581,11 +4581,11 @@ export const injections = Object.freeze([
   {
     id: 'init-adds-a-lifecycle-script',
     invariant:
-      'init adds only equator:* commands to package.json scripts and no install, publish, pre or post hook.',
+      'init adds only thoth:* commands to package.json scripts and no install, publish, pre or post hook.',
     source: 'packages/toolkit/src/project-host.ts',
-    find: "  'equator:watch': 'equator watch',\n});",
+    find: "  'thoth:watch': 'thoth watch',\n});",
     replace:
-      "  'equator:watch': 'equator watch',\n  prebuild: 'equator generate',\n});",
+      "  'thoth:watch': 'thoth watch',\n  prebuild: 'thoth generate',\n});",
     caughtBy: 'packages/toolkit/test/init-leaves-the-build-alone.test.ts',
   },
   {
@@ -4601,7 +4601,7 @@ export const injections = Object.freeze([
   {
     id: 'init-prompts-off-a-terminal',
     invariant:
-      'A bare equator init prompts only when standard input and standard error are both terminals; otherwise it asks nothing and fails with the complete invocation.',
+      'A bare thoth init prompts only when standard input and standard error are both terminals; otherwise it asks nothing and fails with the complete invocation.',
     source: 'packages/toolkit/src/cli.ts',
     find: '  if (hasArguments || !process.stdin.isTTY || !process.stderr.isTTY) {',
     replace: '  if (hasArguments) {',
@@ -4660,7 +4660,7 @@ export const injections = Object.freeze([
   {
     id: 'manifest-read-once-during-inspection',
     invariant:
-      'Output freshness rereads the completion manifest after inspecting the inventory and fails as stale (EQ1603) when it changed or vanished in between.',
+      'Output freshness rereads the completion manifest after inspecting the inventory and fails as stale (TH1603) when it changed or vanished in between.',
     source: 'packages/toolkit/src/output-host.ts',
     find: '  const confirmed = await readCurrentManifest(generatedRoot);',
     replace: '  const confirmed = current;',
@@ -4697,11 +4697,11 @@ export const injections = Object.freeze([
   {
     id: 'owner-identity-follows-the-scope-list',
     invariant:
-      'Writing the first catalog or adding a scope needs no Equator step before the next generation succeeds.',
+      'Writing the first catalog or adding a scope needs no Thoth step before the next generation succeeds.',
     source: 'packages/toolkit/src/compiled-artifacts.ts',
     find: '  const ownerId = generatedOwnerId(request.owner);',
     replace:
-      "  const ownerId = digestCanonicalJson('equator-generated-owner/1', {\n    owner: generatedOwnerId(request.owner),\n    scopes: [...new Set(request.catalogs.map((catalog) => catalog.scopeId))].sort(),\n  });",
+      "  const ownerId = digestCanonicalJson('thoth-generated-owner/1', {\n    owner: generatedOwnerId(request.owner),\n    scopes: [...new Set(request.catalogs.map((catalog) => catalog.scopeId))].sort(),\n  });",
     caughtBy: 'packages/toolkit/test/first-run-sequence.test.ts',
   },
   {
@@ -4731,7 +4731,7 @@ export const injections = Object.freeze([
     source: 'packages/toolkit/src/index.ts',
     find: "export { parseConfiguration } from './configuration.js';",
     replace:
-      "export { parseConfiguration } from './configuration.js';\nimport { mkdirSync as probe } from 'node:fs';\nprobe('.equator', { recursive: true });",
+      "export { parseConfiguration } from './configuration.js';\nimport { mkdirSync as probe } from 'node:fs';\nprobe('.thoth', { recursive: true });",
     caughtBy: 'packages/toolkit/test/import-cost.test.ts',
   },
   {
@@ -4739,9 +4739,9 @@ export const injections = Object.freeze([
     invariant:
       'The translation-state record lives outside every disposable and default-ignored root and survives a clean.',
     source: 'packages/toolkit/src/translation-state.ts',
-    find: "export const TRANSLATION_STATE_PATH =\n  '.equator-translation-state.json' as const;",
+    find: "export const TRANSLATION_STATE_PATH = '.thoth-translation-state.json' as const;",
     replace:
-      "export const TRANSLATION_STATE_PATH =\n  '.equator/translation-state.json' as const;",
+      "export const TRANSLATION_STATE_PATH = '.thoth/translation-state.json' as const;",
     caughtBy: 'packages/toolkit/test/translation-state-durability.test.ts',
   },
   {
@@ -4759,9 +4759,9 @@ export const injections = Object.freeze([
     invariant:
       'A catalog reference to a message function the project registry does not hold is an error.',
     source: 'packages/toolkit/src/semantic-model.ts',
-    find: "    if (descriptor === undefined) {\n      diagnostics.push(\n        semanticDiagnostic(\n          catalog,\n          'EQ1805',\n          `Message function ${JSON.stringify(reference.name)} has no registered application-local descriptor.`,",
+    find: "    if (descriptor === undefined) {\n      diagnostics.push(\n        semanticDiagnostic(\n          catalog,\n          'TH1805',\n          `Message function ${JSON.stringify(reference.name)} has no registered application-local descriptor.`,",
     replace:
-      "    if (descriptor === undefined) {\n      continue;\n      diagnostics.push(\n        semanticDiagnostic(\n          catalog,\n          'EQ1805',\n          `Message function ${JSON.stringify(reference.name)} has no registered application-local descriptor.`,",
+      "    if (descriptor === undefined) {\n      continue;\n      diagnostics.push(\n        semanticDiagnostic(\n          catalog,\n          'TH1805',\n          `Message function ${JSON.stringify(reference.name)} has no registered application-local descriptor.`,",
     caughtBy: 'packages/toolkit/test/catalog-extension-references.test.ts',
   },
   {
@@ -4934,7 +4934,7 @@ export const injections = Object.freeze([
   {
     id: 'family-segment-key-unmatched',
     invariant:
-      'A segments key that is not a placeholder of the template is refused with EQ1305 at the segments mapping.',
+      'A segments key that is not a placeholder of the template is refused with TH1305 at the segments mapping.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '  if (segmentNames.some((name) => !placeholders.has(name))) {',
     replace: '  if (false as boolean) {',
@@ -4943,7 +4943,7 @@ export const injections = Object.freeze([
   {
     id: 'family-segment-type-unregistered',
     invariant:
-      'A segments value that is not a registered identifier-segment type is refused with EQ1805.',
+      'A segments value that is not a registered identifier-segment type is refused with TH1805.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: "      extensionDescriptor(extensions, 'identifier-segment', type) === undefined\n    ) {",
     replace: '      (false as boolean)\n    ) {',
@@ -4952,7 +4952,7 @@ export const injections = Object.freeze([
   {
     id: 'family-template-pattern-part-accepted',
     invariant:
-      'A template part that is neither a whole placeholder nor a message-identity literal, such as a glob, a regular expression, an optional or repeated marker, alternation or concatenation, is refused with EQ1305 at the template.',
+      'A template part that is neither a whole placeholder nor a message-identity literal, such as a glob, a regular expression, an optional or repeated marker, alternation or concatenation, is refused with TH1305 at the template.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '    } else if (nativeMessagePartPattern.test(part)) {',
     replace: '    } else if (true as boolean) {',
@@ -4961,7 +4961,7 @@ export const injections = Object.freeze([
   {
     id: 'family-template-placeholder-repeated',
     invariant:
-      'A template that repeats a placeholder is refused with EQ1305 at the template.',
+      'A template that repeats a placeholder is refused with TH1305 at the template.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '      if (placeholders.has(name)) {',
     replace: '      if (false as boolean) {',
@@ -4970,7 +4970,7 @@ export const injections = Object.freeze([
   {
     id: 'family-template-without-fixed-part',
     invariant:
-      'A template without a literal part or without a placeholder is refused with EQ1305 at the template.',
+      'A template without a literal part or without a placeholder is refused with TH1305 at the template.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '  if (literalCount === 0 || placeholders.size === 0) {',
     replace: '  if (false as boolean) {',
@@ -4979,7 +4979,7 @@ export const injections = Object.freeze([
   {
     id: 'family-without-member-accepted',
     invariant:
-      'A family whose template matches no current source message is refused with EQ1305.',
+      'A family whose template matches no current source message is refused with TH1305.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '    if (members.length === 0) {\n      diagnostics.push(',
     replace:
@@ -5027,7 +5027,7 @@ export const injections = Object.freeze([
   {
     id: 'interactive-slot-nested',
     invariant:
-      'An interactive slot inside another interactive slot, directly or through a plain slot, is refused with EQ1303.',
+      'An interactive slot inside another interactive slot, directly or through a plain slot, is refused with TH1303.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '      (interactiveSlotKinds.has(kind) || descriptor?.interactive === true) &&',
     replace: '      false &&',
@@ -5074,7 +5074,7 @@ export const injections = Object.freeze([
   {
     id: 'markup-option-undeclared-accepted',
     invariant:
-      'A markup option a registered custom kind does not declare, such as a class or a style, is refused with EQ1805.',
+      'A markup option a registered custom kind does not declare, such as a class or a style, is refused with TH1805.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: "      allowed === undefined ||\n      value.kind !== 'literal' ||\n      !allowed.includes(value.value)",
     replace:
@@ -5084,7 +5084,7 @@ export const injections = Object.freeze([
   {
     id: 'markup-option-value-unlisted-accepted',
     invariant:
-      'A markup option on a registered custom kind is refused with EQ1805 when its value is not one the descriptor lists.',
+      'A markup option on a registered custom kind is refused with TH1805 when its value is not one the descriptor lists.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '      !allowed.includes(value.value)\n    ) {',
     replace: '      false\n    ) {',
@@ -5131,7 +5131,7 @@ export const injections = Object.freeze([
   {
     id: 'refinement-enum-null-accepted',
     invariant:
-      'An enum carrying null is refused with EQ1102, because null is governed only by nullable.',
+      'An enum carrying null is refused with TH1102, because null is governed only by nullable.',
     source: 'packages/toolkit/src/schemas.ts',
     find: "          minItems: 1,\n          uniqueItems: true,\n          items: {\n            anyOf: [\n              { type: 'string' },",
     replace:
@@ -5141,7 +5141,7 @@ export const injections = Object.freeze([
   {
     id: 'refinement-enum-of-another-type-accepted',
     invariant:
-      'An enum literal incompatible with the effective input type is refused with EQ1302.',
+      'An enum literal incompatible with the effective input type is refused with TH1302.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '      refinement.enum.some((literal) => !literalMatchesType(literal, type))',
     replace: '      (false as boolean)',
@@ -5149,7 +5149,7 @@ export const injections = Object.freeze([
   },
   {
     id: 'refinement-enum-repeats-accepted',
-    invariant: 'An enum that repeats a literal is refused with EQ1102.',
+    invariant: 'An enum that repeats a literal is refused with TH1102.',
     source: 'packages/toolkit/src/schemas.ts',
     find: "          minItems: 1,\n          uniqueItems: true,\n          items: {\n            anyOf: [\n              { type: 'string' },",
     replace:
@@ -5159,7 +5159,7 @@ export const injections = Object.freeze([
   {
     id: 'refinement-key-not-an-input-accepted',
     invariant:
-      'An inputs key that is not the exact inferred external variable name, whether misspelled, written with its sigil, unused, or naming a local declaration, is refused with EQ1302.',
+      'An inputs key that is not the exact inferred external variable name, whether misspelled, written with its sigil, unused, or naming a local declaration, is refused with TH1302.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '    if (!message.semantics.externalInputs.includes(name)) {',
     replace: '    if (false as boolean) {',
@@ -5168,7 +5168,7 @@ export const injections = Object.freeze([
   {
     id: 'refinement-record-field-accepted',
     invariant:
-      'A refinement record holds only type, enum, optional, nullable and description, so a default, coercion, substitution or conversion field is refused with EQ1102.',
+      'A refinement record holds only type, enum, optional, nullable and description, so a default, coercion, substitution or conversion field is refused with TH1102.',
     source: 'packages/toolkit/src/schemas.ts',
     find: "    {\n      type: 'object',\n      additionalProperties: false,\n      minProperties: 1,\n      properties: {\n        type: portableTypeIdSchema,",
     replace:
@@ -5178,7 +5178,7 @@ export const injections = Object.freeze([
   {
     id: 'refinement-type-outside-the-registry-accepted',
     invariant:
-      'A refinement type that is not in the portable registry, such as a TypeScript symbol, an import, a type expression or a source path, is refused with EQ1302.',
+      'A refinement type that is not in the portable registry, such as a TypeScript symbol, an import, a type expression or a source path, is refused with TH1302.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '  if (!portableTypes.has(refinement.type as PortableTypeId)) {\n    diagnostics.push(',
     replace:
@@ -5207,7 +5207,7 @@ export const injections = Object.freeze([
   {
     id: 'registered-interactive-parent-ignored',
     invariant:
-      'A link inside a registered interactive kind is refused with EQ1303.',
+      'A link inside a registered interactive kind is refused with TH1303.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: "          extensionDescriptor(extensions, 'rich-slot-kind', parentKind)\n            ?.interactive === true",
     replace: '          (false as boolean)',
@@ -5304,9 +5304,9 @@ export const injections = Object.freeze([
     invariant:
       'Every scope name the identity grammar admits compiles to its own module, whatever its length or number of parts.',
     source: 'packages/toolkit/src/identities.ts',
-    find: "    scopePattern,\n    'EQ1104',\n    'Scope identity',",
+    find: "    scopePattern,\n    'TH1104',\n    'Scope identity',",
     replace:
-      "    /^[a-z][a-z0-9]{0,15}$/u,\n    'EQ1104',\n    'Scope identity',",
+      "    /^[a-z][a-z0-9]{0,15}$/u,\n    'TH1104',\n    'Scope identity',",
     caughtBy: 'packages/toolkit/test/scope-name-and-breadth.test.ts',
   },
   {
@@ -5321,7 +5321,7 @@ export const injections = Object.freeze([
   {
     id: 'slot-authored-outside-within-accepted',
     invariant:
-      'A within refinement that excludes a placement the source authors is refused with EQ1303.',
+      'A within refinement that excludes a placement the source authors is refused with TH1303.',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '      [...parents].some((parent) => !refinement.within?.includes(parent))',
     replace: '      (false as boolean)',
@@ -5330,7 +5330,7 @@ export const injections = Object.freeze([
   {
     id: 'slot-refinement-field-accepted',
     invariant:
-      'An expanded slot refinement holds only kind, shape, optional, repeatable, within and description, so a component, template, element, class, style or URL field is refused with EQ1102.',
+      'An expanded slot refinement holds only kind, shape, optional, repeatable, within and description, so a component, template, element, class, style or URL field is refused with TH1102.',
     source: 'packages/toolkit/src/schemas.ts',
     find: "    {\n      type: 'object',\n      additionalProperties: false,\n      minProperties: 1,\n      properties: {\n        kind: portableTypeIdSchema,",
     replace:
@@ -5348,7 +5348,7 @@ export const injections = Object.freeze([
   {
     id: 'target-catalog-families-accepted',
     invariant:
-      'A target catalog carrying a families mapping is refused with EQ1102.',
+      'A target catalog carrying a families mapping is refused with TH1102.',
     source: 'packages/toolkit/src/schemas.ts',
     find: '        ],\n      },\n    },\n  },\n} as const);\n\nconst extensionIdSchema',
     replace:
@@ -5464,7 +5464,7 @@ export const injections = Object.freeze([
   {
     id: 'generated-root-inside-a-dependency-accepted',
     invariant:
-      'A generated root inside a dependency directory is refused at configuration (EQ1601), since a package manager replaces that directory on install.',
+      'A generated root inside a dependency directory is refused at configuration (TH1601), since a package manager replaces that directory on install.',
     source: 'packages/toolkit/src/project-host.ts',
     find: "path.split('/').includes('node_modules')",
     replace: 'false',
@@ -5473,7 +5473,7 @@ export const injections = Object.freeze([
   {
     id: 'generated-root-inside-the-build-output-accepted',
     invariant:
-      "A generated root inside the application's build output is refused at configuration (EQ1601), since the build empties that directory.",
+      "A generated root inside the application's build output is refused at configuration (TH1601), since the build empties that directory.",
     source: 'packages/toolkit/src/project-host.ts',
     find: 'outputPath !== undefined && containedPath(absolute, outputPath)',
     replace: 'false',

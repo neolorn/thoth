@@ -5,7 +5,7 @@ the application's locale when a visitor picks one.
 
 ## Before you begin
 
-You need at least two locales in `equator.config.json`, which is
+You need at least two locales in `thoth.config.json`, which is
 [How to add a locale](add-a-locale.md).
 
 ## Render the options
@@ -36,7 +36,7 @@ Space, and keeps a `role` or `tabindex` you wrote on it.
 
 ## Announce the change
 
-A screen reader is told the page changed language whether or not you ask. Equator announces the
+A screen reader is told the page changed language whether or not you ask. Thoth announces the
 arriving locale's own name, in that locale, into a live region it owns.
 
 `withLocaleAnnouncement` replaces that wording and nothing else. Take it when the language's name is
@@ -44,11 +44,11 @@ not what you want said. It takes a function from the snapshot that has just comm
 sentence to announce, so the wording is yours and can be in the language just arrived at.
 
 If your application already announces the change through a live region of its own, return nothing.
-The change is then announced once, by you, and Equator's region stays in the document saying
+The change is then announced once, by you, and Thoth's region stays in the document saying
 nothing.
 
-Nothing removes the region. `withoutDocumentLocale()` removes it, along with everything else Equator
-writes to the document, and is the statement that the document is not Equator's to touch.
+Nothing removes the region. `withoutDocumentLocale()` removes it, along with everything else Thoth
+writes to the document, and is the statement that the document is not Thoth's to touch.
 
 ## Remember the choice
 
@@ -105,17 +105,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { MOCK_PLATFORM_LOCATION_CONFIG } from '@angular/common/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import {
-  Localization,
-  withRecoveryMessage,
-  withRouting,
-} from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
+import { Localization, withRecoveryMessage, withRouting } from '@neolorn/thoth';
+import { provideLocalizedRouter } from '@neolorn/thoth/router';
 import {
   LocalizationTestingController,
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
 import { messages, providerId, scopeId } from '#i18n/shell';
 
@@ -124,7 +120,7 @@ import { appRouteProjection, routePolicy } from './localization.routes';
 
 const shell = { providerId, scopeId } as const;
 
-// Equator reads the address bar for the locale, so a test that navigates and does not put it back
+// Thoth reads the address bar for the locale, so a test that navigates and does not put it back
 // decides what the next test is looking at.
 afterEach(resetLocalizationTestEnvironment);
 
@@ -180,5 +176,5 @@ the address if your URLs carry the locale, and anything registered as a particip
 ## Related
 
 - [About how a locale switch is a transaction](../explanation/about-locale-switching.md)
-- [How to extend Equator](add-an-extension.md), for bringing your own work into the switch
+- [How to extend Thoth](add-an-extension.md), for bringing your own work into the switch
 - [How to test localized output](test-localized-output.md)

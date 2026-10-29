@@ -7,7 +7,7 @@ import {
 import type {
   LocaleUrlPolicy,
   RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The two answers a renderer gives without content, and the one it must never be turned into.
@@ -34,7 +34,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-RenderWithoutContentTestIdentity0123456789a',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -71,7 +71,7 @@ describe('a render that answers without content', () => {
         policy: POLICY,
         projection: PROJECTION,
         cache: CACHE,
-        cookie: { name: 'equator-locale' },
+        cookie: { name: 'thoth-locale' },
         render,
       })(conditional());
 
@@ -110,7 +110,7 @@ describe('a render that answers without content', () => {
       policy: POLICY,
       projection: PROJECTION,
       cache: CACHE,
-      cookie: { name: 'equator-locale' },
+      cookie: { name: 'thoth-locale' },
       render: () =>
         new Response('moved', {
           status: 302,
@@ -141,7 +141,7 @@ describe('a render that answers without content', () => {
     const seen: { status: number; cacheControl: string | null }[] = [];
 
     for (const render of answers) {
-      for (const cookie of [{ name: 'equator-locale' }, false] as const) {
+      for (const cookie of [{ name: 'thoth-locale' }, false] as const) {
         for (const path of ['/ar-eg/second', '/ar-eg/nothing-here']) {
           const response = await createLocaleRequestHandler({
             policy: POLICY,
@@ -190,7 +190,7 @@ describe('a render that answers with an error it did not declare', () => {
           policy: POLICY,
           projection: PROJECTION,
           cache: CACHE,
-          cookie: { name: 'equator-locale' },
+          cookie: { name: 'thoth-locale' },
           render: refusing(status),
           ɵobserve: ({ declared, carried }) =>
             observed.push({ declared, carried }),

@@ -6,7 +6,7 @@ import {
   catalogConsultationOrder,
   findEvaluationCandidate,
 } from '../src/evaluator.js';
-import { LocalizationError, type MessageHandle } from '@neolorn/equator/core';
+import { LocalizationError, type MessageHandle } from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -38,9 +38,9 @@ function catalogFor(
     outputParts: 8,
   };
   return {
-    profile: 'equator-compiled-ir/1',
-    generatedAbi: 'equator-generated/1',
-    standardsProfile: 'equator-1',
+    profile: 'thoth-compiled-ir/1',
+    generatedAbi: 'thoth-generated/1',
+    standardsProfile: 'thoth-1',
     key: { providerId: 'home', scopeId: 'shell', catalogLocale: locale },
     applicationContractFingerprint: 'test',
     semanticRegistryFingerprint: 'test',
@@ -66,7 +66,7 @@ function catalogFor(
 
 function handleFor(messageId: string): MessageHandle {
   return {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     providerId: 'home',
     scopeId: 'shell',
     messageId,
@@ -174,7 +174,7 @@ describe('a locale whose parent changes the language', () => {
   });
 
   it('follows CLDR across the language boundary', () => {
-    // `hi-Latn` inherits from `en-IN`. Excluding cross-language parents would be Equator overriding
+    // `hi-Latn` inherits from `en-IN`. Excluding cross-language parents would be Thoth overriding
     // pinned data on taste, so they are followed and named in the README.
     const candidate = indian('hi-Latn').resolve('nav.help');
     expect(candidate.catalog.key.catalogLocale).toBe('en-IN');

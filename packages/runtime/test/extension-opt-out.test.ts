@@ -4,7 +4,7 @@ import type {
   MessageFunctionResult,
   RuntimeExtensionBinding,
   RuntimeMessageFunctionDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { defineExtensionRegistry } from '../../toolkit/src/extensions.js';
 import { defineRuntimeExtensions } from '../src/extensions.js';
 import { refusalOf } from './compiled-artifact-harness.js';

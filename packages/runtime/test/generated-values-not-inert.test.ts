@@ -10,10 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 import { LocalCatalogStore } from '../src/catalog-runtime.js';
 import { createLocalizationRuntime } from '../src/localization.js';
-import {
-  LocalizationError,
-  type LocalizationSetup,
-} from '@neolorn/equator/core';
+import { LocalizationError, type LocalizationSetup } from '@neolorn/thoth/core';
 
 import {
   compileSet,

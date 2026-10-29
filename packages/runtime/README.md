@@ -1,13 +1,13 @@
-# @neolorn/equator
+# @neolorn/thoth
 
 ### Localization runtime for Angular applications (MessageFormat 2, CLDR, BCP 47)
 
-[![npm version](https://img.shields.io/npm/v/@neolorn/equator?style=flat-square)](https://www.npmjs.com/package/@neolorn/equator)
-[![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/neolorn/equator/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/@neolorn/thoth?style=flat-square)](https://www.npmjs.com/package/@neolorn/thoth)
+[![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/neolorn/thoth/blob/main/LICENSE)
 
-**@neolorn/equator** is the runtime half of [Equator](https://github.com/neolorn/equator): locale resolution, message evaluation, formatting and parsing through `Intl`, and the Angular integration for routing, forms, and server rendering. It ships as ESM with seven entry points and no dependency beyond `tslib`.
+**@neolorn/thoth** is the runtime half of [Thoth](https://github.com/neolorn/thoth): locale resolution, message evaluation, formatting and parsing through `Intl`, and the Angular integration for routing, forms, and server rendering. It ships as ESM with seven entry points and no dependency beyond `tslib`.
 
-Catalogs are compiled by [`@neolorn/equator-toolkit`](https://www.npmjs.com/package/@neolorn/equator-toolkit) into typed modules under `#i18n`, which this package's providers read.
+Catalogs are compiled by [`@neolorn/thoth-toolkit`](https://www.npmjs.com/package/@neolorn/thoth-toolkit) into typed modules under `#i18n`, which this package's providers read.
 
 ## Features
 
@@ -37,20 +37,20 @@ Catalogs are compiled by [`@neolorn/equator-toolkit`](https://www.npmjs.com/pack
 
 ## Requirements
 
-The Angular, RxJS, and Node.js ranges an install accepts are on [Compatibility](https://github.com/neolorn/equator/blob/main/docs/reference/compatibility.md).
+The Angular, RxJS, and Node.js ranges an install accepts are on [Compatibility](https://github.com/neolorn/thoth/blob/main/docs/reference/compatibility.md).
 
 ## Install
 
 ```sh install
-npm install @neolorn/equator
-npm install --save-dev @neolorn/equator-toolkit
+npm install @neolorn/thoth
+npm install --save-dev @neolorn/thoth-toolkit
 ```
 
 The toolkit runs at build time and ships in nothing, which is why it is a development dependency. This package is what the application ships.
 
 ## Quick start
 
-Run `equator init` and `equator generate` first, which the [tutorial](https://github.com/neolorn/equator/blob/main/docs/tutorial.md) covers. `generate` writes a `provideLocalization` for the project, with the locale set already bound, and runs again whenever catalogs, routes or providers change; `equator watch` does that while you work.
+Run `thoth init` and `thoth generate` first, which the [tutorial](https://github.com/neolorn/thoth/blob/main/docs/tutorial.md) covers. `generate` writes a `provideLocalization` for the project, with the locale set already bound, and runs again whenever catalogs, routes or providers change; `thoth watch` does that while you work.
 
 Declare where the locale sits in a URL, in `src/app/localization.routes.ts`. `#i18n/routes` is generated from the application's route table:
 
@@ -58,7 +58,7 @@ Declare where the locale sits in a URL, in `src/app/localization.routes.ts`. `#i
 import {
   createPathPrefixLocalePolicy,
   defineRouteProjection,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { routeProjection } from '#i18n/routes';
 
 export const routePolicy = createPathPrefixLocalePolicy({
@@ -71,7 +71,7 @@ export const appRouteProjection = defineRouteProjection({
 });
 ```
 
-Compose the providers in `src/app/app.config.ts`. `provideLocalizedRouter`, from `@neolorn/equator/router`, replaces `provideRouter`, and each `with*` selects a feature:
+Compose the providers in `src/app/app.config.ts`. `provideLocalizedRouter`, from `@neolorn/thoth/router`, replaces `provideRouter`, and each `with*` selects a feature:
 
 ```ts excerpt src/app/app.config.ts
 import { provideLocalization } from '#i18n';
@@ -81,8 +81,8 @@ import {
   withPersistence,
   withRecoveryMessage,
   withRouting,
-} from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
+} from '@neolorn/thoth';
+import { provideLocalizedRouter } from '@neolorn/thoth/router';
 import { routes } from './app.routes';
 import { appRouteProjection, routePolicy } from './localization.routes';
 ```
@@ -113,11 +113,7 @@ The recovery message is what a visitor reads if the catalogs cannot load, and `g
 Render a message with `LocalizePipe`, and a switcher option with the `LocaleChoice` directive, both imported by the component:
 
 ```ts excerpt src/app/app.ts
-import {
-  injectLocalization,
-  LocaleChoice,
-  LocalizePipe,
-} from '@neolorn/equator';
+import { injectLocalization, LocaleChoice, LocalizePipe } from '@neolorn/thoth';
 import { messages } from '#i18n/shell';
 ```
 
@@ -141,16 +137,16 @@ Read the facade from a component to render or switch from code:
   protected readonly localization = injectLocalization();
 ```
 
-The [tutorial](https://github.com/neolorn/equator/blob/main/docs/tutorial.md) builds the application these lines come from, and every code block in the documentation is executed against the built packages by the verification suite before each release.
+The [tutorial](https://github.com/neolorn/thoth/blob/main/docs/tutorial.md) builds the application these lines come from, and every code block in the documentation is executed against the built packages by the verification suite before each release.
 
 ## Documentation
 
-- [Tutorial](https://github.com/neolorn/equator/blob/main/docs/tutorial.md): a two-locale application from `ng new` to a localized route.
-- [How-to guides](https://github.com/neolorn/equator/blob/main/docs/README.md#how-to-guides): step-by-step instructions for specific tasks.
-- [Reference](https://github.com/neolorn/equator/blob/main/docs/README.md#reference): entry points, features, configuration, and diagnostics, generated from the packages.
-- [Explanation](https://github.com/neolorn/equator/blob/main/docs/README.md#explanation): how locale resolution, compilation, routing, and the trust model work.
-- [Equator](https://github.com/neolorn/equator): the repository, the specifications, and how to contribute.
+- [Tutorial](https://github.com/neolorn/thoth/blob/main/docs/tutorial.md): a two-locale application from `ng new` to a localized route.
+- [How-to guides](https://github.com/neolorn/thoth/blob/main/docs/README.md#how-to-guides): step-by-step instructions for specific tasks.
+- [Reference](https://github.com/neolorn/thoth/blob/main/docs/README.md#reference): entry points, features, configuration, and diagnostics, generated from the packages.
+- [Explanation](https://github.com/neolorn/thoth/blob/main/docs/README.md#explanation): how locale resolution, compilation, routing, and the trust model work.
+- [Thoth](https://github.com/neolorn/thoth): the repository, the specifications, and how to contribute.
 
 ## License
 
-[MIT](https://github.com/neolorn/equator/blob/main/LICENSE).
+[MIT](https://github.com/neolorn/thoth/blob/main/LICENSE).

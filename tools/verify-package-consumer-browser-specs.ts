@@ -1,5 +1,5 @@
 /**
- * The consumer's specs that exercise `@neolorn/equator/testing`, run in each engine Playwright
+ * The consumer's specs that exercise `@neolorn/thoth/testing`, run in each engine Playwright
  * drives, through the Angular test builder's own browser mode.
  *
  * Every other run of these specs is jsdom's, which is a DOM written for Node and not an engine a
@@ -15,7 +15,7 @@
  * `specs/01-standards-profile.spec.md` section 6 requires its answer not to vary between browsers.
  *
  * The seat is left as the consumer stage left it. The pseudo-locale spec reads the catalog
- * `equator generate --pseudo` writes, so the run generates it first and generates the production
+ * `thoth generate --pseudo` writes, so the run generates it first and generates the production
  * output again afterwards, whatever the run did.
  */
 import assert from 'node:assert/strict';
@@ -105,9 +105,9 @@ const run = (
     ),
   };
 };
-const equator = resolve(
+const thoth = resolve(
   consumerRoot,
-  'node_modules/@neolorn/equator-toolkit/cli.js',
+  'node_modules/@neolorn/thoth-toolkit/cli.js',
 );
 const ng = resolve(consumerRoot, 'node_modules/@angular/cli/bin/ng.js');
 
@@ -122,15 +122,15 @@ await rm(resolve(consumerRoot, 'node_modules/.vite'), {
 let tested: ReturnType<typeof run> | undefined;
 try {
   const generated = run(
-    equator,
+    thoth,
     ['generate', '--pseudo'],
-    'equator generate --pseudo',
+    'thoth generate --pseudo',
     300_000,
   );
   assert.equal(
     generated.status,
     0,
-    `equator generate --pseudo failed:\n${generated.output}`,
+    `thoth generate --pseudo failed:\n${generated.output}`,
   );
   tested = run(
     ng,
@@ -145,11 +145,11 @@ try {
     1_200_000,
   );
 } finally {
-  const restored = run(equator, ['generate'], 'equator generate', 300_000);
+  const restored = run(thoth, ['generate'], 'thoth generate', 300_000);
   assert.equal(
     restored.status,
     0,
-    `equator generate failed, so the seat is left with the pseudo-locales generated:\n${restored.output}`,
+    `thoth generate failed, so the seat is left with the pseudo-locales generated:\n${restored.output}`,
   );
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { contentPresentation } from '../src/locale-presentation.js';
-import { LocalizationError } from '@neolorn/equator/core';
+import { LocalizationError } from '@neolorn/thoth/core';
 
 /**
  * Content whose language is not known, or that has none.

@@ -4,7 +4,7 @@ import {
   buildLocalizedRoute,
   resolveLocalizedRoute,
   type RouteResolution,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 import {
   addressedLocales,
@@ -21,7 +21,7 @@ import { appRouteProjection, routePolicy } from './localization.routes';
  * The address table against the application it describes.
  *
  * Every other spec that expects an address reads it from the table, so a wrong entry would be
- * wrong in all of them at once and could be wrong in the same direction as Equator. This is the
+ * wrong in all of them at once and could be wrong in the same direction as Thoth. This is the
  * one place each entry is held to what the running policy does with it, in both directions: an
  * address the table lists resolves to its page in its locale, and a locale the table leaves out
  * has no address that selects it.
@@ -175,7 +175,7 @@ describe('the address table', () => {
   });
 
   it.each(Object.keys(routed) as RoutedPage[])(
-    'spells %s as Equator writes it, in every locale it lists',
+    'spells %s as Thoth writes it, in every locale it lists',
     (page) => {
       const listed = addressedLocales(page);
       expect(listed.length).toBeGreaterThan(0);
@@ -188,7 +188,7 @@ describe('the address table', () => {
           routeId: routed[page],
         });
       }
-      // The other direction. Equator writes an address for every locale, and where that address
+      // The other direction. Thoth writes an address for every locale, and where that address
       // gives a stranger another locale it is not this locale's address, so the table must not
       // list it and nothing may advertise it.
       for (const locale of locales.filter((each) => !listed.includes(each))) {

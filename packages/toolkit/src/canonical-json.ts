@@ -33,13 +33,13 @@ function assertValidUnicode(value: string): void {
       const following = value.charCodeAt(index + 1);
       if (!(following >= 0xdc00 && following <= 0xdfff)) {
         throw new TypeError(
-          'Equator canonical JSON rejects an unpaired high surrogate.',
+          'Thoth canonical JSON rejects an unpaired high surrogate.',
         );
       }
       index += 1;
     } else if (code >= 0xdc00 && code <= 0xdfff) {
       throw new TypeError(
-        'Equator canonical JSON rejects an unpaired low surrogate.',
+        'Thoth canonical JSON rejects an unpaired low surrogate.',
       );
     }
   }
@@ -58,12 +58,12 @@ function canonicalize(value: CanonicalJsonValue): string {
   if (typeof value === 'number') {
     if (!Number.isFinite(value) || Object.is(value, -0)) {
       throw new TypeError(
-        'Equator canonical JSON requires finite numbers without negative zero.',
+        'Thoth canonical JSON requires finite numbers without negative zero.',
       );
     }
     if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
       throw new TypeError(
-        'Equator canonical JSON requires safe integer numbers.',
+        'Thoth canonical JSON requires safe integer numbers.',
       );
     }
     return JSON.stringify(value);
@@ -93,7 +93,7 @@ export function digestCanonicalJson(
 ): string {
   if (domain.length === 0 || /[\u0000\r\n]/u.test(domain)) {
     throw new TypeError(
-      'An Equator fingerprint domain must be a nonempty single-line identifier.',
+      'A Thoth fingerprint domain must be a nonempty single-line identifier.',
     );
   }
   assertValidUnicode(domain);

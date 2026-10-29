@@ -9,13 +9,13 @@ import { parseExtensionRegistry } from '../src/extensions.js';
 const descriptors: readonly ExtensionDescriptorInput[] = [
   {
     kind: 'identifier-segment',
-    id: 'equator:native-message-part',
+    id: 'thoth:native-message-part',
     syntax: 'lower-kebab',
     maximumLength: 5,
   },
   {
     kind: 'message-function',
-    id: 'equator:uppercase',
+    id: 'thoth:uppercase',
     operandType: 'string',
     resultType: 'string',
     selector: 'none',
@@ -25,13 +25,13 @@ const descriptors: readonly ExtensionDescriptorInput[] = [
 
 // What is built in is named under this namespace, so a descriptor registered there would bound a
 // built-in by rules no registry fingerprint records as required.
-describe('a descriptor in the equator namespace', () => {
+describe('a descriptor in the thoth namespace', () => {
   it.each(descriptors)(
     'is refused where a registry is defined ($id)',
     (descriptor) => {
       const defined = defineExtensionRegistry([descriptor]);
       expect(defined.ok).toBe(false);
-      expect(defined.diagnostics.map(({ code }) => code)).toContain('EQ1805');
+      expect(defined.diagnostics.map(({ code }) => code)).toContain('TH1805');
     },
   );
 
@@ -40,12 +40,12 @@ describe('a descriptor in the equator namespace', () => {
     (descriptor) => {
       const parsed = parseExtensionRegistry(
         JSON.stringify({
-          profile: 'equator-extension-registry/1',
+          profile: 'thoth-extension-registry/1',
           descriptors: [descriptor],
         }),
       );
       expect(parsed.ok).toBe(false);
-      expect(parsed.diagnostics.map(({ code }) => code)).toContain('EQ1805');
+      expect(parsed.diagnostics.map(({ code }) => code)).toContain('TH1805');
     },
   );
 

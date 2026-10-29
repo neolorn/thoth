@@ -7,7 +7,7 @@ import {
 import {
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -16,7 +16,7 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
  *
  * Angular validates a route config only behind `ngDevMode`, so a check that runs inside a
  * bootstrapped application proves nothing about the production path: there, Angular catches the
- * malformed entry for Equator and the check passes for the wrong reason. `route-table.ts` erases to
+ * malformed entry for Thoth and the check passes for the wrong reason. `route-table.ts` erases to
  * plain functions over plain objects precisely so this suite can exercise the shipped code with
  * nothing bootstrapped.
  */
@@ -59,7 +59,7 @@ const POLICY: LocaleUrlPolicy = {
  */
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-RouteProjectionTestIdentity012345678901234_',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -172,7 +172,7 @@ describe('localizedRouteTable', () => {
       POLICY,
       {
         generated: {
-          profile: 'equator-route-projection/1',
+          profile: 'thoth-route-projection/1',
           identity: 'sha256-RouteProjectionTestIdentity012345678901234_',
           routes: [
             { id: 'item', path: 'shop/item/:id', parameterNames: ['id'] },
@@ -219,7 +219,7 @@ describe('localizedRouteTable', () => {
   /**
    * The branches say for themselves that they do not match.
    *
-   * They never did match: Equator removes the locale prefix before the Router is asked anything,
+   * They never did match: Thoth removes the locale prefix before the Router is asked anything,
    * so the canonical layer answers every navigation. But that was true by construction and stated
    * nowhere, which is a different thing: a change that stopped delocalizing would silently promote
    * the branches from a reading of the addresses into a second set of routes competing with the

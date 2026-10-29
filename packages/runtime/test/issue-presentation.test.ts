@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Localization } from '../src/localization.js';
 import { presentExternalValue, presentIssue } from '../src/presentation.js';
-import { GENERATED_ABI, type PlainMessageHandle } from '@neolorn/equator/core';
+import { GENERATED_ABI, type PlainMessageHandle } from '@neolorn/thoth/core';
 
 /**
  * Which message a code or an external value is shown with.

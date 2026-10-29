@@ -9,7 +9,7 @@ import {
   resolveInitialRouteLocale,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What the two readers of a request's address take from the context a platform hands them.
@@ -22,7 +22,7 @@ import {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-RequestContextLocaleTestIdentity0123456789a',
     routes: [
       { id: 'home', path: '', parameterNames: [] },

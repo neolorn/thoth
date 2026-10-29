@@ -104,7 +104,7 @@ export interface ProjectConfiguration {
    * Locales whose person names this application formats, beyond the ones it is translated into.
    *
    * Person-name patterns are generated for `locales` already. This adds the locales a name may be
-   * *written in* while the interface stays in one of those: a fact about the product that Equator
+   * *written in* while the interface stays in one of those: a fact about the product that Thoth
    * cannot derive, which is why it is declared rather than inferred. An application rendering
    * names people typed in needs a wider set than one with a fixed roster.
    *
@@ -125,10 +125,10 @@ export interface ProjectConfiguration {
    *
    * A pseudo-locale is a member of the locale set like any other, which is why it is declared here
    * and not in a file of its own. What makes it different is only that nobody writes its catalog:
-   * Equator derives one from the source catalog at generate time, and everything downstream
+   * Thoth derives one from the source catalog at generate time, and everything downstream
    * receives an ordinary target catalog it cannot distinguish from a translation.
    *
-   * **Declaring one does not generate it.** Generation is off unless `equator generate --pseudo`
+   * **Declaring one does not generate it.** Generation is off unless `thoth generate --pseudo`
    * asks for it, so the same configuration file serves the development build that wants
    * pseudo-locales and the production build that must not contain them. That split is what makes
    * the production guarantee an absence rather than a flag: the catalog is not emitted, it is not
@@ -139,7 +139,7 @@ export interface ProjectConfiguration {
    * pseudo-locale is negotiated, addressed, prerendered and asked for like any other locale, so an
    * application that localizes anything outside a catalog (articles, product data, anything
    * behind a `LocalizationParticipant`) is asked for a locale it can have no content in, and
-   * nothing can produce that content because Equator never sees it. A participant that answers
+   * nothing can produce that content because Thoth never sees it. A participant that answers
    * `unavailable` there fails the render rather than the region: required participants fail the
    * transition, and under prerendering that is a build error with no page written. The answer is a
    * `ready` report whose `supplyingLocale` names the locale the content really came from, which is
@@ -187,7 +187,7 @@ export interface ProjectConfiguration {
  * The fields an invocation may set, which is the parser's own shape minus the version marker.
  *
  * Derived rather than written out, so a key added to `RawConfiguration` is settable through
- * `equator init` on the day it lands and a key removed stops type-checking at every caller. A
+ * `thoth init` on the day it lands and a key removed stops type-checking at every caller. A
  * second list of field names here is precisely the failure 10.5 reports: `personNameLocales`
  * reached the parser and never reached `init`, and nothing was in a position to notice.
  *
@@ -218,8 +218,8 @@ function syntaxDiagnostic(
   sourcePath: string | undefined,
 ): ToolkitDiagnostic {
   return toolkitDiagnostic(
-    'EQ1001',
-    `Equator configuration contains invalid JSON: ${printParseErrorCode(error.error)}.`,
+    'TH1001',
+    `Thoth configuration contains invalid JSON: ${printParseErrorCode(error.error)}.`,
     {
       span: spanAt(source, error.offset, Math.max(1, error.length), sourcePath),
     },
@@ -261,7 +261,7 @@ function freezeLocaleRecord(
 }
 
 /**
- * Reads an `equator.config.json` and returns it parsed, or the reasons it could not be.
+ * Reads an `thoth.config.json` and returns it parsed, or the reasons it could not be.
  *
  * Takes the file's text. Validates against the published schema, canonicalizes every locale, and
  * checks the things a schema cannot: that the default locale is one of the locales built, that an
@@ -281,16 +281,16 @@ export function parseConfiguration(
   // contract is to return a diagnostic instead of throwing.
   const sourceText = untrustedSource(
     sourceValue,
-    'EQ1001',
-    'Equator configuration source',
+    'TH1001',
+    'Thoth configuration source',
   );
   if (!sourceText.ok) return sourceText;
   const source = sourceText.value;
   if (Buffer.byteLength(source, 'utf8') > RESOURCE_LIMITS.configurationBytes) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1001',
-        `Equator configuration exceeds the ${RESOURCE_LIMITS.configurationBytes}-byte implementation ceiling.`,
+        'TH1001',
+        `Thoth configuration exceeds the ${RESOURCE_LIMITS.configurationBytes}-byte implementation ceiling.`,
         {
           span: spanAt(source, 0, source.length, options.sourcePath),
         },
@@ -300,8 +300,8 @@ export function parseConfiguration(
   if (jsonNestingExceeds(source, RESOURCE_LIMITS.jsonDepth)) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1001',
-        `Equator configuration exceeds the JSON depth ceiling of ${RESOURCE_LIMITS.jsonDepth}.`,
+        'TH1001',
+        `Thoth configuration exceeds the JSON depth ceiling of ${RESOURCE_LIMITS.jsonDepth}.`,
       ),
     ]);
   }
@@ -319,8 +319,8 @@ export function parseConfiguration(
     if (diagnostics.length === 0) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1001',
-          'Equator configuration must contain one JSON value.',
+          'TH1001',
+          'Thoth configuration must contain one JSON value.',
         ),
       );
     }
@@ -334,10 +334,10 @@ export function parseConfiguration(
   if (tree.failure !== undefined) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1001',
+        'TH1001',
         tree.failure === 'depth'
-          ? `Equator configuration exceeds the JSON depth ceiling of ${RESOURCE_LIMITS.jsonDepth}.`
-          : `Equator configuration exceeds the JSON node ceiling of ${RESOURCE_LIMITS.jsonNodes}.`,
+          ? `Thoth configuration exceeds the JSON depth ceiling of ${RESOURCE_LIMITS.jsonDepth}.`
+          : `Thoth configuration exceeds the JSON node ceiling of ${RESOURCE_LIMITS.jsonNodes}.`,
       ),
     ]);
   }
@@ -347,9 +347,9 @@ export function parseConfiguration(
     root,
     options.sourcePath,
     {
-      code: 'EQ1001',
+      code: 'TH1001',
       summary: (key) =>
-        `Equator configuration contains the duplicate key ${JSON.stringify(key)}.`,
+        `Thoth configuration contains the duplicate key ${JSON.stringify(key)}.`,
     },
   );
   if (duplicateDiagnostics.length > 0) {
@@ -367,8 +367,8 @@ export function parseConfiguration(
             source,
             root,
             options.sourcePath,
-            'EQ1002',
-            schemaErrorSummary('Equator configuration', error),
+            'TH1002',
+            schemaErrorSummary('Thoth configuration', error),
             path,
           );
         }),
@@ -388,7 +388,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1003',
+          'TH1003',
           `Supported locale ${JSON.stringify(locale)} is malformed.`,
           ['locales', index],
         ),
@@ -402,7 +402,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1004',
+          'TH1004',
           `Supported locale ${JSON.stringify(locale)} duplicates ${JSON.stringify(canonical.value)} after canonicalization.`,
           ['locales', index],
         ),
@@ -428,7 +428,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1003',
+          'TH1003',
           `The ${name} locale ${JSON.stringify(authored)} is malformed.`,
           path,
         ),
@@ -439,7 +439,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1004',
+          'TH1004',
           `The ${name} locale ${JSON.stringify(parsed.value)} is not declared in locales.`,
           path,
         ),
@@ -459,7 +459,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1003',
+          'TH1003',
           `Person-name locale ${JSON.stringify(locale)} is malformed.`,
           ['personNameLocales', index],
         ),
@@ -472,7 +472,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1004',
+          'TH1004',
           `Person-name locale ${JSON.stringify(locale)} duplicates ${JSON.stringify(canonical.value)} after canonicalization.`,
           ['personNameLocales', index],
         ),
@@ -497,7 +497,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1003',
+          'TH1003',
           `Pseudo-locale ${JSON.stringify(tag)} is malformed. A pseudo-locale carries its text direction in its own script subtag, so the tag must be a well-formed catalog locale identity; private-use subtags are not.`,
           ['pseudoLocales', tag],
         ),
@@ -510,7 +510,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1004',
+          'TH1004',
           `Pseudo-locale ${JSON.stringify(canonical.value)} is also declared in "locales". A pseudo-locale is generated from the source catalog, so declaring it as an authored locale would ask for both a written catalog and a derived one under the same identity.`,
           ['pseudoLocales', tag],
         ),
@@ -526,7 +526,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1008',
+          'TH1008',
           problem,
           ['pseudoLocales', tag],
         ),
@@ -550,7 +550,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1003',
+          'TH1003',
           `Formatting is declared for ${JSON.stringify(tag)}, which is not a well-formed locale identity.`,
           ['formatting', tag],
         ),
@@ -566,7 +566,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1004',
+          'TH1004',
           `Formatting is declared for ${JSON.stringify(canonical.value)}, which is not in "locales" or "pseudoLocales". Formatting says how a locale this project serves is written, so a locale it does not serve has nothing to say.`,
           ['formatting', tag],
         ),
@@ -587,7 +587,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1003',
+          'TH1003',
           `A translation-in-progress entry is declared for ${JSON.stringify(tag)}, which is not a well-formed locale identity.`,
           ['inProgress', tag],
         ),
@@ -607,7 +607,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1004',
+          'TH1004',
           `A translation-in-progress entry is declared for ${JSON.stringify(canonical.value)}, which is not an authored target locale. Only a locale in "locales" other than the source locale can be short of the source.`,
           ['inProgress', tag],
         ),
@@ -638,7 +638,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1003',
+          'TH1003',
           `A parent locale is declared for ${JSON.stringify(tag)}, which is not a well-formed locale identity.`,
           ['parentLocales', tag],
         ),
@@ -652,7 +652,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1003',
+          'TH1003',
           `Locale ${JSON.stringify(canonical.value)} declares parent ${JSON.stringify(target)}, which is not a well-formed locale identity. Use a locale, or ${JSON.stringify(ROOT_LOCALE)} for no parent.`,
           ['parentLocales', tag],
         ),
@@ -665,7 +665,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1007',
+          'TH1007',
           `Locale ${JSON.stringify(canonical.value)} declares itself as its own parent. Use ${JSON.stringify(ROOT_LOCALE)} to say it has no parent.`,
           ['parentLocales', tag],
         ),
@@ -693,7 +693,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1007',
+          'TH1007',
           `The parent chain for ${JSON.stringify(locale)} returns to ${JSON.stringify(beyond)}: ${[locale, ...chain, beyond].join(' to ')}. A chain must end, so one of the declarations in it has to name ${JSON.stringify(ROOT_LOCALE)} or a locale outside it.`,
           ['parentLocales', last],
         ),
@@ -707,7 +707,7 @@ export function parseConfiguration(
         source,
         root,
         options.sourcePath,
-        'EQ1004',
+        'TH1004',
         `A parent locale is declared for ${JSON.stringify(tag)}, which no locale this project serves inherits through. The declaration has no effect.`,
         ['parentLocales', tag],
       ),
@@ -728,7 +728,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1005',
+          'TH1005',
           `Locale alias ${JSON.stringify(alias)} is malformed.`,
           ['aliases', alias],
         ),
@@ -743,7 +743,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1006',
+          'TH1006',
           `Locale alias ${JSON.stringify(alias)} shadows supported locale ${JSON.stringify(aliasAsLocale.value)}.`,
           ['aliases', alias],
         ),
@@ -757,7 +757,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1003',
+          'TH1003',
           `Locale alias ${JSON.stringify(alias)} has malformed target ${JSON.stringify(target)}.`,
           ['aliases', alias],
         ),
@@ -768,7 +768,7 @@ export function parseConfiguration(
           source,
           root,
           options.sourcePath,
-          'EQ1006',
+          'TH1006',
           `Locale alias ${JSON.stringify(alias)} targets unsupported locale ${JSON.stringify(canonicalTarget.value)}.`,
           ['aliases', alias],
         ),
@@ -870,7 +870,7 @@ export function admitConfiguration(
   if (source === undefined) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1001',
+        'TH1001',
         'A configuration handed over as an object holds a value that cannot be written as JSON.',
       ),
     ]);
@@ -904,9 +904,9 @@ export function pseudoLocaleTags(
 /**
  * Whether a completeness finding about one locale stops the release, and what to say if it does not.
  *
- * **One rule for the whole family.** A locale with no catalog at all (`EQ1306`), a catalog missing
- * a message (`EQ1307`), a message missing a plural category (`EQ1308`) and a translation written
- * against an older source (`EQ1309`) are one question asked at four granularities: is this locale
+ * **One rule for the whole family.** A locale with no catalog at all (`TH1306`), a catalog missing
+ * a message (`TH1307`), a message missing a plural category (`TH1308`) and a translation written
+ * against an older source (`TH1309`) are one question asked at four granularities: is this locale
  * finished. They escalate together or not at all. A gate that blocked on a missing message and
  * passed a missing catalog would report a green meaning "every message is translated except in the
  * locales where none are".
@@ -959,10 +959,10 @@ const BLOCKING: CompletenessPolicy = Object.freeze({
  * is what lets the catalog analysis keep the graph it finished building: a locale missing a message,
  * or missing every message, still compiles and still generates, it falls back to the source, and
  * an analysis that threw the graph away over it would leave everything downstream of the compile
- * unreported: a project both incomplete and stale would report `EQ1307` alone with the gate on,
- * and `EQ1307`, `EQ1309` and `EQ1704` with it off.
+ * unreported: a project both incomplete and stale would report `TH1307` alone with the gate on,
+ * and `TH1307`, `TH1309` and `TH1704` with it off.
  *
- * `EQ1309` is a member and is never raised by the analysis: it is raised against the translation
+ * `TH1309` is a member and is never raised by the analysis: it is raised against the translation
  * record, which is read after the compile. It is listed anyway, because the family is one thing and
  * a reader who found three of four here would reasonably conclude the fourth was not a member.
  *
@@ -973,7 +973,7 @@ const BLOCKING: CompletenessPolicy = Object.freeze({
  */
 export const COMPLETENESS_CODES: ReadonlySet<ToolkitDiagnosticCode> =
   Object.freeze(
-    new Set<ToolkitDiagnosticCode>(['EQ1306', 'EQ1307', 'EQ1308', 'EQ1309']),
+    new Set<ToolkitDiagnosticCode>(['TH1306', 'TH1307', 'TH1308', 'TH1309']),
   ) as ReadonlySet<ToolkitDiagnosticCode>;
 
 export function formatConfiguration(

@@ -6,7 +6,7 @@ import {
   GENERATED_ABI,
   type IssueMessageSource,
   type PlainMessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A code or a value from another system spelled like a member every object inherits.

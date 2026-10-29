@@ -1,5 +1,5 @@
 {
-  "name": "@neolorn/equator-workspace",
+  "name": "@neolorn/thoth-workspace",
   "version": "1.0.0-rc.1",
   "private": true,
   "type": "module",
@@ -11,8 +11,8 @@
   "scripts": {
     "clean": "node ./tools/clean.ts",
     "build": "pnpm run clean dist && pnpm run build:runtime && pnpm run build:toolkit",
-    "build:runtime": "pnpm --filter @neolorn/equator build",
-    "build:toolkit": "pnpm --filter @neolorn/equator-toolkit build",
+    "build:runtime": "pnpm --filter @neolorn/thoth build",
+    "build:toolkit": "pnpm --filter @neolorn/thoth-toolkit build",
     "generate:locale-profile": "node ./tools/generate-locale-profile.ts",
     "generate:person-names": "node ./tools/generate-person-names.ts",
     "generate:cli-options": "node ./tools/generate-cli-options.ts",

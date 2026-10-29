@@ -15,20 +15,20 @@ import { syntaxErrorSentence } from '../src/message-format.js';
  *
  * The defect these tests protect against is entirely in the wording, so every assertion below is
  * on the rendered sentence and none of them is on a code. A test that asserts `code ===
- * 'EQ1102'` passes against every one of the sentences these replaced, which is why they were
+ * 'TH1102'` passes against every one of the sentences these replaced, which is why they were
  * written after those codes were already covered.
  *
  * The three, as they read before:
  *
- * - **EQ1102, a rejected key.** Two lines for one key, at two positions, each carrying half of
- *   what the reader needed: `Equator catalog must match pattern "^[a-z][a-z0-9]*(?:-[a-z]..."` (
+ * - **TH1102, a rejected key.** Two lines for one key, at two positions, each carrying half of
+ *   what the reader needed: `Thoth catalog must match pattern "^[a-z][a-z0-9]*(?:-[a-z]..."` (
  *   the rule, in a language the reader is not writing in, with no property named) and
- *   `Equator catalog property name must be valid`, which names the property's position and no rule.
+ *   `Thoth catalog property name must be valid`, which names the property's position and no rule.
  *   Neither said that a catalog spells keys one way and code spells them another.
- * - **EQ1101, a parse failure.** The `yaml` package's `message` is a code frame: sentence, blank
+ * - **TH1101, a parse failure.** The `yaml` package's `message` is a code frame: sentence, blank
  *   line, source, caret. Interpolated into a one-line diagnostic it reached the terminal as
  *   `Missing closing "quote at line 3, column 1:<CR><LF>  greeting: "unterminated<CR><LF>^<CR>`.
- * - **EQ1702, no catalogs.** *"Equator found no conventional i18n/<scope>/<locale>.yaml catalogs"*
+ * - **TH1702, no catalogs.** *"Thoth found no conventional i18n/<scope>/<locale>.yaml catalogs"*
  *   was printed whether none existed or every one of them existed and failed to parse: above the
  *   parse errors for the very files it had just read.
  *
@@ -56,7 +56,7 @@ function catalogSummaries(body: string, code: string): readonly string[] {
   });
   for (const diagnostic of result.diagnostics) {
     // Every diagnostic in this file is one terminal line, whichever case produced it. This is the
-    // EQ1101 defect stated as a property rather than as one expected string, so a second parser
+    // TH1101 defect stated as a property rather than as one expected string, so a second parser
     // message that also arrives as a code frame cannot pass unnoticed.
     expect(diagnostic.summary).not.toMatch(/[\u0000-\u001f]/u);
   }
@@ -141,14 +141,14 @@ async function catalogDiscoveryLines(
     project: await projectWithCatalogs(scopes),
   });
   return checked.diagnostics
-    .filter(({ code }) => code === 'EQ1702')
+    .filter(({ code }) => code === 'TH1702')
     .map(({ severity, code, summary }) => `${severity} ${code}: ${summary}`);
 }
 
 describe('a rejected catalog key, said the way a person would say it', () => {
   it('names the key, states the rule, and gives the name code will use', () => {
     expect(
-      catalogSummaries('messages:\n  signInButton: Sign in\n', 'EQ1102'),
+      catalogSummaries('messages:\n  signInButton: Sign in\n', 'TH1102'),
     ).toEqual([
       'Message key "signInButton" is not a valid catalog key. Message keys are lower-case words joined by hyphens, and a dot separates groups. Write it as "sign-in-button", which code reaches as messages.signInButton.',
     ]);
@@ -158,13 +158,13 @@ describe('a rejected catalog key, said the way a person would say it', () => {
     // The count is the point. Ajv reports the rejected name twice, and printing both halves still
     // passes the assertion above.
     expect(
-      catalogSummaries('messages:\n  signInButton: Sign in\n', 'EQ1102'),
+      catalogSummaries('messages:\n  signInButton: Sign in\n', 'TH1102'),
     ).toHaveLength(1);
   });
 
   it('keeps a group separator a group separator', () => {
     expect(
-      catalogSummaries('messages:\n  cart.lineItems: Items\n', 'EQ1102'),
+      catalogSummaries('messages:\n  cart.lineItems: Items\n', 'TH1102'),
     ).toEqual([
       'Message key "cart.lineItems" is not a valid catalog key. Message keys are lower-case words joined by hyphens, and a dot separates groups. Write it as "cart.line-items", which code reaches as messages.cart.lineItems.',
     ]);
@@ -172,7 +172,7 @@ describe('a rejected catalog key, said the way a person would say it', () => {
 
   it('repairs the mistakes a person actually makes', () => {
     expect(
-      catalogSummaries('messages:\n  sign_in_button: Sign in\n', 'EQ1102'),
+      catalogSummaries('messages:\n  sign_in_button: Sign in\n', 'TH1102'),
     ).toEqual([
       'Message key "sign_in_button" is not a valid catalog key. Message keys are lower-case words joined by hyphens, and a dot separates groups. Write it as "sign-in-button", which code reaches as messages.signInButton.',
     ]);
@@ -181,7 +181,7 @@ describe('a rejected catalog key, said the way a person would say it', () => {
   it('offers no repair the schema would reject in turn', () => {
     // `1greeting` has nothing wrong that lower-casing and hyphenation can fix. A suggestion that is
     // itself rejected is worse than none, so the rule is given and the sentence stops.
-    expect(catalogSummaries('messages:\n  1greeting: Hi\n', 'EQ1102')).toEqual([
+    expect(catalogSummaries('messages:\n  1greeting: Hi\n', 'TH1102')).toEqual([
       'Message key "1greeting" is not a valid catalog key. Message keys are lower-case words joined by hyphens, and a dot separates groups.',
     ]);
   });
@@ -190,7 +190,7 @@ describe('a rejected catalog key, said the way a person would say it', () => {
     expect(
       catalogSummaries(
         'messages:\n  ok: Fine\nfamilies:\n  personName:\n    kind: person-name\n',
-        'EQ1102',
+        'TH1102',
       )[0],
     ).toBe(
       'Family name "personName" is not a valid catalog key. Family names are lower-case words joined by hyphens. Write it as "person-name".',
@@ -203,10 +203,10 @@ describe('a rejected catalog key, said the way a person would say it', () => {
     // that silently swallowed the whole report would fail here rather than look like a quieter
     // diagnostic.
     expect(
-      catalogSummaries('messages: not-a-map\nunknown-key: 1\n', 'EQ1102'),
+      catalogSummaries('messages: not-a-map\nunknown-key: 1\n', 'TH1102'),
     ).toEqual([
-      'Equator catalog must NOT have additional properties.',
-      'Equator catalog must be object.',
+      'Thoth catalog must NOT have additional properties.',
+      'Thoth catalog must be object.',
     ]);
   });
 });
@@ -214,13 +214,13 @@ describe('a rejected catalog key, said the way a person would say it', () => {
 describe('a catalog the YAML parser could not read', () => {
   it('says what is wrong in one sentence, without the code frame', () => {
     expect(
-      catalogSummaries('messages:\n  greeting: "unterminated\n', 'EQ1101'),
-    ).toEqual(['Equator catalog YAML is invalid: Missing closing "quote']);
+      catalogSummaries('messages:\n  greeting: "unterminated\n', 'TH1101'),
+    ).toEqual(['Thoth catalog YAML is invalid: Missing closing "quote']);
   });
 
   it('does the same for a parser message that is not about quoting', () => {
-    expect(catalogSummaries('messages:\n\tgreeting: Hi\n', 'EQ1101')).toEqual([
-      'Equator catalog YAML is invalid: Tabs are not allowed as indentation',
+    expect(catalogSummaries('messages:\n\tgreeting: Hi\n', 'TH1101')).toEqual([
+      'Thoth catalog YAML is invalid: Tabs are not allowed as indentation',
     ]);
   });
 });
@@ -228,19 +228,19 @@ describe('a catalog the YAML parser could not read', () => {
 describe('catalogs that are missing and catalogs that will not parse', () => {
   it('treats having no messages yet as a note, and says where the first one goes', async () => {
     expect(await catalogDiscoveryLines([])).toEqual([
-      'info EQ1702: Equator found no messages yet. Write the first catalog at i18n/<scope>/en-US.yaml, for example i18n/shell/en-US.yaml.',
+      'info TH1702: Thoth found no messages yet. Write the first catalog at i18n/<scope>/en-US.yaml, for example i18n/shell/en-US.yaml.',
     ]);
   });
 
   it('names the one it found and could not read', async () => {
     expect(await catalogDiscoveryLines(['shell'])).toEqual([
-      'error EQ1702: Equator found 1 conventional catalog and could not read it: i18n/shell/en-US.yaml.',
+      'error TH1702: Thoth found 1 conventional catalog and could not read it: i18n/shell/en-US.yaml.',
     ]);
   });
 
   it('names all of them while the list is short enough to read', async () => {
     expect(await catalogDiscoveryLines(['cart', 'shell'])).toEqual([
-      'error EQ1702: Equator found 2 conventional catalogs and could not read any of them: i18n/cart/en-US.yaml, i18n/shell/en-US.yaml.',
+      'error TH1702: Thoth found 2 conventional catalogs and could not read any of them: i18n/cart/en-US.yaml, i18n/shell/en-US.yaml.',
     ]);
   });
 
@@ -256,7 +256,7 @@ describe('catalogs that are missing and catalogs that will not parse', () => {
         'shell',
       ]),
     ).toEqual([
-      'error EQ1702: Equator found 7 conventional catalogs and could not read any of them: i18n/account/en-US.yaml, i18n/admin/en-US.yaml, i18n/cart/en-US.yaml, i18n/checkout/en-US.yaml, i18n/help/en-US.yaml, i18n/search/en-US.yaml and 1 more.',
+      'error TH1702: Thoth found 7 conventional catalogs and could not read any of them: i18n/account/en-US.yaml, i18n/admin/en-US.yaml, i18n/cart/en-US.yaml, i18n/checkout/en-US.yaml, i18n/help/en-US.yaml, i18n/search/en-US.yaml and 1 more.',
     ]);
   });
 });
@@ -264,7 +264,7 @@ describe('catalogs that are missing and catalogs that will not parse', () => {
 /**
  * What a refused message says, held as text.
  *
- * The same family as EQ1101 above. `MessageSyntaxError.message` is the parser's own type slug
+ * The same family as TH1101 above. `MessageSyntaxError.message` is the parser's own type slug
  * followed by the offset, `parse-error at 6`, and `MessageDataModelError` adds nothing to it, so a
  * diagnostic that carries it whole reads
  * `MessageFormat missing-selector-annotation: missing-selector-annotation`: the slug twice over,
@@ -409,7 +409,7 @@ describe('a message the parser or the validator refuses', () => {
 
   it('covers every type the pinned parser and validator can produce', () => {
     // The sentences above are one per type, which is a claim about the sources rather than about
-    // Equator, so it is checked against the thing that raises them. A type this file stopped
+    // Thoth, so it is checked against the thing that raises them. A type this file stopped
     // exercising would otherwise leave its sentence asserted by nothing.
     const produced = new Set<string>();
     for (const [, source] of cases) {

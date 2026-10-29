@@ -16,7 +16,7 @@ import type {
 import {
   type FormattingContext,
   type MessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * One message, parsed by the real parser and evaluated by the real evaluator.
@@ -65,9 +65,9 @@ function compiledCatalogFor(
     outputParts,
   };
   return {
-    profile: 'equator-compiled-ir/1',
-    generatedAbi: 'equator-generated/1',
-    standardsProfile: 'equator-1',
+    profile: 'thoth-compiled-ir/1',
+    generatedAbi: 'thoth-generated/1',
+    standardsProfile: 'thoth-1',
     key: {
       providerId: 'selection',
       scopeId: 'selection',
@@ -100,7 +100,7 @@ export function renderSemantics(
 ): string {
   const catalog = compiledCatalogFor(semantics, inputs);
   const handle: MessageHandle = {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     providerId: 'selection',
     scopeId: 'selection',
     messageId: 'subject',

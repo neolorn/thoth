@@ -1,5 +1,5 @@
 /** Generated from cldr-localenames-full 48.2.0 by tools/generate-locale-profile.ts. */
-export const ENDONYM_PROFILE = 'cldr-48.2/equator-endonyms-1' as const;
+export const ENDONYM_PROFILE = 'cldr-48.2/thoth-endonyms-1' as const;
 
 /**
  * The name each locale has for itself, in itself, keyed by CLDR locale identifier.
@@ -7,7 +7,7 @@ export const ENDONYM_PROFILE = 'cldr-48.2/equator-endonyms-1' as const;
  * Derived by TR35 locale display name from the same CLDR release the rest of the profile comes
  * from, so a switcher renders one label for a locale on every engine and on both sides of
  * hydration. The engine's own answer is not wrong, it is merely the engine's: measured over the
- * four engines Equator gates on, three of sixteen locales disagreed, and a server-rendered label
+ * four engines Thoth gates on, three of sixteen locales disagreed, and a server-rendered label
  * that changes on hydration is a defect no consumer can fix.
  *
  * A locale absent from this table is one CLDR has no name for. There are

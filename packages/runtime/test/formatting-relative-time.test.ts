@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { decimal, formatRelativeTime } from '../src/formatting.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 /**
  * What formatting an offset in a unit hands back, and what it refuses.

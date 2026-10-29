@@ -18,7 +18,7 @@ import type { ToolkitDiagnostic } from '../src/index.js';
  *
  * The alternative designs are both wrong. Making every application hand-write a list of startup
  * scopes is wiring that has to be maintained forever and will drift. Loading every scope at
- * startup is the same defect with nobody to blame for it. Equator analyses the route tree, so it
+ * startup is the same defect with nobody to blame for it. Thoth analyses the route tree, so it
  * can see the boundaries and derive the answer.
  *
  * A file behind a boundary that something eager also imports is eager: the first render already
@@ -237,7 +237,7 @@ describe('routes that split the bundle', () => {
     // names its own loaders.
     const diagnostics = await diagnose(sharedComponentApplication(true));
 
-    const eager = diagnostics.filter(({ code }) => code === 'EQ1407');
+    const eager = diagnostics.filter(({ code }) => code === 'TH1407');
     expect(eager).toHaveLength(1);
     expect(eager[0]?.severity).toBe('warning');
     expect(eager[0]?.summary).toContain('/lazy');
@@ -250,7 +250,7 @@ describe('routes that split the bundle', () => {
     // route file through the dynamic import the closure does not follow.
     const diagnostics = await diagnose(sharedComponentApplication(false));
 
-    expect(diagnostics.filter(({ code }) => code === 'EQ1407')).toEqual([]);
+    expect(diagnostics.filter(({ code }) => code === 'TH1407')).toEqual([]);
     expect(await analyse(sharedComponentApplication(false))).toContain(
       'src/second.ts',
     );

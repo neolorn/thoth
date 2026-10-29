@@ -7,7 +7,7 @@ import {
 import type {
   LocaleUrlPolicy,
   RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 const POLICY: LocaleUrlPolicy = {
   kind: 'path-prefix',
@@ -21,7 +21,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-HandlerDevelopmentReportsTestIdentity012345',
     routes: [{ id: 'route:_index', path: '', parameterNames: [] }],
   },

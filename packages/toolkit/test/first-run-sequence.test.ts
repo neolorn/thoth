@@ -37,7 +37,7 @@ async function listing(root: string): Promise<string[]> {
     )
     .filter(
       (path) =>
-        !path.startsWith('.equator/') && !path.startsWith('src/generated/'),
+        !path.startsWith('.thoth/') && !path.startsWith('src/generated/'),
     )
     .sort();
 }
@@ -82,7 +82,7 @@ describe('the first run', () => {
     });
     expect(initialized.ok).toBe(true);
     // The one file init writes besides the package manifest it edits.
-    written.add('equator.config.json');
+    written.add('thoth.config.json');
 
     // Before a single catalog: success, and only a note saying where the first one goes.
     const empty = await generate('before the first catalog');

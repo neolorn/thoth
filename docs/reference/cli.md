@@ -1,6 +1,6 @@
 # Command line
 
-Every command and every flag the `equator` command line accepts. The text below is the output of
+Every command and every flag the `thoth` command line accepts. The text below is the output of
 `--help` on the built CLI, captured by running it.
 
 This page is generated from the packages and is not edited by hand.
@@ -9,20 +9,20 @@ Running these commands in a project is
 [How to run generation in your build](../how-to/run-generation-in-your-build.md).
 
 ```text
-Usage: equator <command> [options]
+Usage: thoth <command> [options]
 
 Commands:
-  init       Add compatible Equator configuration and package setup
+  init       Add compatible Thoth configuration and package setup
   generate   Compile and safely publish generated #i18n artifacts
   check      Validate authored inputs, analysis, and generated freshness
-  format     Canonically format Equator configuration and catalogs
-  clean      Remove only verified Equator-owned generated and work state
-  uninstall  Remove Equator from this owner, keeping authored catalogs
+  format     Canonically format Thoth configuration and catalogs
+  clean      Remove only verified Thoth-owned generated and work state
+  uninstall  Remove Thoth from this owner, keeping authored catalogs
   watch      Reconcile changes in one foreground process
-  migrate    Preview or apply one explicit Equator-authored migration plan
+  migrate    Preview or apply one explicit Thoth-authored migration plan
 
 Common options:
-  --project <path>   Select an owner directory or equator.config.json
+  --project <path>   Select an owner directory or thoth.config.json
   --json             Emit deterministic machine-readable JSON
   --dry-run          Preview init, generate, format, clean, uninstall, or migrate
   --help             Show this help
@@ -32,7 +32,7 @@ Init options:
   --source-locale <locale>
       The locale the authored source catalogs are written in.
   --default-locale <locale>
-      The locale served when a request asks for none Equator supports.
+      The locale served when a request asks for none Thoth supports.
   --locale <locale>   (repeatable)
       Every locale this project supports. Repeat for each one.
   --person-name-locale <locale>   (repeatable)
@@ -62,7 +62,7 @@ Init options:
 
   A repeatable flag may appear more than once. Where a value contains "=", the left side is a
   path beneath the field: "eg=ar-EG" sets one entry, "en-Latn-XA.markers=true" sets one
-  option of one entry. Every field equator.config.json accepts is above; there is no other way
+  option of one entry. Every field thoth.config.json accepts is above; there is no other way
   to set one.
 
 Uninstall options:
@@ -75,7 +75,7 @@ Check options:
   --pseudo           Also generate the configured pseudo-locales (development only)
 
 Migrate options:
-  --plan <path>      Select one equator-authored-change-plan/1 JSON file
+  --plan <path>      Select one thoth-authored-change-plan/1 JSON file
   --project <owner>  Select the explicit migration owner (required)
 
 Exit codes: 0 success, 1 diagnostics, 2 invocation/configuration, 3 environment, 130 interruption.

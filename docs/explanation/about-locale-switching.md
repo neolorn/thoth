@@ -34,7 +34,7 @@ the page changes.
 A change is coordinated unless it asks otherwise: the commit waits for every scope the view renders,
 so the wait is as long as the slowest catalog. Text below the fold or behind an interaction does not
 have to be part of that wait. A progressive change commits with the scopes that are ready and loads
-the ones named as progressive beside it. Equator reports where each of those stands through
+the ones named as progressive beside it. Thoth reports where each of those stands through
 `scopeReadiness` and decides nothing about the region that renders it: a placeholder, the previous
 content, or nothing at all is the application's choice, because only the application knows what
 that region is for.
@@ -68,7 +68,7 @@ Server-rendered HTML is claimed by hydration rather than rewritten, and hydratio
 the server chose rather than negotiating one. Content behind a deferred hydration boundary can be
 claimed after a locale has changed. Angular's ordinary update pass then finds the stored binding
 value no longer matching the committed locale and writes the current one over the claimed DOM, so
-the block shows the committed locale. Equator adds no repair of its own for this. Content placed
+the block shows the committed locale. Thoth adds no repair of its own for this. Content placed
 behind a boundary that Angular's public APIs cannot hydrate or replace is outside that guarantee.
 
 `renderedLocale()` reports the locale the server-rendered document was written in, and `undefined` in
@@ -88,5 +88,5 @@ stays. That is one of the costs of choosing that policy, and it is weighed in
 
 - [How to add a locale switcher](../how-to/add-a-locale-switcher.md)
 - [How to render on the server](../how-to/render-on-the-server.md)
-- [How to extend Equator](../how-to/add-an-extension.md)
+- [How to extend Thoth](../how-to/add-an-extension.md)
 - [How to test localized output](../how-to/test-localized-output.md)

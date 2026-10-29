@@ -5,7 +5,7 @@ hydration claims that HTML rather than rewriting it.
 
 ## Before you begin
 
-`@neolorn/equator/ssr` is a separate entry point with `@angular/ssr` as an optional peer. A
+`@neolorn/thoth/ssr` is a separate entry point with `@angular/ssr` as an optional peer. A
 browser-only application installs neither the peer nor this code.
 
 This page starts from an application localized as the [tutorial](../tutorial.md) localizes one, with
@@ -17,7 +17,7 @@ server rendering added by `ng add @angular/ssr` or chosen at `ng new`. The CLI's
 ```text
 import { mergeApplicationConfig, type ApplicationConfig } from '@angular/core';
 import { RenderMode } from '@angular/ssr';
-import { provideLocalizedServerRendering } from '@neolorn/equator/ssr';
+import { provideLocalizedServerRendering } from '@neolorn/thoth/ssr';
 import { configuration } from '#i18n';
 
 import { appConfig } from './app.config';
@@ -136,7 +136,7 @@ spelling is `308`. The first also carries `Cache-Control: private, no-cache` and
 one locale spells, which only a locale-neutral policy has, carries the same `Vary`.
 
 How long a correction or a page may be kept does depend on your deployment, so a render leaves that
-out. The handler in `@neolorn/equator/http` writes it from the numbers you give it, which is
+out. The handler in `@neolorn/thoth/http` writes it from the numbers you give it, which is
 [How to control how your pages are cached](control-caching.md).
 
 ## Related

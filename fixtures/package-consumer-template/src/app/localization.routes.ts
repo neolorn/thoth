@@ -4,7 +4,7 @@ import {
   defineRouteProjection,
   type RouteParameterContext,
   type RouteParameterCodec,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { routeProjection } from '#i18n/routes';
 
 export { routePolicy, SITE_ORIGIN } from './route-policy';
@@ -28,12 +28,12 @@ export const articleSlugCodec: RouteParameterCodec<string> = Object.freeze({
  * Identity in both directions, and it takes no `RouteParameterContext` at all: the omission is the
  * statement. `articleSlugCodec` above knows both spellings because they are in its source; a
  * dossier's Arabic slug is in a database, so no synchronous pure function can produce it and this
- * one does not pretend to. Without a declaration Equator therefore advertises the English slug
+ * one does not pretend to. Without a declaration Thoth therefore advertises the English slug
  * under the Arabic prefix, which resolves and is not Arabic. `LocalizedRouteParameters` is what
  * supplies the fact this cannot.
  *
  * It still has to *read* every spelling, including the ones it could never have written: an
- * address Equator emits and cannot resolve is worse than one it never emitted, and
+ * address Thoth emits and cannot resolve is worse than one it never emitted, and
  * `buildLocalizedRoute` refuses a declared spelling this rejects.
  */
 export const dossierSlugCodec: RouteParameterCodec<string> = Object.freeze({
@@ -86,7 +86,7 @@ export const exerciseSheetCodec: RouteParameterCodec<string> = Object.freeze({
  */
 export const parameterlessProjection = defineRouteProjection({
   generated: Object.freeze({
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-parameterless-projection-fixture',
     routes: Object.freeze([
       Object.freeze({

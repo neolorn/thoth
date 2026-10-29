@@ -26,10 +26,10 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 /**
  * Whether the gate can fail at all.
  *
- * Everything else here is verified by `equator check` or by the `verify` scripts, and neither can
+ * Everything else here is verified by `thoth check` or by the `verify` scripts, and neither can
  * fail on the things the rest of it depends on unless the success path reads severity: without it,
- * `equator check --require-complete` returns exit 0 and `"status": "success"` while carrying
- * `EQ1310` at `severity: error`, and `equator generate` does the same. A gate that cannot report a
+ * `thoth check --require-complete` returns exit 0 and `"status": "success"` while carrying
+ * `TH1310` at `severity: error`, and `thoth generate` does the same. A gate that cannot report a
  * failure is not a weaker gate, it is a claim nobody is holding.
  *
  */
@@ -85,14 +85,14 @@ async function createProject(prefix: string): Promise<string> {
     [
       'en-US',
       [
-        '  app-title: Equator gate fixture',
+        '  app-title: Thoth gate fixture',
         '  recovery.unavailable: Localization is temporarily unavailable.',
       ],
     ],
     [
       'ar-EG',
       [
-        '  app-title: تطبيق Equator',
+        '  app-title: تطبيق Thoth',
         '  recovery.unavailable: الترجمة غير متاحة مؤقتًا.',
       ],
     ],
@@ -143,7 +143,7 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
     expect(fresh.ok).toBe(true);
     if (!fresh.ok) return;
     expect(fresh.value.freshness.fresh).toBe(true);
-    expect(fresh.diagnostics.some(({ code }) => code === 'EQ1704')).toBe(false);
+    expect(fresh.diagnostics.some(({ code }) => code === 'TH1704')).toBe(false);
 
     // Authoring a message without regenerating is the ordinary way output goes stale, and the
     // reason friendly mode must not fail on it.
@@ -152,7 +152,7 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
       'i18n/shell/en-US.yaml',
       [
         'messages:',
-        '  app-title: Equator gate fixture',
+        '  app-title: Thoth gate fixture',
         '  added-later: Added after generation',
         '  recovery.unavailable: Localization is temporarily unavailable.',
         '',
@@ -166,7 +166,7 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
     expect(advisory.ok).toBe(true);
     if (!advisory.ok) return;
     expect(advisory.value.freshness.fresh).toBe(false);
-    const advised = advisory.diagnostics.find(({ code }) => code === 'EQ1704');
+    const advised = advisory.diagnostics.find(({ code }) => code === 'TH1704');
     expect(advised?.severity).toBe('warning');
     expect(diagnosticsBlock(advisory.diagnostics)).toBe(false);
 
@@ -177,7 +177,7 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
     });
     expect(strict.ok).toBe(true);
     if (!strict.ok) return;
-    const blocked = strict.diagnostics.find(({ code }) => code === 'EQ1704');
+    const blocked = strict.diagnostics.find(({ code }) => code === 'TH1704');
     expect(blocked?.severity).toBe('error');
     expect(diagnosticsBlock(strict.diagnostics)).toBe(true);
     claimCapability('cli:check');
@@ -194,7 +194,7 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
       'i18n/shell/ar-EG.yaml',
       [
         'messages:',
-        '  app-title: تطبيق Equator',
+        '  app-title: تطبيق Thoth',
         '  added-later: أضيف بعد التوليد',
         '  recovery.unavailable: الترجمة غير متاحة مؤقتًا.',
         '',
@@ -205,7 +205,7 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
       'i18n/shell/en-US.yaml',
       [
         'messages:',
-        '  app-title: Equator gate fixture',
+        '  app-title: Thoth gate fixture',
         '  added-later: Added after generation',
         '  recovery.unavailable: Localization is temporarily unavailable.',
         '',
@@ -222,7 +222,7 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
     expect(completeOnly.ok).toBe(true);
     if (!completeOnly.ok) return;
     expect(
-      completeOnly.diagnostics.find(({ code }) => code === 'EQ1704')?.severity,
+      completeOnly.diagnostics.find(({ code }) => code === 'TH1704')?.severity,
     ).toBe('warning');
     claimCapability('cli:check');
   });

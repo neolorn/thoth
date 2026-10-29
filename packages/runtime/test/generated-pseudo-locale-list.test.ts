@@ -6,7 +6,7 @@ import {
   localizedServerRoutes,
   type GeneratedConfiguration,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The shape of the pseudo-locale list a generated configuration carries, as the route table reads it.
@@ -18,7 +18,7 @@ import {
 
 const projection = (): RouteRuntimeProjection => ({
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-GeneratedPseudoLocaleListTestIdentity012345',
     routes: [{ id: 'second', path: 'second', parameterNames: [] }],
   },
@@ -29,7 +29,7 @@ const configurationFor = (
   pseudoLocales: unknown,
 ): GeneratedConfiguration =>
   ({
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
     locales,

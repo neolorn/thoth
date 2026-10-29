@@ -14,7 +14,7 @@ import { writtenCatalog } from './fixtures.js';
 /**
  * Round-trip, idempotence and differential properties over generated input.
  *
- * These exist because of `equator format`. Building a plain object from the semantic model and
+ * These exist because of `thoth format`. Building a plain object from the semantic model and
  * stringifying it drops every comment, because comments are not in that model, so a command whose
  * name promises presentation changes deletes them all from a consumer's catalogs: twelve across
  * four files on one real catalog set, two of them load-bearing. `lossless-format.test.ts` pins that
@@ -187,7 +187,7 @@ interface GeneratedCatalog {
 }
 
 /**
- * An Equator catalog as an author would have written one, comments included.
+ * A Thoth catalog as an author would have written one, comments included.
  *
  * Comments are the point. They exist only in the file, never in the semantic model, so any
  * transform that goes through the model loses them, which is exactly what happened.
@@ -268,7 +268,7 @@ describe('formatting a catalog source is lossless and idempotent', () => {
       expect(twice.ok, once.value).toBe(true);
       if (!twice.ok) continue;
 
-      // Without this, `equator format` in a pre-commit hook can loop, and a `check --fix` can
+      // Without this, `thoth format` in a pre-commit hook can loop, and a `check --fix` can
       // report work remaining on a file it just wrote.
       expect(twice.value, source).toBe(once.value);
     }
@@ -310,7 +310,7 @@ describe('a catalog survives the model round trip', () => {
       expect(reparsed.ok, written).toBe(true);
       if (!reparsed.ok) continue;
 
-      // `formatCatalog` goes through the semantic model by design, it is how Equator writes a
+      // `formatCatalog` goes through the semantic model by design, it is how Thoth writes a
       // catalog it composed rather than one an author wrote, so comments are legitimately absent
       // here. What must not be absent is anything the model holds.
       expect(reparsed.value.messages, written).toEqual(parsed.value.messages);
@@ -384,7 +384,7 @@ describe('locale canonicalization is a fixed point and agrees with the platform'
       if (!result.ok) continue;
 
       // A differential rather than a pinned string, and against a *different* ECMA-402 entry point
-      // than the one Equator calls: `canonicalizeLocale` goes through
+      // than the one Thoth calls: `canonicalizeLocale` goes through
       // `Intl.getCanonicalLocales`, and this checks the answer against `Intl.Locale`, which is a
       // separate algorithm over the same standard. Pinning `en-US` here would pin one ICU edition
       // and turn every platform bump into a failure nobody could tell from a regression.

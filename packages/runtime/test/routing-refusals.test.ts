@@ -11,7 +11,7 @@ import {
   type GeneratedRouteProjectionEntry,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -75,7 +75,7 @@ const valid = (overrides: Overrides = {}): RouteRuntimeProjection => ({
     // `validateRouteProjection` from a generated file on disk, where no type held it. The runtime
     // check exists for exactly the value the compiler will not let this file name.
     profile: (overrides.profile ??
-      'equator-route-projection/1') as 'equator-route-projection/1',
+      'thoth-route-projection/1') as 'thoth-route-projection/1',
     identity: overrides.identity ?? IDENTITY,
     routes: overrides.routes ?? ROUTES,
   },
@@ -112,7 +112,7 @@ describe('what a generated route projection is refused for', () => {
   });
 
   it('refuses a profile or an identity it did not write', () => {
-    expect(validating({ profile: 'equator-route-projection/2' })).toContain(
+    expect(validating({ profile: 'thoth-route-projection/2' })).toContain(
       'profile or identity',
     );
     // The identity is a sha256 in base64url and its length is the check: 43 characters after the
@@ -379,7 +379,7 @@ describe('what an address is refused for before any route sees it', () => {
       ).toBe('malformed');
     }
     // A backslash is a path separator to some parsers and a literal to others, so an address
-    // carrying one means different things to Equator and to whatever serves the file.
+    // carrying one means different things to Thoth and to whatever serves the file.
     expect(statusOf('/en-us\\second')).toBe('malformed');
   });
 
@@ -455,7 +455,7 @@ describe('what an address is refused for before any route sees it', () => {
 
 describe('the credential-free origin rule, at both sites that apply it', () => {
   const CONFIGURATION: GeneratedConfiguration = {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
     locales: ['en-US', 'ar-EG'],

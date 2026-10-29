@@ -416,7 +416,7 @@ for (const step of declaredSteps) {
 // no file named each leave a stage at its own level.
 assert.equal(stagePriority({ id: 'b' }, true), 'normal');
 const liftedBy = (text: string | undefined) =>
-  priorityLifted({ EQUATOR_VERIFY_PRIORITY_FILE: 'level' }, () => {
+  priorityLifted({ THOTH_VERIFY_PRIORITY_FILE: 'level' }, () => {
     if (text === undefined) throw new Error('ENOENT');
     return text;
   });
@@ -428,7 +428,7 @@ assert.deepEqual(
     liftedBy(''),
     liftedBy(undefined),
     priorityLifted({}, () => 'normal'),
-    priorityLifted({ EQUATOR_VERIFY_PRIORITY_FILE: '' }, () => 'normal'),
+    priorityLifted({ THOTH_VERIFY_PRIORITY_FILE: '' }, () => 'normal'),
   ],
   [true, true, false, false, false, false, false],
   'The run is lifted by something other than a named file whose text is normal.',
@@ -701,8 +701,8 @@ const runCaptured = async (
 };
 const marker = 'the planted stage named what failed';
 const thrown = await runCaptured(
-  "process.stderr.write('Building\\n'); throw new Error('x'.repeat(99).concat('\\n').repeat(3000) + process.env.EQUATOR_SELF_TEST_MARKER);",
-  { EQUATOR_SELF_TEST_MARKER: marker },
+  "process.stderr.write('Building\\n'); throw new Error('x'.repeat(99).concat('\\n').repeat(3000) + process.env.THOTH_SELF_TEST_MARKER);",
+  { THOTH_SELF_TEST_MARKER: marker },
 );
 assert.equal(thrown.exitCode, 1, 'A stage that threw did not exit 1.');
 assert.ok(
@@ -713,8 +713,8 @@ assert.ok(
 // `options.detached`), and only a child that outlives the first process can hold its output.
 const grandchild = (stdio: string) =>
   runCaptured(
-    "const child = require('node:child_process').spawn(process.execPath, ['-e', \"setTimeout(() => console.log('the child ended'), 1500)\"], { stdio: process.env.EQUATOR_SELF_TEST_STDIO, detached: true }); child.unref(); console.log('the first process ended');",
-    { EQUATOR_SELF_TEST_STDIO: stdio },
+    "const child = require('node:child_process').spawn(process.execPath, ['-e', \"setTimeout(() => console.log('the child ended'), 1500)\"], { stdio: process.env.THOTH_SELF_TEST_STDIO, detached: true }); child.unref(); console.log('the first process ended');",
+    { THOTH_SELF_TEST_STDIO: stdio },
   );
 const inherited = await grandchild('inherit');
 assert.ok(

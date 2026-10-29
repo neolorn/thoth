@@ -14,7 +14,7 @@ import {
   UrlSerializer,
   type UrlTree,
 } from '@angular/router';
-import { toInternalPath, type LocalizedAddressContext } from '@neolorn/equator';
+import { toInternalPath, type LocalizedAddressContext } from '@neolorn/thoth';
 
 /**
  * The same delocalization the `LocationStrategy` performs, on the one path it cannot see.
@@ -101,7 +101,7 @@ export class LocalizedUrlHandlingStrategy extends UrlHandlingStrategy {
   private report(supplied: string, internal: string): void {
     if (!isDevMode()) return;
     console.warn(
-      `[Equator] A navigation to ${JSON.stringify(supplied)} is not the canonical address of the route it reaches. Equator resolves it as ${JSON.stringify(internal)} and renders it in the locale that is committed now, so a locale the address names is ignored rather than applied. Navigate to the canonical address ${JSON.stringify(internal)}, and change locale with Localization.changeLocale(): switching locale is its own operation, and it moves the address bar for you.`,
+      `[Thoth] A navigation to ${JSON.stringify(supplied)} is not the canonical address of the route it reaches. Thoth resolves it as ${JSON.stringify(internal)} and renders it in the locale that is committed now, so a locale the address names is ignored rather than applied. Navigate to the canonical address ${JSON.stringify(internal)}, and change locale with Localization.changeLocale(): switching locale is its own operation, and it moves the address bar for you.`,
     );
   }
 

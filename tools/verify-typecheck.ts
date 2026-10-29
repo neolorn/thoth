@@ -38,7 +38,7 @@ const IGNORED_DIRECTORIES = new Set([
   'node_modules',
   'dist',
   '.git',
-  '.equator',
+  '.thoth',
   'tmp',
 ]);
 
@@ -262,12 +262,12 @@ if (
   toolsRun.status !== 0
 ) {
   process.stderr.write(
-    `${diagnostics.join('\n')}\n\nEquator typecheck failed with ${diagnostics.length} error(s).\n`,
+    `${diagnostics.join('\n')}\n\nThoth typecheck failed with ${diagnostics.length} error(s).\n`,
   );
   process.exit(1);
 }
 
 process.stdout.write(
-  `Equator typecheck verified: ${loaded.size} files loaded across ${roots.length} source roots, ` +
+  `Thoth typecheck verified: ${loaded.size} files loaded across ${roots.length} source roots, ` +
     `${expected.size} entry points mapped, ${toolFiles.length} tools loaded, no type errors.\n`,
 );

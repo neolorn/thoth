@@ -68,7 +68,7 @@ function missingCategories(declarations: readonly unknown[]): number {
     ],
   });
   expect(result.ok).toBe(true);
-  return result.diagnostics.filter(({ code }) => code === 'EQ1308').length;
+  return result.diagnostics.filter(({ code }) => code === 'TH1308').length;
 }
 
 const local = (name: string | undefined, value: object): unknown => ({

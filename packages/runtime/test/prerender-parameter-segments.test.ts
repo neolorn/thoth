@@ -9,7 +9,7 @@ import {
   type LocaleUrlPolicy,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The spelling a codec writes for a value a build is told to render ahead of time.
@@ -28,7 +28,7 @@ const TEXT: RouteParameterCodec<string> = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-PrerenderParameterSegmentsTestIdentity01234',
     routes: [
       { id: 'article', path: 'articles/:slug', parameterNames: ['slug'] },
@@ -38,7 +38,7 @@ const PROJECTION: RouteRuntimeProjection = {
 };
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],

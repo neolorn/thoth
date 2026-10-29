@@ -24,7 +24,7 @@ import {
   type LocaleUrlPolicy,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A parameter spelling the codec cannot produce, supplied by whoever loaded the record.
@@ -69,7 +69,7 @@ const POLICY: LocaleUrlPolicy = {
 function projectionWith(codec: RouteParameterCodec): RouteRuntimeProjection {
   return {
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: 'sha256-DeclaredParameterSpellingsFixture0123456789',
       routes: [
         {
@@ -87,7 +87,7 @@ function projectionWith(codec: RouteParameterCodec): RouteRuntimeProjection {
 const PROJECTION = projectionWith(IDENTITY);
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],
@@ -139,7 +139,7 @@ describe('a declared route parameter spelling', () => {
   });
 
   it('refuses a declared spelling the codec cannot read back', () => {
-    // The declaration is checked, not trusted. An address Equator emits and cannot resolve is worse
+    // The declaration is checked, not trusted. An address Thoth emits and cannot resolve is worse
     // than one it never emitted: it becomes an `hreflang` link to a 404, or a locale switch that
     // lands the reader on nothing. The codec here reads only the English slug, so the Arabic
     // declaration is one this application could not serve.

@@ -8,7 +8,7 @@ import {
   findEvaluationCandidate,
 } from '../src/evaluator.js';
 import { RuntimeExtensions } from '../src/extensions.js';
-import type { MessageHandle } from '@neolorn/equator/core';
+import type { MessageHandle } from '@neolorn/thoth/core';
 
 /**
  * A translation missing from one locale is not a page missing from the application.
@@ -45,9 +45,9 @@ function catalogFor(
     outputParts: 8,
   };
   return {
-    profile: 'equator-compiled-ir/1',
-    generatedAbi: 'equator-generated/1',
-    standardsProfile: 'equator-1',
+    profile: 'thoth-compiled-ir/1',
+    generatedAbi: 'thoth-generated/1',
+    standardsProfile: 'thoth-1',
     key: { providerId: 'home', scopeId: 'article', catalogLocale: locale },
     applicationContractFingerprint: 'test',
     semanticRegistryFingerprint: 'test',
@@ -68,7 +68,7 @@ function catalogFor(
 }
 
 const HANDLE = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   providerId: 'home',
   scopeId: 'article',
   messageId: 'article.byline',

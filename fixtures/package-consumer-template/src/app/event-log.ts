@@ -1,7 +1,7 @@
-import { type LocalizationObservabilitySink } from '@neolorn/equator';
+import { type LocalizationObservabilitySink } from '@neolorn/thoth';
 
 /**
- * Where this application sends what Equator reports: one line per event on the console, which is
+ * Where this application sends what Thoth reports: one line per event on the console, which is
  * the process's standard output on the server and while the build prerenders, and the developer
  * console in a browser. A deployment hands the same lines to its own log collection.
  *
@@ -9,5 +9,5 @@ import { type LocalizationObservabilitySink } from '@neolorn/equator';
  * any language, so it reads the same whichever locale the page was in.
  */
 export const eventLog = Object.freeze<LocalizationObservabilitySink>({
-  emit: (event) => console.info(`equator-event ${JSON.stringify(event)}`),
+  emit: (event) => console.info(`thoth-event ${JSON.stringify(event)}`),
 });

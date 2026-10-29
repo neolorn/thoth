@@ -4,7 +4,7 @@ import { localizedRouteTable } from '../router/src/route-table.js';
 import {
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Which authored entries become addresses, and which spellings a branch may carry.
@@ -40,7 +40,7 @@ const projectionOf = (
   localizedPaths?: RouteRuntimeProjection['localizedPaths'],
 ): RouteRuntimeProjection => ({
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-RouteTableFlatteningTestIdentity0123456789_',
     routes,
   },

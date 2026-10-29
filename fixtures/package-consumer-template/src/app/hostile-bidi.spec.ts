@@ -9,7 +9,7 @@ import {
   LocalizedMessage,
   provideLocalizationSetup,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -181,7 +181,7 @@ describe('isolation of interpolated values', () => {
     });
 
     expect(text).toContain('ABC');
-    // The override is still in the value, because Equator does not silently rewrite consumer data,
+    // The override is still in the value, because Thoth does not silently rewrite consumer data,
     // but it is wrapped, so its effect cannot escape the placeholder.
     const start = text.indexOf(FSI);
     const end = text.indexOf(PDI);

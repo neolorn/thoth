@@ -27,16 +27,16 @@ the lowest version of each line other than the one this repository develops on.
 | `@angular/compiler` | `>=22.0.0 <23.0.0` (build time) |
 | `typescript`        | `>=6.0.2 <6.1.0` (build time)   |
 
-Angular is a peer, not a dependency, so the copy that compiles your application is the copy Equator
-compiles against. There is never a second Angular in your tree because of Equator.
+Angular is a peer, not a dependency, so the copy that compiles your application is the copy Thoth
+compiles against. There is never a second Angular in your tree because of Thoth.
 
 ## Peers you install only if you use them
 
-`@angular/forms` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/equator/forms`.
+`@angular/forms` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/thoth/forms`.
 
-`@angular/router` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/equator/router`.
+`@angular/router` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/thoth/router`.
 
-`@angular/ssr` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/equator/ssr`.
+`@angular/ssr` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/thoth/ssr`.
 
 Leave one out and the entry point that needs it is the only thing you cannot import. A
 browser-only application installs none of the three.
@@ -45,7 +45,7 @@ browser-only application installs none of the three.
 
 | Row                             | Angular  | TypeScript | RxJS    |
 | ------------------------------- | -------- | ---------- | ------- |
-| Equator development row         | `22.2.1` | `6.0.3`    | `7.8.2` |
+| Thoth development row           | `22.2.1` | `6.0.3`    | `7.8.2` |
 | Angular patch compatibility row | `22.0.4` | `6.0.3`    | `7.8.2` |
 | Demanding compiler options      | `22.2.1` | `6.0.3`    | `7.8.2` |
 | Lowest supported versions       | `22.0.0` | `6.0.2`    | `7.4.0` |
@@ -59,13 +59,13 @@ different versions on the same day, and a row that pins only the framework leave
 unwatched.
 
 `@angular/build` before 22.1.7 finishes a build in which a prerendered page failed to render and
-writes no file for that page. A page Equator refuses after it has started rendering, such as one
+writes no file for that page. A page Thoth refuses after it has started rendering, such as one
 that declares its outcome while prerendering, is then missing from the output instead of failing
 the build.
 
 ## Browsers
 
-Equator targets what your Angular build targets. It adds no browser requirement of its own beyond
+Thoth targets what your Angular build targets. It adds no browser requirement of its own beyond
 `Intl`, which every browser Angular supports has had for years.
 
 What varies between browsers is the data behind `Intl`. Two browsers can format the same date
@@ -75,7 +75,7 @@ rather than on the exact string, which is
 
 ## Formatting a host does not provide
 
-Equator formats with the host's own `Intl`. On a host without the capability a function needs,
+Thoth formats with the host's own `Intl`. On a host without the capability a function needs,
 that function returns a failure with the code `unsupported-formatting-capability` rather than an
 approximation.
 
@@ -87,6 +87,6 @@ These are the hosts each release is run on that lack one:
 
 ## When a version outside the range is installed
 
-The toolkit checks the host before the compiler does anything and refuses with `EQ1806` rather
+The toolkit checks the host before the compiler does anything and refuses with `TH1806` rather
 than attempting a best effort. A refusal names what it found and what it wanted, so the fix is
 the install rather than a bisect.

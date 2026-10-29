@@ -12,7 +12,7 @@ import {
   withObservability,
   type LocalizationFeature,
   type LocalizationObservabilityEvent,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -29,7 +29,7 @@ import { runtimeExtensions } from './runtime-extensions';
  */
 
 const TRANSFER_KEY = makeStateKey<{ readonly primaryLocale: string } | null>(
-  '@neolorn/equator:localization-state/1',
+  '@neolorn/thoth:localization-state/1',
 );
 
 function onTheServer(

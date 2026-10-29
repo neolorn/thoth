@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   type FormattingContext,
   type LocalizedInputProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A numeric field learns how its locale writes a number from what the platform's formatter writes:

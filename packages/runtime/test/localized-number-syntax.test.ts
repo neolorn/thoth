@@ -11,7 +11,7 @@ import { parseLocalizedInput } from '../src/localized-input.js';
 import {
   type FormattingContext,
   type LocalizedInputProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A numeric field reads what its locale writes and nothing else.

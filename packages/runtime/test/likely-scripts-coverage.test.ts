@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canonicalizeLanguageTag,
   type FormattingContext,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import {
   compareLocalized,

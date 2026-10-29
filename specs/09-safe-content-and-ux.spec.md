@@ -1,6 +1,6 @@
 # Safe content and user experience
 
-What a translation is allowed to do in Equator, what a renderer does with what it produces, and what
+What a translation is allowed to do in Thoth, what a renderer does with what it produces, and what
 the interface around it owes a reader: direction, focus, announcement, and the assets beside the
 text.
 

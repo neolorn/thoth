@@ -238,12 +238,12 @@ const thrown = spawnSyncToFiles(
   process.execPath,
   [
     '-e',
-    "process.stderr.write('Building the consumer\\n'); throw new Error('x'.repeat(99).concat('\\n').repeat(3000) + process.env.EQUATOR_SELF_TEST_ASSERTION);",
+    "process.stderr.write('Building the consumer\\n'); throw new Error('x'.repeat(99).concat('\\n').repeat(3000) + process.env.THOTH_SELF_TEST_ASSERTION);",
   ],
   {
     env: {
       ...process.env,
-      EQUATOR_SELF_TEST_ASSERTION:
+      THOTH_SELF_TEST_ASSERTION:
         '[data-locale-choice="ar-EG"] lost focus during the locale commit',
     },
   },

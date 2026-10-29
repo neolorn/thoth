@@ -44,7 +44,7 @@ Classify the route in its own `data`:
 ```text
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Home },
-  { path: 'second', component: Second, data: { equatorIndexing: 'internal' } },
+  { path: 'second', component: Second, data: { thothIndexing: 'internal' } },
 ];
 ```
 
@@ -61,25 +61,25 @@ withRouting({
 }),
 ```
 
-`DEFAULT_ROUTE_INDEXING_FIELD` is `equatorIndexing`. A project that already classifies its routes
+`DEFAULT_ROUTE_INDEXING_FIELD` is `thothIndexing`. A project that already classifies its routes
 names the field it already has. Only the exceptions need naming: a route whose field is absent, or
 whose value the table does not list, is indexable.
 
 A class on a parent route reaches its children the way Angular passes route data down: every child
 under the router's default, and under `paramsInheritanceStrategy: 'emptyOnly'` only a child with an
 empty path or one whose parent renders no component. A class the child states itself wins.
-`generate` reads the strategy from your router configuration, and where it cannot, reports `EQ1416`
+`generate` reads the strategy from your router configuration, and where it cannot, reports `TH1416`
 and passes the class to every child.
 
 Where a parent and its children share an address, the class that counts is the one on the route
 Angular renders there. Where a `matcher` or a `canMatch` guard picks that route when the page is
 visited, `generate` cannot tell which one it is, so it answers the address as `private` and reports
-`EQ1414`.
+`TH1414`.
 
 Both blocks are read from your source text at generate time, which is why this is a field name and a
 table of literals rather than a predicate. A literal can be written in place or through a `const`,
 and route data can arrive through a `const` or a spread of one. A class `generate` cannot read,
-because it is computed, held by a `let` or supplied by a resolver, is reported as `EQ1414`, and until
+because it is computed, held by a `let` or supplied by a resolver, is reported as `TH1414`, and until
 you correct it the route and every route that inherits its data are private.
 
 The indexing field is read by both the page metadata and the sitemap, so a route is classified in one
@@ -105,7 +105,7 @@ export class ArticleRoute {
 ```
 
 Declaring after the page is on screen is the ordinary case, because the load finishes after
-activation. Equator rebuilds the head when the declaration arrives.
+activation. Thoth rebuilds the head when the declaration arrives.
 
 The status `pageOperationalFailure` takes is a whole number from 200 to 599, and the call throws
 `invalid-configuration` for any other.
@@ -118,7 +118,7 @@ not produce the page, which is about one response rather than about the address.
 
 On a server the declaration also reaches the response, which is
 [How to negotiate a locale on your own server](negotiate-on-your-own-server.md). In the browser there
-is no response to reach and Equator invents none.
+is no response to reach and Thoth invents none.
 
 What the page is called while it is missing is yours. Read `context.pageOutcome` in the `document`
 callback and return the wording for it.
@@ -145,7 +145,7 @@ provideLocalizedRouter(routes, {
 Without them the head of a missing page is whatever the previous page left in it, title and
 description and canonical link together, which tells a reader and a crawler they are somewhere they
 are not. They are message handles like every other title, so a missing translation is reported by
-`equator check --require-complete` rather than serving one language's wording under another's.
+`thoth check --require-complete` rather than serving one language's wording under another's.
 
 ## Related
 

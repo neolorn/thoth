@@ -45,7 +45,7 @@ if (consumerProfile.overlay !== undefined) {
 }
 
 // The compiler this row's application uses. Analysis adopts a consumer's own options, so a row
-// that changes them changes the program every Equator diagnostic is computed against.
+// that changes them changes the program every Thoth diagnostic is computed against.
 if (consumerProfile.compilerOptions !== undefined) {
   const tsconfigPath = resolve(consumerRoot, 'tsconfig.json');
   const tsconfig = JSON.parse(await readFile(tsconfigPath, 'utf8'));
@@ -122,8 +122,8 @@ manifest.devDependencies.typescript = consumerProfile.typescript;
 const packageLocator = (outputRoot: string) =>
   builtPackageLocator(consumerRoot, workspaceRoot, outputRoot);
 
-manifest.dependencies['@neolorn/equator'] = packageLocator('dist/runtime');
-manifest.devDependencies['@neolorn/equator-toolkit'] =
+manifest.dependencies['@neolorn/thoth'] = packageLocator('dist/runtime');
+manifest.devDependencies['@neolorn/thoth-toolkit'] =
   packageLocator('dist/toolkit');
 
 await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');

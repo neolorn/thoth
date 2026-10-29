@@ -70,7 +70,7 @@ describe('a catalog entry carries no workflow field', () => {
           role: options.role,
           ok: false,
         });
-        expect(result.diagnostics.map(({ code }) => code)).toContain('EQ1102');
+        expect(result.diagnostics.map(({ code }) => code)).toContain('TH1102');
       }
     },
   );

@@ -94,7 +94,7 @@ interface CodeDescriptionsView {
 /** The one recorded open set of `tools/format-shapes.json` the plants edit. */
 interface FormatShapesView {
   formats: {
-    'equator-toolkit-observability-event/1': {
+    'thoth-toolkit-observability-event/1': {
       declarations: {
         'dist/toolkit/observability.d.ts#ToolkitObservabilityEvent': {
           object: { code: { type: { open: string[] } } };
@@ -133,7 +133,7 @@ const plantMatching =
   (root: string): Promise<void> =>
     editText(root, path, replaceOnceMatching(pattern, replace));
 
-const runtimeBundle = 'dist/runtime/fesm2022/neolorn-equator.mjs';
+const runtimeBundle = 'dist/runtime/fesm2022/neolorn-thoth.mjs';
 
 // The Node rows the compatibility page lists as executed, as the page writes them. Read from the
 // manifest and `.node-version`, so a plant that names them moves when the development Node does.
@@ -290,7 +290,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
           // packed some other way carries it to a consumer, and npm cannot resolve it.
           id: 'workspace-protocol-published',
           plant: editTarball(
-            packedTarball('runtime', 'neolorn-equator'),
+            packedTarball('runtime', 'neolorn-thoth'),
             editManifest((manifest) => {
               manifest.dependencies.tslib = 'workspace:*';
             }),
@@ -300,7 +300,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
         {
           id: 'dependency-the-lock-does-not-hold',
           plant: editTarball(
-            packedTarball('toolkit', 'neolorn-equator-toolkit'),
+            packedTarball('toolkit', 'neolorn-thoth-toolkit'),
             editManifest((manifest) => {
               manifest.dependencies['left-pad'] = '1.3.0';
             }),
@@ -311,7 +311,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
           // A peer range no release of the peer satisfies, which npm refuses and pnpm only warns about.
           id: 'peer-range-nothing-satisfies',
           plant: editTarball(
-            packedTarball('runtime', 'neolorn-equator'),
+            packedTarball('runtime', 'neolorn-thoth'),
             editManifest((manifest) => {
               manifest.peerDependencies.rxjs = '>=8.0.0 <9.0.0';
             }),
@@ -321,9 +321,8 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
         {
           id: 'exported-file-not-packed',
           plant: editTarball(
-            packedTarball('runtime', 'neolorn-equator'),
-            (folder) =>
-              rm(resolve(folder, 'fesm2022/neolorn-equator-http.mjs')),
+            packedTarball('runtime', 'neolorn-thoth'),
+            (folder) => rm(resolve(folder, 'fesm2022/neolorn-thoth-http.mjs')),
           ),
           refusal: /An entry point of the installed packages did not load/u,
         },
@@ -364,7 +363,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             "  | 'parentLocales'\n",
             '',
           ),
-          refusal: /The checked-in equator init option table is stale/u,
+          refusal: /The checked-in thoth init option table is stale/u,
         },
         {
           id: 'settable-field-without-a-description',
@@ -394,16 +393,16 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
           id: 'recorded-toolkit-code-renumbered',
           plant: plantText(
             'dist/toolkit/diagnostic-reference.js',
-            '    EQ1701: ',
-            '    EQ1799: ',
+            '    TH1701: ',
+            '    TH1799: ',
           ),
           refusal:
-            /EQ1701 is in tools\/code-record\.json and ToolkitDiagnosticCode no longer declares it/u,
+            /TH1701 is in tools\/code-record\.json and ToolkitDiagnosticCode no longer declares it/u,
         },
         {
           id: 'recorded-failure-code-withdrawn',
           plant: plantMatching(
-            'dist/runtime/types/neolorn-equator-core.d.ts',
+            'dist/runtime/types/neolorn-thoth-core.d.ts',
             /(["'])participant-timeout\1 \| /u,
             '',
           ),
@@ -413,22 +412,22 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
         {
           id: 'runtime-event-code-moved-to-another-area',
           plant: plantMatching(
-            'dist/runtime/types/neolorn-equator.d.ts',
-            /(readonly transition: ["'])EQ-E2003(["'];\s+readonly formatting: ["'])EQ-E2004(["'];)/u,
-            '$1EQ-E2004$2EQ-E2003$3',
+            'dist/runtime/types/neolorn-thoth.d.ts',
+            /(readonly transition: ["'])TH-E2003(["'];\s+readonly formatting: ["'])TH-E2004(["'];)/u,
+            '$1TH-E2004$2TH-E2003$3',
           ),
           refusal:
-            /EQ-E2003 is recorded for transition and RUNTIME_EVENT_CODES now declares it for formatting/u,
+            /TH-E2003 is recorded for transition and RUNTIME_EVENT_CODES now declares it for formatting/u,
         },
         {
           id: 'toolkit-event-code-moved-to-another-area',
           plant: plantText(
             'dist/toolkit/observability.js',
-            "interchange: 'EQ-E1002',\n    migration: 'EQ-E1003',",
-            "interchange: 'EQ-E1003',\n    migration: 'EQ-E1002',",
+            "interchange: 'TH-E1002',\n    migration: 'TH-E1003',",
+            "interchange: 'TH-E1003',\n    migration: 'TH-E1002',",
           ),
           refusal:
-            /EQ-E1002 is recorded for interchange and TOOLKIT_EVENT_CODES now declares it for migration/u,
+            /TH-E1002 is recorded for interchange and TOOLKIT_EVENT_CODES now declares it for migration/u,
         },
         {
           id: 'declared-code-not-recorded',
@@ -436,12 +435,12 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             'tools/code-record.json',
             (record: { toolkitDiagnostics: string[] }) => {
               record.toolkitDiagnostics = record.toolkitDiagnostics.filter(
-                (code) => code !== 'EQ1416',
+                (code) => code !== 'TH1416',
               );
             },
           ),
           refusal:
-            /Declared and not in tools\/code-record\.json: EQ1416 \(ToolkitDiagnosticCode\)/u,
+            /Declared and not in tools\/code-record\.json: TH1416 \(ToolkitDiagnosticCode\)/u,
         },
         // A failing run that moves its own baseline the way that hides the failure: the built table the
         // stage imports renumbers a recorded code and rewrites the record to match. The stage still
@@ -455,8 +454,8 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
               [
                 "import { readFileSync, writeFileSync } from 'node:fs';",
                 "const recordUrl = new URL('../../tools/code-record.json', import.meta.url);",
-                "writeFileSync(recordUrl, readFileSync(recordUrl, 'utf8').replace('\"EQ1701\"', '\"EQ1799\"'));",
-                replaceOnce('    EQ1701: ', '    EQ1799: ')(text),
+                "writeFileSync(recordUrl, readFileSync(recordUrl, 'utf8').replace('\"TH1701\"', '\"TH1799\"'));",
+                replaceOnce('    TH1701: ', '    TH1799: ')(text),
               ].join('\n'),
             ),
         },
@@ -476,19 +475,19 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
           plant: editJson(
             'tools/code-descriptions.json',
             (descriptions: CodeDescriptionsView) => {
-              descriptions.runtimeEvents['EQ-E2009'] =
+              descriptions.runtimeEvents['TH-E2009'] =
                 'An area the runtime does not declare.';
             },
           ),
           refusal:
-            /tools\/code-descriptions\.json describes EQ-E2009, which RUNTIME_EVENT_CODES does not declare/u,
+            /tools\/code-descriptions\.json describes TH-E2009, which RUNTIME_EVENT_CODES does not declare/u,
         },
         {
           id: 'package-reference-kept-by-hand',
           plant: plantText(
             'packages/toolkit/DIAGNOSTICS.md',
-            '### EQ1701',
-            '### EQ1799',
+            '### TH1701',
+            '### TH1799',
           ),
           refusal:
             /packages[\\/]toolkit[\\/]DIAGNOSTICS\.md does not match the diagnostics table/u,
@@ -497,8 +496,8 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
           id: 'web-reference-kept-by-hand',
           plant: plantText(
             'docs/reference/diagnostics.md',
-            '### EQ1701',
-            '### EQ1799',
+            '### TH1701',
+            '### TH1799',
           ),
           refusal:
             /docs[\\/]reference[\\/]diagnostics\.md does not match the diagnostics table/u,
@@ -844,7 +843,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             '"ht":"fr-HT"',
             '"ht":"fr"',
           ),
-          refusal: /The checked-in Equator parent-locale table is stale/u,
+          refusal: /The checked-in Thoth parent-locale table is stale/u,
         },
         {
           id: 'collation-parent-table-not-the-pinned-one',
@@ -853,7 +852,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             '"yue":"zh-Hant",',
             '',
           ),
-          refusal: /The checked-in Equator parent-locale table is stale/u,
+          refusal: /The checked-in Thoth parent-locale table is stale/u,
         },
         {
           id: 'likely-script-table-not-the-pinned-one',
@@ -862,7 +861,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             'zh-SR zh-TH zh-TW',
             'zh-SR zh-TH',
           ),
-          refusal: /The checked-in Equator likely-script table is stale/u,
+          refusal: /The checked-in Thoth likely-script table is stale/u,
         },
         {
           id: 'language-script-table-not-the-pinned-one',
@@ -871,7 +870,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             'zh-TW zh-US',
             'zh-US',
           ),
-          refusal: /The checked-in Equator language-script table is stale/u,
+          refusal: /The checked-in Thoth language-script table is stale/u,
         },
         {
           id: 'time-zone-table-of-the-toolkit-not-the-pinned-one',
@@ -880,7 +879,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             'Asia/Calcutta>Asia/Kolkata',
             'Asia/Calcutta>Asia/Dhaka',
           ),
-          refusal: /The checked-in Equator time zone identity table is stale/u,
+          refusal: /The checked-in Thoth time zone identity table is stale/u,
         },
         {
           id: 'time-zone-link-not-the-pinned-one',
@@ -889,7 +888,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             'Asia/Calcutta>Asia/Kolkata',
             'Asia/Calcutta>Asia/Dhaka',
           ),
-          refusal: /The checked-in Equator time zone identity table is stale/u,
+          refusal: /The checked-in Thoth time zone identity table is stale/u,
         },
         {
           id: 'zone-a-country-calls-its-own-read-as-a-link',
@@ -898,7 +897,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             'Europe/Oslo',
             'Europe/Oslo_',
           ),
-          refusal: /The checked-in Equator time zone identity table is stale/u,
+          refusal: /The checked-in Thoth time zone identity table is stale/u,
         },
         {
           id: 'former-name-resolved-outside-its-country',
@@ -907,7 +906,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             '#PACKRATLIST zone.tab Link Africa/Bamako Africa/Timbuktu',
             '#PACKRATLIST zone.tab Link Africa/Abidjan Africa/Timbuktu',
           ),
-          refusal: /The checked-in Equator time zone identity table is stale/u,
+          refusal: /The checked-in Thoth time zone identity table is stale/u,
         },
         {
           id: 'fixed-offset-zone-not-the-pinned-one',
@@ -916,7 +915,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             'Etc/GMT+5',
             'Etc/GMT+15',
           ),
-          refusal: /The checked-in Equator time zone identity table is stale/u,
+          refusal: /The checked-in Thoth time zone identity table is stale/u,
         },
         {
           id: 'replacement-name-primary-inside-its-waiting-period',
@@ -925,7 +924,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             '"released": "2022-08-10"',
             '"released": "2025-08-10"',
           ),
-          refusal: /The checked-in Equator time zone identity table is stale/u,
+          refusal: /The checked-in Thoth time zone identity table is stale/u,
         },
         {
           // The table an earlier pin would have left: the former name primary, the new one absent.
@@ -948,8 +947,8 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
                   'Europe/Kiev Europe/Kirov ',
                 )(
                   replaceOnce(
-                    "'tzdata-2026e/equator-time-zone-1'",
-                    "'tzdata-2026d/equator-time-zone-1'",
+                    "'tzdata-2026e/thoth-time-zone-1'",
+                    "'tzdata-2026d/thoth-time-zone-1'",
                   )(text),
                 ),
             );
@@ -964,16 +963,16 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             ',tw>ak,',
             ',tw>tw,',
           ),
-          refusal: /The checked-in Equator locale alias table is stale/u,
+          refusal: /The checked-in Thoth locale alias table is stale/u,
         },
         {
           id: 'plural-table-not-from-the-pinned-source',
           plant: plantText(
             'packages/toolkit/src/plural-categories.generated.ts',
-            "export const PLURAL_DATA_PROFILE = 'cldr-48.2/equator-plurals-1' as const;",
-            "export const PLURAL_DATA_PROFILE = 'cldr-48.2/equator-plurals-2' as const;",
+            "export const PLURAL_DATA_PROFILE = 'cldr-48.2/thoth-plurals-1' as const;",
+            "export const PLURAL_DATA_PROFILE = 'cldr-48.2/thoth-plurals-2' as const;",
           ),
-          refusal: /The checked-in Equator plural-category table is stale/u,
+          refusal: /The checked-in Thoth plural-category table is stale/u,
         },
         {
           id: 'plural-categories-not-the-pinned-ones',
@@ -982,7 +981,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             '"ar":["zero","one","two","few","many","other"],"ars"',
             '"ar":["one","other"],"ars"',
           ),
-          refusal: /The checked-in Equator plural-category table is stale/u,
+          refusal: /The checked-in Thoth plural-category table is stale/u,
         },
         {
           id: 'script-distance-read-as-encompassing',
@@ -991,8 +990,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             '"zh":{"cdo":10',
             '"zh-Hant":{"zh-Hans":50},"zh":{"cdo":10',
           ),
-          refusal:
-            /The checked-in Equator encompassed-language table is stale/u,
+          refusal: /The checked-in Thoth encompassed-language table is stale/u,
         },
       ],
     },
@@ -1021,7 +1019,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
               .flatMap(({ inputs }) => Object.entries(inputs ?? {}))
               .find(([path]) =>
                 path.endsWith(
-                  'node_modules/@neolorn/equator/fesm2022/neolorn-equator-core.mjs',
+                  'node_modules/@neolorn/thoth/fesm2022/neolorn-thoth-core.mjs',
                 ),
               );
             (input as [string, { bytesInOutput: number }])[1].bytesInOutput +=
@@ -1051,14 +1049,14 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             for (const output of Object.values(stats.outputs)) {
               output.inputs = Object.fromEntries(
                 Object.entries(output.inputs ?? {}).map(([path, value]) => [
-                  path.replace('/@neolorn/equator/', '/@neolorn/elsewhere/'),
+                  path.replace('/@neolorn/thoth/', '/@neolorn/elsewhere/'),
                   value,
                 ]),
               );
             }
           }),
           refusal:
-            /Minimal consumer: no input of the build was attributed to @neolorn\/equator\./u,
+            /Minimal consumer: no input of the build was attributed to @neolorn\/thoth\./u,
         },
       ],
     },
@@ -1081,7 +1079,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             '}\nexport interface ApplyOutputPlanRequest',
           ),
           refusal:
-            /equator-work-owner\/1: \S+#WorkOwnerMarker\.ownerId: removed \(incompatible\)/u,
+            /thoth-work-owner\/1: \S+#WorkOwnerMarker\.ownerId: removed \(incompatible\)/u,
         },
         {
           id: 'field-added-to-a-closed-format',
@@ -1091,7 +1089,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             '    readonly stateDigest: string;\n    readonly planted?: string;\n',
           ),
           refusal:
-            /equator-compiler-cache\/1: \S+#CompilerCacheEnvelope\.planted: added as optional \(incompatible\)/u,
+            /thoth-compiler-cache\/1: \S+#CompilerCacheEnvelope\.planted: added as optional \(incompatible\)/u,
         },
         // Compatible, so it is not a reason to move the stamp, and still a difference the record does
         // not hold: the check is red until the record is written again.
@@ -1103,28 +1101,28 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             '    readonly operations: readonly TransactionOperation[];\n    readonly planted?: string;\n',
           ),
           refusal:
-            /equator-output-transaction\/1: \S+#TransactionJournal\.planted: added as optional \(compatible\)/u,
+            /thoth-output-transaction\/1: \S+#TransactionJournal\.planted: added as optional \(compatible\)/u,
         },
         {
           id: 'runtime-reader-field-retyped',
           plant: plantMatching(
-            'dist/runtime/types/neolorn-equator-core.d.ts',
+            'dist/runtime/types/neolorn-thoth-core.d.ts',
             /(\/\*\* The stable name for this route, which is what every address is built from\. \*\/\s+readonly id: )string;/u,
             '$1number;',
           ),
           refusal:
-            /equator-route-projection\/1: \S+#GeneratedRouteProjection\.\S*\.id: type changed from "string" to "number" \(incompatible\)/u,
+            /thoth-route-projection\/1: \S+#GeneratedRouteProjection\.\S*\.id: type changed from "string" to "number" \(incompatible\)/u,
         },
         {
           id: 'released-stamp-replaced',
           plant: editJson(
             'tools/released-format-stamps.json',
             (file: { released: string[] }) => {
-              file.released.push('equator-work-owner/1');
+              file.released.push('thoth-work-owner/1');
             },
           ),
-          args: () => ['--replace', 'equator-work-owner/1'],
-          refusal: /equator-work-owner.1 has been released/u,
+          args: () => ['--replace', 'thoth-work-owner/1'],
+          refusal: /thoth-work-owner.1 has been released/u,
         },
         // The record holds a code this build does not write: the build withdrew it.
         {
@@ -1133,14 +1131,14 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             'tools/format-shapes.json',
             (record: FormatShapesView) => {
               record.formats[
-                'equator-toolkit-observability-event/1'
+                'thoth-toolkit-observability-event/1'
               ].declarations[
                 'dist/toolkit/observability.d.ts#ToolkitObservabilityEvent'
-              ].object.code.type.open.push('EQ-E1000');
+              ].object.code.type.open.push('TH-E1000');
             },
           ),
           refusal:
-            /equator-toolkit-observability-event\/1: \S+#ToolkitObservabilityEvent\.code: value "EQ-E1000" removed from an open set \(incompatible\)/u,
+            /thoth-toolkit-observability-event\/1: \S+#ToolkitObservabilityEvent\.code: value "TH-E1000" removed from an open set \(incompatible\)/u,
         },
         // Compatible, and still a difference the record does not hold.
         {
@@ -1149,14 +1147,14 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             'tools/format-shapes.json',
             (record: FormatShapesView) => {
               record.formats[
-                'equator-toolkit-observability-event/1'
+                'thoth-toolkit-observability-event/1'
               ].declarations[
                 'dist/toolkit/observability.d.ts#ToolkitObservabilityEvent'
               ].object.code.type.open.pop();
             },
           ),
           refusal:
-            /equator-toolkit-observability-event\/1: \S+#ToolkitObservabilityEvent\.code: value "EQ-E1003" added to an open set \(compatible\)/u,
+            /thoth-toolkit-observability-event\/1: \S+#ToolkitObservabilityEvent\.code: value "TH-E1003" added to an open set \(compatible\)/u,
         },
         {
           id: 'published-schema-admits-other-data',
@@ -1167,17 +1165,17 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
             },
           ),
           refusal:
-            /equator-cli-result\/1: dist\/toolkit\/schemas\/cli-result\.v1\.schema\.json: the published schema admits different data \(incompatible\)/u,
+            /thoth-cli-result\/1: dist\/toolkit\/schemas\/cli-result\.v1\.schema\.json: the published schema admits different data \(incompatible\)/u,
         },
         {
           id: 'stamp-nothing-records',
           plant: plantText(
             'dist/toolkit/output-host.js',
-            "export const WORK_OWNER_PROFILE = 'equator-work-owner/1';",
-            "export const WORK_OWNER_PROFILE = 'equator-work-owner/1';\nexport const PLANTED_PROFILE = 'equator-planted-format/1';",
+            "export const WORK_OWNER_PROFILE = 'thoth-work-owner/1';",
+            "export const WORK_OWNER_PROFILE = 'thoth-work-owner/1';\nexport const PLANTED_PROFILE = 'thoth-planted-format/1';",
           ),
           refusal:
-            /equator-planted-format\/1 \(in dist\/toolkit\/output-host\.js\): not a recorded format, a same-build stamp, or a digest label/u,
+            /thoth-planted-format\/1 \(in dist\/toolkit\/output-host\.js\): not a recorded format, a same-build stamp, or a digest label/u,
         },
       ],
     },
@@ -1203,7 +1201,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
           plant: (root) =>
             editText(
               root,
-              'dist/runtime/types/neolorn-equator-core.d.ts',
+              'dist/runtime/types/neolorn-thoth-core.d.ts',
               (text) =>
                 `${text}\nexport declare const ${plantedExport}: Readonly<object>;\n`,
             ),
@@ -1226,10 +1224,10 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
               root,
               'docs/how-to/translate-catalogs.md',
               (text) =>
-                `${text}\n\`\`\`ts\nimport { ɵopenPageOutcomeChannel } from '@neolorn/equator/core';\n\`\`\`\n`,
+                `${text}\n\`\`\`ts\nimport { ɵopenPageOutcomeChannel } from '@neolorn/thoth/core';\n\`\`\`\n`,
             ),
           refusal:
-            /^docs\/how-to\/translate-catalogs\.md: ɵopenPageOutcomeChannel from @neolorn\/equator\/core$/mu,
+            /^docs\/how-to\/translate-catalogs\.md: ɵopenPageOutcomeChannel from @neolorn\/thoth\/core$/mu,
         },
         {
           id: 'fixture-reaches-wiring-through-a-namespace',
@@ -1238,10 +1236,10 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
               root,
               'fixtures/package-consumer-template/src/app/addresses.ts',
               (text) =>
-                `${text}\nimport * as equatorCore from '@neolorn/equator/core';\nexport const planted = equatorCore.ɵopenPageOutcomeChannel;\n`,
+                `${text}\nimport * as thothCore from '@neolorn/thoth/core';\nexport const planted = thothCore.ɵopenPageOutcomeChannel;\n`,
             ),
           refusal:
-            /^fixtures\/package-consumer-template\/src\/app\/addresses\.ts: ɵopenPageOutcomeChannel from @neolorn\/equator\/core$/mu,
+            /^fixtures\/package-consumer-template\/src\/app\/addresses\.ts: ɵopenPageOutcomeChannel from @neolorn\/thoth\/core$/mu,
         },
       ],
     },
@@ -1371,7 +1369,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
           // Without eviction the shared store keeps every locale and option pair it is asked for.
           id: 'formatter-store-unbounded',
           plant: plantText(
-            'dist/runtime/fesm2022/neolorn-equator.mjs',
+            'dist/runtime/fesm2022/neolorn-thoth.mjs',
             'while (this.values.size > this.maximumEntries)',
             'while (false)',
           ),
@@ -1426,7 +1424,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
           // A failed load left in flight answers every later attempt with the same failure.
           id: 'failed-load-kept-in-flight',
           plant: plantText(
-            'dist/runtime/fesm2022/neolorn-equator.mjs',
+            'dist/runtime/fesm2022/neolorn-thoth.mjs',
             '.finally(() => this.inFlight.delete(key));',
             '.finally(() => void key);',
           ),
@@ -1437,7 +1435,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
         {
           id: 'catalog-cache-unbounded',
           plant: plantText(
-            'dist/runtime/fesm2022/neolorn-equator.mjs',
+            'dist/runtime/fesm2022/neolorn-thoth.mjs',
             'while (this.cache.size > this.maximumEntries) {',
             'while (false) {',
           ),

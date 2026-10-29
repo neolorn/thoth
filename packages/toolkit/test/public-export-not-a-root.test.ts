@@ -55,7 +55,7 @@ async function unreached(
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify({ schemaVersion: 1, sourceLocale: 'en-US', defaultLocale: 'en-US', locales: ['en-US'] }, null, 2)}\n`,
   );
   await write(
@@ -100,7 +100,7 @@ async function unreached(
     await write(root, path, text);
   const generated = await generateProject({ project: root });
   expect(generated.ok, JSON.stringify(generated.diagnostics)).toBe(true);
-  const advisory = generated.diagnostics.find(({ code }) => code === 'EQ1311');
+  const advisory = generated.diagnostics.find(({ code }) => code === 'TH1311');
   return advisory === undefined
     ? []
     : [...advisory.summary.matchAll(/"([^"]+)"/gu)].map(

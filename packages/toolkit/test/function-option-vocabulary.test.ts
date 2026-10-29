@@ -172,7 +172,7 @@ describe('the option vocabulary of the built-in functions', () => {
   });
 
   /**
-   * `timeZone=input` names the operand's own zone. An Equator date input is a `Date` and carries
+   * `timeZone=input` names the operand's own zone. A Thoth date input is a `Date` and carries
    * none, so the only operand that can answer is one whose declaration wrote a zone.
    *
    * The specification's answer when nothing does is a Bad Operand error at format time beside a

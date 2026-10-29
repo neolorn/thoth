@@ -11,7 +11,7 @@
 export const UNSELECTED_CAPABILITY_MARKERS = Object.freeze([
   {
     capability: 'route resolution, selected with withRouting()',
-    // Written by the path-prefix and host resolvers in `@neolorn/equator/core` when an address
+    // Written by the path-prefix and host resolvers in `@neolorn/thoth/core` when an address
     // cannot be parsed, which only resolving an address can reach.
     markers: [
       'The localized request URL is malformed.',
@@ -25,7 +25,7 @@ export const UNSELECTED_CAPABILITY_MARKERS = Object.freeze([
   {
     capability: 'runtime events, selected with withObservability()',
     // The stamp every event carries, which only building an event writes.
-    markers: ['equator-runtime-observability-event/1'],
+    markers: ['thoth-runtime-observability-event/1'],
   },
 ]);
 

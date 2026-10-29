@@ -8,10 +8,10 @@ import { diagnosticsBlock } from '../src/diagnostics.js';
 /**
  * Can the gate fail at all?
  *
- * The rest of the checks are verified by `equator check` or by the `verify` scripts, and neither
+ * The rest of the checks are verified by `thoth check` or by the `verify` scripts, and neither
  * can fail on what they depend on unless the success path reads severity: without it,
- * `equator check --require-complete` returns exit 0 and `"status": "success"` while carrying
- * `EQ1310` at `severity: error`, and `equator generate` does the same. A gate that cannot report a
+ * `thoth check --require-complete` returns exit 0 and `"status": "success"` while carrying
+ * `TH1310` at `severity: error`, and `thoth generate` does the same. A gate that cannot report a
  * failure is not a weaker gate, it is a claim nobody is holding.
  *
  * Kept apart from the freshness criterion next door, which shares no surface with it: this one is a
@@ -23,9 +23,9 @@ import { diagnosticsBlock } from '../src/diagnostics.js';
 
 describe('a blocking diagnostic is decided by severity, never by a code list', () => {
   it('blocks on error severity and passes on warning, for a code no list mentions', () => {
-    // `EQ1310` is deliberate: it is error-severity, and it is in none of the CLI's code lists.
+    // `TH1310` is deliberate: it is error-severity, and it is in none of the CLI's code lists.
     const diagnostic = {
-      code: 'EQ1310',
+      code: 'TH1310',
       severity: 'error',
       summary: 'synthetic',
       path: ['messages', 'cart.items'],
@@ -42,10 +42,10 @@ describe('a blocking diagnostic is decided by severity, never by a code list', (
       fileURLToPath(new URL('../src/cli.ts', import.meta.url)),
       'utf8',
     );
-    // The wrong fix this refuses: adding EQ1310 to a hardcoded blocking-codes list. Such a fix
+    // The wrong fix this refuses: adding TH1310 to a hardcoded blocking-codes list. Such a fix
     // passes the test above and fails this one, because the code used here is in no list at all
     // and does not appear in the CLI.
-    const absent = 'EQ9999';
+    const absent = 'TH9999';
     expect(cli.includes(absent)).toBe(false);
     expect(
       diagnosticsBlock([
@@ -82,7 +82,7 @@ describe('a blocking diagnostic is decided without reading its wording', () => {
     'decides the same whatever the summary says: %j',
     (summary) => {
       const base = {
-        code: 'EQ1310',
+        code: 'TH1310',
         summary,
         path: ['messages', 'cart.items'],
       } as const;

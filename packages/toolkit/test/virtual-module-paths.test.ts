@@ -55,16 +55,16 @@ function pathsOfFindings(specifier: string): readonly string[] {
 
 describe('the path a finding inside a generated module carries', () => {
   it('spells the module the overlay stands in for', () => {
-    expect(pathsOfFindings('#i18n/lazy')).toContain('.equator-virtual/lazy.ts');
+    expect(pathsOfFindings('#i18n/lazy')).toContain('.thoth-virtual/lazy.ts');
   });
 
   it('spells a nested generated module the same way', () => {
     expect(pathsOfFindings('#i18n/catalogs/shell')).toContain(
-      '.equator-virtual/catalogs/shell.ts',
+      '.thoth-virtual/catalogs/shell.ts',
     );
   });
 
   it('names the root module index', () => {
-    expect(pathsOfFindings('#i18n')).toContain('.equator-virtual/index.ts');
+    expect(pathsOfFindings('#i18n')).toContain('.thoth-virtual/index.ts');
   });
 });

@@ -10,7 +10,7 @@ import {
   type LocalizedInputProfile,
   type LocalizedInputStatus,
   type LocalizedInputValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A time-zone field accepts the zones its profile lists, each under the spellings the profile

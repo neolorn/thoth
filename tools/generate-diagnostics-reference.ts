@@ -1,7 +1,7 @@
 /**
  * The diagnostics reference, written from the union that declares the codes.
  *
- * `specs/10-compiler-and-tooling.spec.md` section 12 says Equator's diagnostic codes are stable and
+ * `specs/10-compiler-and-tooling.spec.md` section 12 says Thoth's diagnostic codes are stable and
  * documented, and the second half needs a document naming every code. A hand-kept list, in a
  * specification or anywhere else, is a second source, and it drifts from the union on the first
  * commit that adds one.
@@ -336,7 +336,7 @@ const used = new Set(codes.map(sectionOf));
 for (const section of used) {
   assert.ok(
     typeof DIAGNOSTIC_SECTIONS[section] === 'string',
-    `Codes EQ${section}xx exist and no section is titled "${section}". Add one to DIAGNOSTIC_SECTIONS.`,
+    `Codes TH${section}xx exist and no section is titled "${section}". Add one to DIAGNOSTIC_SECTIONS.`,
   );
 }
 for (const section of Object.keys(DIAGNOSTIC_SECTIONS)) {
@@ -392,7 +392,7 @@ for (const root of roots) {
     if (DECLARATIONS.has(file.split(/[\\/]/u).at(-1))) continue;
     scanned += 1;
     const text = readFileSync(file, 'utf8');
-    for (const match of text.matchAll(/'(EQ\d{4})'/gu)) {
+    for (const match of text.matchAll(/'(TH\d{4})'/gu)) {
       occurrences += 1;
       raised.get(match[1] as string)?.push(relative(workspaceRoot, file));
     }
@@ -429,9 +429,9 @@ for (const section of sections) {
 }
 
 const lines = [
-  '# Equator diagnostics',
+  '# Thoth diagnostics',
   '',
-  'Every code `@neolorn/equator-toolkit` can report, and what it means. A diagnostic carries its own',
+  'Every code `@neolorn/thoth-toolkit` can report, and what it means. A diagnostic carries its own',
   'summary saying what happened at the place it happened; this says what the code is about.',
   '',
   '**Generated.** The list comes from the `ToolkitDiagnosticCode` union and the sentences from the',
@@ -440,7 +440,7 @@ const lines = [
   'both directions.',
   '',
   '**Severity is not listed, on purpose.** Several codes carry the severity a run decides: the',
-  "completeness family and `EQ1704` are advisory or blocking depending on the command's switches and",
+  "completeness family and `TH1704` are advisory or blocking depending on the command's switches and",
   "the project's own declarations, so a severity written here would be wrong for exactly the codes",
   'most worth looking up. What a run does with a finding is decided on severity, and the finding says',
   'which one it carries.',
@@ -499,7 +499,7 @@ const eventsAndFailures = [
 const webDocument = `${[
   '# Diagnostics',
   '',
-  'Every code Equator reports, and what it means: the diagnostics of `@neolorn/equator-toolkit`, the',
+  'Every code Thoth reports, and what it means: the diagnostics of `@neolorn/thoth-toolkit`, the',
   'event codes both packages send to an observability sink, and the failure codes a runtime',
   'diagnostic carries. A diagnostic carries its own summary describing what happened where it',
   'happened; this page describes the code.',
@@ -509,7 +509,7 @@ const webDocument = `${[
   'network.',
   '',
   'Severity is not listed. Several codes carry the severity the run decides: the completeness family',
-  "and `EQ1704` are advisory or blocking depending on the command's switches and the project's own",
+  "and `TH1704` are advisory or blocking depending on the command's switches and the project's own",
   'declarations. A finding states the severity it carries, and a run acts on that.',
   '',
   'What a diagnostic contains, and what it never contains, is',
@@ -568,7 +568,7 @@ if (recording) {
     );
   }
   process.stdout.write(
-    `Equator diagnostics reference verified: ${codes.length} code(s) across ${sections.length} section(s), each raised in a src directory under packages/; ${occurrences} code reference(s) over ${scanned} file(s); ${families.map(({ declaration, declared }) => `${declared.size} ${declaration}`).join(', ')}, every one recorded and every recorded one still declared where it was; every event and failure code described in ${descriptionsName} and every description declared.\n`,
+    `Thoth diagnostics reference verified: ${codes.length} code(s) across ${sections.length} section(s), each raised in a src directory under packages/; ${occurrences} code reference(s) over ${scanned} file(s); ${families.map(({ declaration, declared }) => `${declared.size} ${declaration}`).join(', ')}, every one recorded and every recorded one still declared where it was; every event and failure code described in ${descriptionsName} and every description declared.\n`,
   );
 } else {
   await mkdir(dirname(webDocumentPath), { recursive: true });
@@ -576,6 +576,6 @@ if (recording) {
     await writeFile(target, contents, 'utf8');
   }
   process.stdout.write(
-    `Equator diagnostics reference written: ${codes.length} code(s) across ${sections.length} section(s), in ${written.length} document(s).\n`,
+    `Thoth diagnostics reference written: ${codes.length} code(s) across ${sections.length} section(s), in ${written.length} document(s).\n`,
   );
 }

@@ -14,7 +14,7 @@ import {
   type LocalizationRouteSnapshot,
   type LocalizationSetup,
   type MessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import {
   PROVIDER,

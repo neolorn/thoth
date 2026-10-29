@@ -88,7 +88,7 @@ const counted = [
 describe('plural coverage', () => {
   it('is asked of a target that selects where the source does', () => {
     expect(findings(counted, counted)).toEqual([
-      'EQ1308 messages/note i18n/shell/ar-EG.yaml',
+      'TH1308 messages/note i18n/shell/ar-EG.yaml',
     ]);
   });
 
@@ -112,7 +112,7 @@ describe('a function call a target writes', () => {
 
   it('is refused on the target message without that option', () => {
     expect(findings(source, [message('{$length :demo:measure}')])).toEqual([
-      'EQ1805 messages/note i18n/shell/ar-EG.yaml',
+      'TH1805 messages/note i18n/shell/ar-EG.yaml',
     ]);
   });
 });

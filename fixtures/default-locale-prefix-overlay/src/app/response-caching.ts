@@ -1,4 +1,4 @@
-import type { LocaleRequestHandlerOptions } from '@neolorn/equator/http';
+import type { LocaleRequestHandlerOptions } from '@neolorn/thoth/http';
 
 /**
  * The development row's durations, and a deployment that lets a cache serve a stale success

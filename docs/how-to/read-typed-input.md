@@ -1,6 +1,6 @@
 # How to read typed input
 
-`@neolorn/equator/forms` exports `LocalizedInput`, a directive that parses what a visitor typed in
+`@neolorn/thoth/forms` exports `LocalizedInput`, a directive that parses what a visitor typed in
 the committed locale and gives the form the value rather than the text. `١٢٣٫٥` typed in Egyptian
 Arabic, `123.5` in American English and `123,5` in German are one amount, and the control returns
 that amount.
@@ -35,7 +35,7 @@ writeValue(value: LocalizedInputValue<Amount> | null): void {
 ```
 
 That write can arrive before the inner field has been given its profile, because the form writes to
-the outermost accessor during its own binding pass and the inner bindings are applied after. Equator
+the outermost accessor during its own binding pass and the inner bindings are applied after. Thoth
 holds such a write and renders it when the profile lands, so there is no ordering for you to
 discover and nothing to buffer around.
 
@@ -79,12 +79,12 @@ import {
   withRecoveryMessage,
   type LocalizedMoneyInputProfile,
   type MoneyValue,
-} from '@neolorn/equator';
-import { LocalizedInput } from '@neolorn/equator/forms';
+} from '@neolorn/thoth';
+import { LocalizedInput } from '@neolorn/thoth/forms';
 import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
 import { messages } from '#i18n/shell';
 
@@ -193,7 +193,7 @@ describe('a localized input', () => {
 
     expect(host.localized().result()?.status).toBe('invalid');
     expect(host.control().errors?.['localizedInput']).toEqual({
-      code: 'equator.input.invalid',
+      code: 'thoth.input.invalid',
       status: 'invalid',
     });
     // The form keeps the value it had. A field nobody can read does not empty what was already

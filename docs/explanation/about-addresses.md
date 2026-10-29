@@ -1,7 +1,7 @@
 # About how routing derives addresses
 
 A localized address and an Angular route are two different things. The route is what your application
-matches on; the address is what a visitor sees and shares. Equator derives the second from the first
+matches on; the address is what a visitor sees and shares. Thoth derives the second from the first
 and one policy, and everything a crawler reads comes out of the same derivation.
 
 ## One projection, three consumers
@@ -32,9 +32,9 @@ written `_index`:
 
 A literal segment keeps its ASCII letters and digits, and a run of anything else becomes one `-`.
 Renaming a parameter changes no identity, and the path your visitors see in each locale has no part
-in it. A route that states `data: { equatorRouteId: 'article' }` has that identity instead. State one
+in it. A route that states `data: { thothRouteId: 'article' }` has that identity instead. State one
 where two paths would derive the same identity or a path has nothing to derive one from, both of
-which `generate` reports as `EQ1404`.
+which `generate` reports as `TH1404`.
 
 ## Writing a link as a route
 
@@ -77,10 +77,10 @@ one is the one that gets indexed.
 `priority`, `lastmod` and indexability are claims about content that only the application can make,
 so they are read from a field on the Angular route's own `data` at generate time.
 
-Equator never runs your code to find them. That is why the declaration is a field name and a table
+Thoth never runs your code to find them. That is why the declaration is a field name and a table
 of literals rather than a function: `generate` reads source text.
 
-Equator emits `lastmod` only from a value a route declares. A build time is a date the page did not
+Thoth emits `lastmod` only from a value a route declares. A build time is a date the page did not
 change on, and a search engine reads that element only when it can verify it.
 
 ## Related

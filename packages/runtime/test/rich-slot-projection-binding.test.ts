@@ -14,7 +14,7 @@ import {
   type LocalizedPart,
   type LocalizedSlotPart,
   type RuntimeRichSlotKindDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { defineExtensionRegistry } from '../../toolkit/src/extensions.js';
 import { projectLocalizedParts } from '../src/evaluator.js';
 import { RuntimeExtensions } from '../src/extensions.js';

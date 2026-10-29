@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   LocalizationError,
   type PersonNameFieldKey,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { personName } from '../src/formatting.js';
 

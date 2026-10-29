@@ -6,7 +6,7 @@ import {
   resolveLocalizedRoute,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * How the segments of an address are compared with the segments of a route.
@@ -37,7 +37,7 @@ const identity = (name: string): string => `sha256-${name.padEnd(43, '0')}`;
 /** Routes with fixed segments only, some respelled for German with a capital in them. */
 const SPELLED: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: identity('RouteSegmentMatchingSpelledIdentity'),
     routes: [
       { id: 'home', path: '', parameterNames: [] },
@@ -57,7 +57,7 @@ const SPELLED: RouteRuntimeProjection = {
 /** Fixed routes written before a route that reads any single segment as its parameter. */
 const CAUGHT: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: identity('RouteSegmentMatchingCaughtIdentity'),
     routes: [
       { id: 'street', path: 'strasse', parameterNames: [] },
@@ -204,7 +204,7 @@ describe('what a parameter route declines', () => {
     slug: RouteParameterCodec<string>,
   ): RouteRuntimeProjection => ({
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: identity('RouteSegmentMatchingCodecIdentity'),
       routes: [
         { id: 'article', path: 'articles/:slug', parameterNames: ['slug'] },

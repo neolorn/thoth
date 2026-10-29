@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import type { LocalizationParticipant } from '@neolorn/equator/core';
+import type { LocalizationParticipant } from '@neolorn/thoth/core';
 
 import { catalogKey, rejectionOf } from './catalog-store-harness.js';
 import { TITLE, participant, runtime } from './transaction-runtime-harness.js';

@@ -2,8 +2,8 @@
 //
 // `specs/09-safe-content-and-ux.spec.md` section 14 keeps an asset locale-neutral until the
 // application declares otherwise, so a descriptor's source stays opaque consumer data that
-// Equator never builds, parses, or fetches, and a variant is chosen from an explicit ordered
-// fallback list rather than from a chain Equator guessed. A report about a dynamic asset carries
+// Thoth never builds, parses, or fetches, and a variant is chosen from an explicit ordered
+// fallback list rather than from a chain Thoth guessed. A report about a dynamic asset carries
 // status, identity and representation and no payload, because the payload is the consumer's.
 
 import {
@@ -16,7 +16,7 @@ import {
   type LocalizationParticipantRepresentation,
   type LocalizedParts,
   type LocalizedText,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { languageForLocale } from './evaluator';
 import { isRecord } from './runtime-safety';
 
@@ -32,8 +32,8 @@ export type LocalizedAssetDescription = LocalizedText | LocalizedParts;
  * The words that go around an asset, held apart from the asset itself.
  *
  * Every field is optional, and each one supplied is already localized: this copy comes from the
- * catalog like any other message, so Equator carries it through resolution rather than choosing it
- * per locale. Which fields an asset needs is the application's judgement, not a shape Equator
+ * catalog like any other message, so Thoth carries it through resolution rather than choosing it
+ * per locale. Which fields an asset needs is the application's judgement, not a shape Thoth
  * checks.
  */
 export interface LocalizedAssetMetadata {
@@ -64,7 +64,7 @@ export interface NeutralAssetDescriptor<Source> extends AssetDescriptorBase {
   /**
    * Whatever the application uses to reach the asset: a URL, an import, a handle.
    *
-   * Equator holds it and never builds, parses or fetches it, so the type is the application's own.
+   * Thoth holds it and never builds, parses or fetches it, so the type is the application's own.
    */
   readonly source: Source;
 }
@@ -73,7 +73,7 @@ export interface NeutralAssetDescriptor<Source> extends AssetDescriptorBase {
 export interface LocalizedAssetVariant<Source> {
   /** The locale this version is for, canonically spelled. No two variants may name the same one. */
   readonly locale: string;
-  /** How the application reaches this version. Opaque to Equator. */
+  /** How the application reaches this version. Opaque to Thoth. */
   readonly source: Source;
 }
 
@@ -126,7 +126,7 @@ export interface FixedLanguageAssetDescriptor<
   Source,
 > extends AssetDescriptorBase {
   readonly kind: 'fixed-language';
-  /** How the application reaches it. Opaque to Equator. */
+  /** How the application reaches it. Opaque to Thoth. */
   readonly source: Source;
   /** The language the asset is in, canonically spelled. The asset's language, not the reader's. */
   readonly language: string;
@@ -154,7 +154,7 @@ export interface LocalizedAssetResolutionRequest {
    * than refused.
    */
   readonly targetLocale: string;
-  /** Explicit application policy; Equator never guesses a locale fallback chain. */
+  /** Explicit application policy; Thoth never guesses a locale fallback chain. */
   readonly fallbackLocales?: readonly string[];
   /** Descriptive copy is already localized independently from the asset. */
   readonly metadata?: LocalizedAssetMetadata;
@@ -207,7 +207,7 @@ export type ResolvedLocalizedAsset<Source> =
  * How an asset the application fetched itself is to be marked up.
  *
  * Bound to the locale that supplied it, carrying no language at all, or fixed in one. The
- * participant states this rather than Equator deciding it, because the application is the side that
+ * participant states this rather than Thoth deciding it, because the application is the side that
  * knows what came back.
  */
 export type DynamicAssetParticipantRepresentation =
@@ -238,7 +238,7 @@ interface DynamicAssetParticipantBase {
  * four outcomes: ready with its representation, unavailable, a domain outcome under the
  * application's own code, or a failure with an operational reason. No source and no payload come
  * through here, so a report can be logged whole without carrying the application's content into
- * Equator.
+ * Thoth.
  */
 export type DynamicAssetParticipantReportInput =
   | (DynamicAssetParticipantBase & {

@@ -92,7 +92,7 @@ describe('semantic catalog diff', () => {
 });
 
 describe('semantic refactors and authored migrations', () => {
-  it('strictly reconstructs Equator-authored plans and rejects duplicate, foreign, or tampered content', () => {
+  it('strictly reconstructs Thoth-authored plans and rejects duplicate, foreign, or tampered content', () => {
     const created = createMigrationPlan({
       id: 'strict-plan',
       domain: 'configuration',
@@ -100,7 +100,7 @@ describe('semantic refactors and authored migrations', () => {
       toVersion: '1.1',
       changes: [
         {
-          path: 'equator.config.json',
+          path: 'thoth.config.json',
           before: '{"schemaVersion":1}\n',
           after: '{"schemaVersion":1,"sourceLocale":"en-US"}\n',
         },
@@ -195,7 +195,7 @@ describe('semantic refactors and authored migrations', () => {
   it('applies a validated migration transaction idempotently and refuses stale input before mutation', async () => {
     const root = await mkdtemp(resolve(tmpdir(), 'migration-'));
     try {
-      const path = resolve(root, 'equator.config.json');
+      const path = resolve(root, 'thoth.config.json');
       await writeFile(path, '{"schemaVersion":1}\n', 'utf8');
       const plan = createMigrationPlan({
         id: 'canonical-profile',
@@ -204,7 +204,7 @@ describe('semantic refactors and authored migrations', () => {
         toVersion: '1.1',
         changes: [
           {
-            path: 'equator.config.json',
+            path: 'thoth.config.json',
             before: '{"schemaVersion":1}\n',
             after: '{"schemaVersion":1,"sourceLocale":"en-US"}\n',
           },
@@ -248,7 +248,7 @@ describe('semantic refactors and authored migrations', () => {
         toVersion: '2',
         changes: [
           {
-            path: 'equator.config.json',
+            path: 'thoth.config.json',
             before: 'unexpected',
             after: 'unsafe',
           },

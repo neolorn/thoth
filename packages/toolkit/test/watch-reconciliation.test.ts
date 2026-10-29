@@ -259,7 +259,7 @@ describe('watch', () => {
       // The generation that read the second version sees its input change before publishing and
       // withholds it, and the rerun publishes the third.
       expect(results[1]?.diagnostics.map(({ code }) => code)).toEqual([
-        'EQ1602',
+        'TH1602',
       ]);
       expect(results[2]?.ok, JSON.stringify(results[2]?.diagnostics)).toBe(
         true,

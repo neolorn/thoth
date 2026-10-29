@@ -10,11 +10,11 @@ import {
   LocalizePipe,
   withRouting,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   provideLocalizationTesting,
   renderedText,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -28,9 +28,9 @@ import { routePolicy, appRouteProjection } from './localization.routes';
 import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 
 /**
- * A page under a pseudo-locale, and the string that did not go through Equator.
+ * A page under a pseudo-locale, and the string that did not go through Thoth.
  *
- * The catalog under test is the one `equator generate --pseudo` wrote. It is loaded through the
+ * The catalog under test is the one `thoth generate --pseudo` wrote. It is loaded through the
  * application's own generated `catalogLoaders`, switched to with an ordinary `changeLocale`, and
  * nothing here tells the runtime that a pseudo-locale is involved, because nothing can. That is
  * the design: the transform ran at build time and what the runtime received is a target catalog.
@@ -38,12 +38,12 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
  * **The hardcoded string is the point of the criterion, not decoration.** Pseudo-localization
  * exists to make an unlocalized string visible, and a fixture with nothing hardcoded proves the
  * transform runs but not that it catches anything: every assertion would pass for a page with no
- * way to fail. The paragraph below is a string a developer forgot to put through Equator, and the
+ * way to fail. The paragraph below is a string a developer forgot to put through Thoth, and the
  * check is that it comes through the locale change byte for byte while everything beside it does
  * not.
  */
 
-/** A string a developer forgot to put through Equator. Deliberate, and the whole point. */
+/** A string a developer forgot to put through Thoth. Deliberate, and the whole point. */
 const HARDCODED = 'Saved 3 minutes ago';
 
 const MARKER_START = '⟦';
@@ -130,7 +130,7 @@ describe('a page rendered under a pseudo-locale', () => {
       const after = textOf(element, selector);
       expect(
         after,
-        `${selector} as renderedText read it, from the catalog equator generate --pseudo wrote`,
+        `${selector} as renderedText read it, from the catalog thoth generate --pseudo wrote`,
       ).toContain(MARKER_START);
       expect(after).toContain(MARKER_END);
       expect(after).not.toBe(before.get(selector));
@@ -153,7 +153,7 @@ describe('a page rendered under a pseudo-locale', () => {
       'the page provideLocalizationTesting composed',
     ).toBe(HARDCODED);
     const platform = TestBed.inject(PLATFORM_ID) as string;
-    claimCapability('entry:@neolorn/equator', {
+    claimCapability('entry:@neolorn/thoth', {
       policy: routePolicy,
       platform,
     });
@@ -196,6 +196,6 @@ describe('a page rendered under a pseudo-locale', () => {
     // And the language stays English, which is what makes the mirrored page readable to the
     // developer looking at it. A pseudo-locale in another language tests something else.
     expect(document.documentElement.lang).toBe('en-Arab-XB');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 });

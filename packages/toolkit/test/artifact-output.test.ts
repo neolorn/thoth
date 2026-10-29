@@ -138,7 +138,7 @@ function compiledFixture() {
   return { compiled, source, target };
 }
 
-describe('Equator deterministic compiled artifacts', () => {
+describe('Thoth deterministic compiled artifacts', () => {
   it('emits inert IR, full identities, resource summaries, recovery data, and one deterministic output plan', () => {
     const first = compiledFixture().compiled;
     const second = compiledFixture().compiled;
@@ -224,7 +224,7 @@ describe('Equator deterministic compiled artifacts', () => {
       { path: '../escape.ts', contents: 'unsafe' },
     ]);
     expect(traversal.ok).toBe(false);
-    expect(traversal.diagnostics[0]?.code).toBe('EQ1503');
+    expect(traversal.diagnostics[0]?.code).toBe('TH1503');
 
     const collision = createOutputPlan([
       { path: 'Scope.ts', contents: 'a' },
@@ -236,7 +236,7 @@ describe('Equator deterministic compiled artifacts', () => {
       'x'.repeat(RESOURCE_LIMITS.messageBytes + 1),
     );
     expect(excessive.ok).toBe(false);
-    expect(excessive.diagnostics[0]?.code).toBe('EQ1201');
+    expect(excessive.diagnostics[0]?.code).toBe('TH1201');
     expect(() => stringifyCanonicalJson('\ud800')).toThrow(
       /unpaired high surrogate/u,
     );
@@ -266,12 +266,12 @@ describe('Equator deterministic compiled artifacts', () => {
   });
 });
 
-describe('Equator owned output publication', () => {
+describe('Thoth owned output publication', () => {
   it('publishes once, preserves unchanged mtimes, removes only manifest-owned stale files, and recovers an interrupted replacement', async () => {
     const ownerRoot = await mkdtemp(resolve(tmpdir(), 'output-test-'));
     temporaryRoots.push(ownerRoot);
     const generatedRoot = resolve(ownerRoot, 'src/generated/i18n');
-    const workRoot = resolve(ownerRoot, '.equator');
+    const workRoot = resolve(ownerRoot, '.thoth');
     const ownerId = `sha256-${'a'.repeat(43)}`;
     const firstPlan = createOutputPlan([
       { path: 'a.txt', contents: 'alpha\n' },
@@ -294,19 +294,19 @@ describe('Equator owned output publication', () => {
     expect(unchanged).toMatchObject({ ok: true, value: { changed: false } });
     expect(after.mtimeMs).toBe(before.mtimeMs);
 
-    const backup = resolve(generatedRoot, '.a.txt.equator-crash.bak');
+    const backup = resolve(generatedRoot, '.a.txt.thoth-crash.bak');
     await rename(resolve(generatedRoot, 'a.txt'), backup);
     await writeFile(resolve(generatedRoot, 'a.txt'), 'interrupted\n');
     await writeFile(
       resolve(workRoot, 'transaction.json'),
       `${JSON.stringify(
         {
-          profile: 'equator-output-transaction/1',
+          profile: 'thoth-output-transaction/1',
           ownerId,
           operations: [
             {
               path: 'a.txt',
-              backup: '.a.txt.equator-crash.bak',
+              backup: '.a.txt.thoth-crash.bak',
               hadOriginal: true,
             },
           ],
@@ -344,7 +344,7 @@ describe('Equator owned output publication', () => {
     const ownerRoot = await mkdtemp(resolve(tmpdir(), 'output-guard-'));
     temporaryRoots.push(ownerRoot);
     const generatedRoot = resolve(ownerRoot, 'generated');
-    const workRoot = resolve(ownerRoot, '.equator');
+    const workRoot = resolve(ownerRoot, '.thoth');
     const ownerId = `sha256-${'b'.repeat(43)}`;
     const firstPlan = createOutputPlan([
       { path: 'owned.txt', contents: 'owned\n' },
@@ -376,7 +376,7 @@ describe('Equator owned output publication', () => {
       plan: changedPlan.value,
     });
     expect(mixed.ok).toBe(false);
-    expect(mixed.diagnostics[0]?.code).toBe('EQ1601');
+    expect(mixed.diagnostics[0]?.code).toBe('TH1601');
     expect(
       await readFile(resolve(generatedRoot, 'consumer-owned.txt'), 'utf8'),
     ).toBe('preserve');
@@ -386,7 +386,7 @@ describe('Equator owned output publication', () => {
     const ownerRoot = await mkdtemp(resolve(tmpdir(), 'output-dry-'));
     temporaryRoots.push(ownerRoot);
     const generatedRoot = resolve(ownerRoot, 'generated');
-    const workRoot = resolve(ownerRoot, '.equator');
+    const workRoot = resolve(ownerRoot, '.thoth');
     const plan = createOutputPlan([{ path: 'file.txt', contents: 'x' }]);
     if (!plan.ok) return;
     const result = await applyOutputPlan({

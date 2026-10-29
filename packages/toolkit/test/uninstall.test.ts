@@ -10,7 +10,7 @@ import { cleanProject, uninstallProject } from '../src/project-host.js';
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
 /**
- * Removing Equator from an application.
+ * Removing Thoth from an application.
  *
  * `clean` means "remove build output" everywhere else (`cargo clean`, `make clean`,
  * `ng cache clean` all leave project configuration alone) so it keeps that meaning and this is
@@ -19,7 +19,7 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
  *
  * Two rules give this its shape. Authored catalogs are the consumer's content and survive unless
  * their removal is asked for by name; deleting a project's translations as a side effect of
- * uninstalling a tool would be indefensible. And only what Equator wrote is taken back: a `#i18n`
+ * uninstalling a tool would be indefensible. And only what Thoth wrote is taken back: a `#i18n`
  * specifier somebody repointed, or a script somebody edited, is theirs now.
  */
 
@@ -47,9 +47,9 @@ async function exists(path: string): Promise<boolean> {
 interface ProjectOptions {
   /** A `#i18n` specifier the consumer has repointed at something of their own. */
   readonly repointed?: boolean;
-  /** An Equator script the consumer has edited. */
+  /** A Thoth script the consumer has edited. */
   readonly editedScript?: boolean;
-  /** A script of the consumer's own, beside Equator's. */
+  /** A script of the consumer's own, beside Thoth's. */
   readonly ownScript?: boolean;
 }
 
@@ -73,10 +73,10 @@ async function project(options: ProjectOptions = {}): Promise<string> {
           '#i18n/*': './src/generated/i18n/*.ts',
         },
         scripts: {
-          'equator:generate': options.editedScript
-            ? 'equator generate --project . --json'
-            : 'equator generate',
-          'equator:check': 'equator check',
+          'thoth:generate': options.editedScript
+            ? 'thoth generate --project . --json'
+            : 'thoth generate',
+          'thoth:check': 'thoth check',
           ...(options.ownScript === true ? { build: 'ng build' } : {}),
         },
       },
@@ -86,7 +86,7 @@ async function project(options: ProjectOptions = {}): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -118,11 +118,7 @@ async function project(options: ProjectOptions = {}): Promise<string> {
     )}\n`,
   );
   await write(root, 'src/app.ts', 'export const marker = 1;\n');
-  await write(
-    root,
-    'i18n/shell/en-US.yaml',
-    'messages:\n  app-title: Equator\n',
-  );
+  await write(root, 'i18n/shell/en-US.yaml', 'messages:\n  app-title: Thoth\n');
   return root;
 }
 
@@ -142,8 +138,8 @@ afterEach(async () => {
   );
 });
 
-describe('uninstalling Equator', () => {
-  it('takes back what Equator wrote and leaves the content alone', async () => {
+describe('uninstalling Thoth', () => {
+  it('takes back what Thoth wrote and leaves the content alone', async () => {
     const root = await project({ ownScript: true });
     expect((await generateProject({ project: root })).ok).toBe(true);
 
@@ -156,7 +152,7 @@ describe('uninstalling Equator', () => {
     expect(after['scripts']).toEqual({ build: 'ng build' });
     expect(after['name']).toBe('@example/uninstall');
 
-    expect(await exists(resolve(root, 'equator.config.json'))).toBe(false);
+    expect(await exists(resolve(root, 'thoth.config.json'))).toBe(false);
     expect(await exists(resolve(root, 'src/generated/i18n/index.ts'))).toBe(
       false,
     );
@@ -179,13 +175,13 @@ describe('uninstalling Equator', () => {
       '#i18n': './src/hand-written/index.ts',
     });
     expect(after['scripts']).toEqual({
-      'equator:generate': 'equator generate --project . --json',
+      'thoth:generate': 'thoth generate --project . --json',
     });
 
     // Named rather than reverted, so nothing about it is a surprise.
     expect(result.value.retained).toEqual([
       'imports.#i18n',
-      'scripts.equator:generate',
+      'scripts.thoth:generate',
     ]);
     claimCapability('cli:uninstall');
   });
@@ -218,15 +214,15 @@ describe('uninstalling Equator', () => {
     if (!result.ok) return;
 
     expect(result.value.changed).toBe(true);
-    expect(result.value.removed).toContain('equator.config.json');
+    expect(result.value.removed).toContain('thoth.config.json');
     expect(await readFile(resolve(root, 'package.json'), 'utf8')).toBe(before);
-    expect(await exists(resolve(root, 'equator.config.json'))).toBe(true);
+    expect(await exists(resolve(root, 'thoth.config.json'))).toBe(true);
     expect(await exists(resolve(root, 'i18n/shell/en-US.yaml'))).toBe(true);
     claimCapability('cli:uninstall');
   });
 
-  it('leaves a manifest that holds nothing of Equator untouched', async () => {
-    // Reachable through `--project`, which takes any directory: nothing of Equator's is here, so
+  it('leaves a manifest that holds nothing of Thoth untouched', async () => {
+    // Reachable through `--project`, which takes any directory: nothing of Thoth's is here, so
     // the application's own file keeps every byte, spacing included.
     const root = await mkdtemp(resolve(tmpdir(), 'uninstall-'));
     temporaryRoots.push(root);
@@ -270,7 +266,7 @@ describe('uninstalling Equator', () => {
 
     expect((await cleanProject({ project: root })).ok).toBe(true);
 
-    expect(await exists(resolve(root, 'equator.config.json'))).toBe(true);
+    expect(await exists(resolve(root, 'thoth.config.json'))).toBe(true);
     expect((await manifest(root))['imports']).toBeDefined();
     expect(await exists(resolve(root, 'i18n/shell/en-US.yaml'))).toBe(true);
     expect(await exists(resolve(root, 'src/generated/i18n/index.ts'))).toBe(

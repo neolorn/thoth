@@ -18,9 +18,9 @@ import {
   withRouting,
   type LocaleUrlPolicy,
   withFormattingContext,
-} from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth';
+import { provideLocalizedRouter } from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -122,7 +122,7 @@ interface Arrival {
  * A browser-supplied arrival, driven by the Router's own initial navigation.
  *
  * Both halves of the address are set, and the pair is load-bearing: `MockPlatformLocation` is what
- * the `LocationStrategy` reads, and jsdom's `history` is what Equator's `url` locale source reads.
+ * the `LocationStrategy` reads, and jsdom's `history` is what Thoth's `url` locale source reads.
  * Setting one and not the other leaves the Router and the committed locale disagreeing, which the
  * three-path fixture measured and recorded.
  *

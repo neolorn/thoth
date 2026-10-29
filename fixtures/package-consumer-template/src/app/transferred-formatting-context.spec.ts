@@ -18,7 +18,7 @@ import {
   Localization,
   provideLocalizationSetup,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -26,7 +26,7 @@ import { messages } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
 
-const KEY = '@neolorn/equator:localization-state/1';
+const KEY = '@neolorn/thoth:localization-state/1';
 const APP = 'transfer-context-lab';
 const THAI = /[๐-๙]/u;
 const ARABIC_INDIC = /[٠-٩]/u;
@@ -39,7 +39,7 @@ describe('a transferred formatting context', () => {
     script.type = 'application/json';
     script.textContent = JSON.stringify({
       [KEY]: {
-        profile: 'equator-transfer-state/1',
+        profile: 'thoth-transfer-state/1',
         primaryLocale: 'en-US',
         formatting: { locale: 'en-US', numberingSystem: 'thai' },
         catalogs: [],

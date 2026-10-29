@@ -26,7 +26,7 @@ const uppercase = {
 
 function registryFile(
   descriptors: readonly unknown[],
-  profile = 'equator-extension-registry/1',
+  profile = 'thoth-extension-registry/1',
 ): string {
   return JSON.stringify({ profile, descriptors });
 }
@@ -52,7 +52,7 @@ describe('an extension descriptor', () => {
           registryFile([{ ...uppercase, fingerprint: supplied }]),
         ),
       ),
-    ).toContain('EQ1805');
+    ).toContain('TH1805');
     const defined = defineExtensionRegistry([
       {
         ...uppercase,
@@ -70,7 +70,7 @@ describe('an extension descriptor', () => {
       } as unknown as ExtensionDescriptorInput,
     ]);
     expect(defined.ok).toBe(false);
-    expect(defined.diagnostics.map(({ code }) => code)).toContain('EQ1805');
+    expect(defined.diagnostics.map(({ code }) => code)).toContain('TH1805');
   });
 
   it('is refused outside a provider namespace, and under a profile this release does not read', () => {
@@ -80,13 +80,13 @@ describe('an extension descriptor', () => {
           registryFile([{ ...uppercase, id: 'uppercase' }]),
         ),
       ),
-    ).toContain('EQ1805');
+    ).toContain('TH1805');
     expect(
       refusal(
         parseExtensionRegistry(
-          registryFile([uppercase], 'equator-extension-registry/2'),
+          registryFile([uppercase], 'thoth-extension-registry/2'),
         ),
       ),
-    ).toContain('EQ1805');
+    ).toContain('TH1805');
   });
 });

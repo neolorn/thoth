@@ -1,6 +1,6 @@
 # Packages and platform
 
-What Equator ships, how it is divided, what a consumer installs, and where it runs. This document
+What Thoth ships, how it is divided, what a consumer installs, and where it runs. This document
 owns package topology, entry points and the conditions under which one exists, the distribution
 format, dependency direction, behavior at install and import time, the host ranges, the boundary
 against a compiler host, and what a distributable has to prove before it counts as verified.
@@ -13,13 +13,13 @@ surface does is owned by the documents that own those subjects.
 A release ships two packages of one release line, versioned together and with separate exports and
 separate dependency graphs.
 
-| Package                    | Environment                          | Holds                                                                                                                |
-| -------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `@neolorn/equator`         | Browser and Angular server rendering | Runtime state, catalog evaluation and loading, formatting, Angular integration, request handling, testing supports.  |
-| `@neolorn/equator-toolkit` | Node development tooling             | The catalog compiler, static analysis, code generation, interchange, project commands, and the `equator` executable. |
+| Package                  | Environment                          | Holds                                                                                                               |
+| ------------------------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `@neolorn/thoth`         | Browser and Angular server rendering | Runtime state, catalog evaluation and loading, formatting, Angular integration, request handling, testing supports. |
+| `@neolorn/thoth-toolkit` | Node development tooling             | The catalog compiler, static analysis, code generation, interchange, project commands, and the `thoth` executable.  |
 
 Node-only code, Node-only dependencies, Node globals, and compiler APIs MUST NOT enter
-`@neolorn/equator` or a consumer's browser bundle. Angular server rendering is a runtime concern,
+`@neolorn/thoth` or a consumer's browser bundle. Angular server rendering is a runtime concern,
 and a release MUST NOT require the toolkit to be installed for it.
 
 A package exposes implemented behavior. A capability that is being considered creates no package, no
@@ -27,17 +27,17 @@ entry point, no dependency, and no compatibility obligation until it exists.
 
 ## 2. Runtime entry points
 
-`@neolorn/equator` publishes seven entry points:
+`@neolorn/thoth` publishes seven entry points:
 
-| Entry point                | Carries                                                                                  | Exists because                           |
-| -------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `@neolorn/equator`         | The runtime and its Angular integration.                                                 | It is the package.                       |
-| `@neolorn/equator/core`    | The runtime's vocabulary, locale profiles and negotiation, and route classification.     | It loads without Angular.                |
-| `@neolorn/equator/http`    | The locale request handler and its Node adapter.                                         | It loads without Angular.                |
-| `@neolorn/equator/router`  | Localized routing and `provideLocalizedRouter(...)`.                                     | It carries an optional peer.             |
-| `@neolorn/equator/forms`   | The localized input control.                                                             | It carries an optional peer.             |
-| `@neolorn/equator/ssr`     | `provideLocalizedServerRendering(...)`.                                                  | It carries an optional peer.             |
-| `@neolorn/equator/testing` | Test composition, controllable loading and participants, a render helper, a server seat. | It must stay out of a production bundle. |
+| Entry point              | Carries                                                                                  | Exists because                           |
+| ------------------------ | ---------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `@neolorn/thoth`         | The runtime and its Angular integration.                                                 | It is the package.                       |
+| `@neolorn/thoth/core`    | The runtime's vocabulary, locale profiles and negotiation, and route classification.     | It loads without Angular.                |
+| `@neolorn/thoth/http`    | The locale request handler and its Node adapter.                                         | It loads without Angular.                |
+| `@neolorn/thoth/router`  | Localized routing and `provideLocalizedRouter(...)`.                                     | It carries an optional peer.             |
+| `@neolorn/thoth/forms`   | The localized input control.                                                             | It carries an optional peer.             |
+| `@neolorn/thoth/ssr`     | `provideLocalizedServerRendering(...)`.                                                  | It carries an optional peer.             |
+| `@neolorn/thoth/testing` | Test composition, controllable loading and participants, a render helper, a server seat. | It must stay out of a production bundle. |
 
 A secondary entry point exists for one of three reasons, and for no other: it carries an optional
 peer dependency the primary must not require; it loads in an environment the primary cannot; or it
@@ -84,8 +84,8 @@ core knows nothing of the primary, and that direction is what yields one copy ra
 
 ## 4. Toolkit entry points
 
-`@neolorn/equator-toolkit` publishes a side-effect-free programmatic API, the JSON Schemas of its
-public file formats, its own `package.json`, and the `equator` executable.
+`@neolorn/thoth-toolkit` publishes a side-effect-free programmatic API, the JSON Schemas of its
+public file formats, its own `package.json`, and the `thoth` executable.
 
 Importing the toolkit API MUST NOT execute a command, mutate the process, install a hook, scan a
 project, write a file, start a watcher, or perform network access. Command execution begins only
@@ -97,7 +97,7 @@ installed directory.
 
 ## 5. Distribution format
 
-`@neolorn/equator` MUST be distributed in Angular Package Format with partial Angular compilation.
+`@neolorn/thoth` MUST be distributed in Angular Package Format with partial Angular compilation.
 Its distributable MUST carry:
 
 - ESM output in the format the supported Angular line requires;
@@ -112,14 +112,14 @@ uses Angular's supported library packaging pipeline; a replacement for it MUST p
 format, export integrity, partial compilation, declaration quality, and consumer compatibility
 before it is used.
 
-`@neolorn/equator-toolkit` is an ordinary built Node package with explicit exports, declarations,
+`@neolorn/thoth-toolkit` is an ordinary built Node package with explicit exports, declarations,
 executable metadata, and accurate side-effect metadata. It is never packaged as browser runtime code.
 
 Both distributables MUST remain installable by any npm-compatible package manager.
 
 ## 6. Runtime dependency topology
 
-The Angular packages `@neolorn/equator` imports, and RxJS, are peer dependencies supplied by the
+The Angular packages `@neolorn/thoth` imports, and RxJS, are peer dependencies supplied by the
 consumer. `@angular/common` and `@angular/core` are required peers; `@angular/forms`,
 `@angular/router`, and `@angular/ssr` are optional, because each is reachable only from the secondary
 entry point that integrates with it.
@@ -146,7 +146,7 @@ toolkit's compiler machinery from parts.
 ## 8. Install and import behavior
 
 Installing a package of a release MUST NOT run a migration, a generation step, or any other work of
-its own. A runtime module MUST be free of side effects on import, and importing `@neolorn/equator`
+its own. A runtime module MUST be free of side effects on import, and importing `@neolorn/thoth`
 MUST NOT:
 
 - load locale data or a catalog;

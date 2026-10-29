@@ -12,7 +12,7 @@ import { checkProject, generateProject } from '../src/index.js';
  * The policy claims the first segment of an address before any route does: a locale prefix names
  * the locale and is removed, an older alias of one redirects, a locale-neutral root is answered by
  * nothing. A route declared at `ar-eg/tools` under an `ar-eg` prefix is therefore unreachable at
- * the address it declared, and Equator will publish addresses for it that it cannot resolve.
+ * the address it declared, and Thoth will publish addresses for it that it cannot resolve.
  *
  * This is the first point in a build that holds both statements. The policy is one source file and
  * the route projection is another; the runtime validator that checks the projection is handed no
@@ -111,7 +111,7 @@ async function project(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -155,11 +155,11 @@ async function project(options: ProjectOptions): Promise<string> {
     'node_modules/@angular/router/package.json',
     manifest('@angular/router'),
   );
-  await write(root, 'node_modules/@neolorn/equator/index.d.ts', STUB);
+  await write(root, 'node_modules/@neolorn/thoth/index.d.ts', STUB);
   await write(
     root,
-    'node_modules/@neolorn/equator/package.json',
-    manifest('@neolorn/equator'),
+    'node_modules/@neolorn/thoth/package.json',
+    manifest('@neolorn/thoth'),
   );
 
   const table =
@@ -203,7 +203,7 @@ async function project(options: ProjectOptions): Promise<string> {
       "import { messages } from '#i18n/shell';",
       ...(options.shadowed
         ? []
-        : [`import { ${factory} } from '@neolorn/equator';`]),
+        : [`import { ${factory} } from '@neolorn/thoth';`]),
       '',
       ...(options.shadowed
         ? [
@@ -252,7 +252,7 @@ async function refusals(root: string): Promise<{
     diagnostics: readonly { readonly code: string; readonly summary: string }[],
   ): readonly string[] =>
     diagnostics
-      .filter(({ code }) => code === 'EQ1409')
+      .filter(({ code }) => code === 'TH1409')
       .map(({ summary }) => summary);
   const generated = await generateProject({ project: root });
   const checked = await checkProject({ project: root });
@@ -315,7 +315,7 @@ describe('a route may not be declared at an address the policy owns', () => {
   /**
    * Every way of spelling a policy, so the check is silent for none of them.
    *
-   * Equator exports four policy factories, and a toolkit that recognized only some would give a
+   * Thoth exports four policy factories, and a toolkit that recognized only some would give a
    * consumer who used `createDefaultLocalePrefixPolicy` (the shape in which a route's own leading
    * segment becomes the first segment of an address, and therefore the one most exposed to this
    * defect) no check at all. Every factory is asserted here, and the two that put no locale in the

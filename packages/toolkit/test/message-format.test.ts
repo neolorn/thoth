@@ -20,7 +20,7 @@ const catalogOptions: CatalogParseOptions = {
   sourcePath: 'i18n/messages/en-US.yaml',
 };
 
-describe('Equator MessageFormat 2 profile', () => {
+describe('Thoth MessageFormat 2 profile', () => {
   it('pins every stable and draft LDML 48.2 default function', () => {
     expect(MESSAGE_FUNCTION_PROFILE).toEqual([
       { name: 'string', status: 'stable', selection: 'literal' },
@@ -56,7 +56,7 @@ describe('Equator MessageFormat 2 profile', () => {
     ['date', '{$value :date}'],
     ['time', '{$value :time}'],
   ])(
-    'admits the pinned :%s function into the Equator semantic model',
+    'admits the pinned :%s function into the Thoth semantic model',
     (name, source) => {
       const result = parseMessageSemanticModel(source);
       expect(result.ok).toBe(true);
@@ -69,7 +69,7 @@ describe('Equator MessageFormat 2 profile', () => {
   /**
    * The option here is a real one on a function that has it. `:string case=upper` is neither:
    * `:string` has no options and `case` is not an option of anything, so a normalizer asked about
-   * that message is asked about one no reader could rely on, and Equator refuses it. The question
+   * that message is asked about one no reader could rely on, and Thoth refuses it. The question
    * is worth putting only to a message that means something.
    */
   it('normalizes expressions, options, attributes, and external inputs without dependency-owned types', () => {
@@ -167,7 +167,7 @@ describe('Equator MessageFormat 2 profile', () => {
       path: ['messages', 'hello'],
     });
     expect(syntax.ok).toBe(false);
-    expect(syntax.diagnostics[0]?.code).toBe('EQ1201');
+    expect(syntax.diagnostics[0]?.code).toBe('TH1201');
     expect(syntax.diagnostics[0]?.path).toEqual(['messages', 'hello']);
     expect(syntax.diagnostics[0]?.span?.sourcePath).toBe('message.mf2');
 
@@ -175,7 +175,7 @@ describe('Equator MessageFormat 2 profile', () => {
       '.input {$count :number}\n.match $count\n1 {{One}}',
     );
     expect(dataModel.ok).toBe(false);
-    expect(dataModel.diagnostics.some(({ code }) => code === 'EQ1202')).toBe(
+    expect(dataModel.diagnostics.some(({ code }) => code === 'TH1202')).toBe(
       true,
     );
   });
@@ -184,9 +184,9 @@ describe('Equator MessageFormat 2 profile', () => {
    * The standard's division, not the parser's stages.
    *
    * `messageformat` throws `duplicate-option-name` while parsing and reports the other five types
-   * from `validate`, so classifying by stage files them under two codes, `EQ1201` and `EQ1202`.
+   * from `validate`, so classifying by stage files them under two codes, `TH1201` and `TH1202`.
    * The working group's own `data-model-errors.json` files all six together. Which stage notices a
-   * fault is a detail of the parser Equator embeds; which class of error it is belongs to the
+   * fault is a detail of the parser Thoth embeds; which class of error it is belongs to the
    * message.
    *
    * The sources are written out rather than read from that suite, which `verify:message-format-
@@ -210,31 +210,31 @@ describe('Equator MessageFormat 2 profile', () => {
       expect(
         result.diagnostics.map(({ code }) => code),
         `${type} did not report the data-model code`,
-      ).toEqual([`EQ1202`]);
+      ).toEqual([`TH1202`]);
     }
 
     // The control that keeps the row above meaningful: a message the syntax refuses is still
-    // `EQ1201`, so the table is a division rather than a rename.
+    // `TH1201`, so the table is a division rather than a rename.
     expect(parseMessageSemanticModel('Hello {').diagnostics[0]?.code).toBe(
-      'EQ1201',
+      'TH1201',
     );
   });
 
-  it('rejects functions outside the approved Equator 1 profile', () => {
+  it('rejects functions outside the approved Thoth 1 profile', () => {
     const result = parseMessageSemanticModel('{$value :example}');
     expect(result.ok).toBe(false);
     expect(result.diagnostics).toMatchObject([
       {
-        code: 'EQ1203',
+        code: 'TH1203',
         summary:
-          'MessageFormat function :example is not part of the Equator 1 profile.',
+          'MessageFormat function :example is not part of the Thoth 1 profile.',
       },
     ]);
   });
 });
 
 describe('MessageFormat catalog integration', () => {
-  it('attaches Equator-owned semantics to every nonempty catalog message', () => {
+  it('attaches Thoth-owned semantics to every nonempty catalog message', () => {
     const result = parseCatalog(
       'messages:\n  greeting: "Hello {$name :string}"\n  spacer:\n    empty: true\n',
       catalogOptions,
@@ -262,7 +262,7 @@ describe('MessageFormat catalog integration', () => {
       catalogOptions,
     );
     expect(invalid.ok).toBe(false);
-    expect(invalid.diagnostics[0]?.code).toBe('EQ1201');
+    expect(invalid.diagnostics[0]?.code).toBe('TH1201');
     expect(invalid.diagnostics[0]?.path).toEqual(['messages', 'greeting']);
     expect(invalid.diagnostics[0]?.span?.sourcePath).toBe(
       'i18n/messages/en-US.yaml',
@@ -273,14 +273,14 @@ describe('MessageFormat catalog integration', () => {
       catalogOptions,
     );
     expect(unsupported.ok).toBe(false);
-    expect(unsupported.diagnostics[0]?.code).toBe('EQ1203');
+    expect(unsupported.diagnostics[0]?.code).toBe('TH1203');
   });
 });
 
 /**
  * MessageFormat 2 reserves the `u:` option namespace for the message syntax itself.
  *
- * Equator folded these in with every other option, kept them in the model and dropped them at
+ * Thoth folded these in with every other option, kept them in the model and dropped them at
  * runtime, so `{$name :string u:dir=rtl}` produced no diagnostic and no isolation. An author had no
  * way to discover that: the message parsed, the gate was green, and the bytes were identical to
  * the same message written without the option.
@@ -289,7 +289,7 @@ describe('MessageFormat catalog integration', () => {
  * ignored, because `u:locale` is a real option in the spec: accepting it quietly would mean a
  * message formatted in the wrong locale with nothing to say so.
  */
-describe('Equator MessageFormat u: options', () => {
+describe('Thoth MessageFormat u: options', () => {
   const diagnosticsFor = (message: string) => {
     const result = parseMessageSemanticModel(message);
     return result.ok
@@ -312,13 +312,13 @@ describe('Equator MessageFormat u: options', () => {
 
   it('rejects a u:dir value outside the four the spec defines', () => {
     const diagnostics = diagnosticsFor('{$name :string u:dir=sideways}');
-    expect(diagnostics[0]?.code).toBe('EQ1204');
+    expect(diagnostics[0]?.code).toBe('TH1204');
     expect(diagnostics[0]?.summary).toContain('u:dir="sideways"');
   });
 
   it('rejects a u:dir that is a variable rather than a literal', () => {
     const diagnostics = diagnosticsFor('{$name :string u:dir=$flag}');
-    expect(diagnostics[0]?.code).toBe('EQ1204');
+    expect(diagnostics[0]?.code).toBe('TH1204');
     expect(diagnostics[0]?.summary).toContain('must be a literal');
   });
 
@@ -328,7 +328,7 @@ describe('Equator MessageFormat u: options', () => {
    */
   it('rejects u:dir on markup', () => {
     const diagnostics = diagnosticsFor('{#strong u:dir=rtl}text{/strong}');
-    expect(diagnostics[0]?.code).toBe('EQ1204');
+    expect(diagnostics[0]?.code).toBe('TH1204');
     expect(diagnostics[0]?.summary).toContain('markup {#strong}');
   });
 
@@ -340,7 +340,7 @@ describe('Equator MessageFormat u: options', () => {
 
   it('refuses a reserved option it does not implement rather than ignoring it', () => {
     const diagnostics = diagnosticsFor('{$name :string u:locale=ar}');
-    expect(diagnostics[0]?.code).toBe('EQ1204');
+    expect(diagnostics[0]?.code).toBe('TH1204');
     expect(diagnostics[0]?.summary).toContain('u:locale');
   });
 });
@@ -348,7 +348,7 @@ describe('Equator MessageFormat u: options', () => {
 /**
  * MessageFormat's Number Operand, refused here so it cannot reach the runtime and throw.
  *
- * `{foo :number}` is valid MessageFormat syntax and Equator compiled it without a word. The operand
+ * `{foo :number}` is valid MessageFormat syntax and Thoth compiled it without a word. The operand
  * is a literal, so it reaches the evaluator as the string `foo`, and the evaluator threw. A message
  * that passes the gate and then throws while rendering is the one failure a localization library
  * cannot leave in: there is no fallback below it and the frame is already on screen.
@@ -357,7 +357,7 @@ describe('Equator MessageFormat u: options', () => {
  * decided at compile time; a variable operand is not, and the runtime still answers for that. The
  * two checks read the same production out of the same sentence of LDML 48 Part 9.
  */
-describe('Equator MessageFormat number operands', () => {
+describe('Thoth MessageFormat number operands', () => {
   const diagnosticsFor = (message: string) => {
     const result = parseMessageSemanticModel(message);
     return result.ok
@@ -377,7 +377,7 @@ describe('Equator MessageFormat number operands', () => {
 
   it('refuses a literal operand that is not a number', () => {
     const diagnostics = diagnosticsFor('{foo :number}');
-    expect(diagnostics[0]?.code).toBe('EQ1205');
+    expect(diagnostics[0]?.code).toBe('TH1205');
     expect(diagnostics[0]?.summary).toContain('"foo"');
   });
 
@@ -400,7 +400,7 @@ describe('Equator MessageFormat number operands', () => {
     ]) {
       const diagnostics = diagnosticsFor(`{${operand} :number}`);
       expect(
-        diagnostics.some(({ code }) => code === 'EQ1205'),
+        diagnostics.some(({ code }) => code === 'TH1205'),
         `${operand} should be refused as a number operand`,
       ).toBe(true);
     }
@@ -408,7 +408,7 @@ describe('Equator MessageFormat number operands', () => {
 
   it('refuses a number function written with no operand at all', () => {
     const diagnostics = diagnosticsFor('{:number}');
-    expect(diagnostics[0]?.code).toBe('EQ1205');
+    expect(diagnostics[0]?.code).toBe('TH1205');
     expect(diagnostics[0]?.summary).toContain('needs an operand');
   });
 
@@ -423,7 +423,7 @@ describe('Equator MessageFormat number operands', () => {
  * LDML 48 Part 9 lets a number function's resolved value carry its options into a later annotation,
  * and names one exception: "If the `select` option is set by an implementation-defined type used as
  * an operand, a Bad Option Error is emitted." MessageFormat reports that while formatting and falls
- * back to the catch-all. Equator refuses the message here instead, for the reason the rest of the
+ * back to the catch-all. Thoth refuses the message here instead, for the reason the rest of the
  * `select` handling is here: the value decides which CLDR plural table a target catalog's coverage
  * is checked against, and a translator opening the message has to be able to see which one.
  *
@@ -431,7 +431,7 @@ describe('Equator MessageFormat number operands', () => {
  * compiled artifact that did not come through this check, and `packages/runtime/test/
  * declaration-values.test.ts` reaches it by assembling one.
  */
-describe('Equator MessageFormat inherited select', () => {
+describe('Thoth MessageFormat inherited select', () => {
   const diagnosticsFor = (message: string) => {
     const result = parseMessageSemanticModel(message);
     return result.ok
@@ -443,7 +443,7 @@ describe('Equator MessageFormat inherited select', () => {
     const diagnostics = diagnosticsFor(
       '.local $sel = {1 :integer select=exact}\n.local $bad = {$sel :integer}\n{{{$bad}}}',
     );
-    expect(diagnostics[0]?.code).toBe('EQ1204');
+    expect(diagnostics[0]?.code).toBe('TH1204');
     expect(diagnostics[0]?.summary).toContain('$sel');
   });
 
@@ -452,7 +452,7 @@ describe('Equator MessageFormat inherited select', () => {
       diagnosticsFor(
         '.local $sel = {1 :number select=exact}\n.local $same = {$sel}\n.local $bad = {$same :number}\n{{{$bad}}}',
       )[0]?.code,
-    ).toBe('EQ1204');
+    ).toBe('TH1204');
   });
 
   it('refuses it in the pattern as well as in a declaration', () => {
@@ -460,7 +460,7 @@ describe('Equator MessageFormat inherited select', () => {
       diagnosticsFor(
         '.local $sel = {1 :integer select=exact}\n{{{$sel :number}}}',
       )[0]?.code,
-    ).toBe('EQ1204');
+    ).toBe('TH1204');
   });
 
   it('accepts a re-annotation that writes its own select', () => {
@@ -491,7 +491,7 @@ describe('Equator MessageFormat inherited select', () => {
  * failing case. `packages/runtime/test/message-function-options.test.ts` holds the other half,
  * where the same tables are checked against the two `Intl` constructors that impose them.
  */
-describe('Equator MessageFormat numeric options', () => {
+describe('Thoth MessageFormat numeric options', () => {
   const summaryFor = (message: string): string | undefined => {
     const result = parseMessageSemanticModel(message);
     return result.ok ? undefined : result.diagnostics[0]?.summary;
@@ -570,7 +570,7 @@ describe('Equator MessageFormat numeric options', () => {
    * the whole point: `Intl.NumberFormat` accepts `usage` and silently ignores it, so a message
    * asking for road distances would print metres to an American reader with nothing to say so.
    */
-  it('refuses the two options Equator cannot honour rather than ignoring them', () => {
+  it('refuses the two options Thoth cannot honour rather than ignoring them', () => {
     expect(
       summaryFor('{1 :currency currency=EUR currencyDisplay=never}'),
     ).toContain('no way to produce it');
@@ -613,7 +613,7 @@ describe('Equator MessageFormat numeric options', () => {
 
   /**
    * `:percent` discards `select` from its operand rather than reporting it, because it has no
-   * `select` option for an inherited one to have decided anything about. Equator refused this,
+   * `select` option for an inherited one to have decided anything about. Thoth refused this,
    * which is a conforming message rejected, and the conformance suite has no case for it either.
    */
   it('lets a function without a select option inherit one harmlessly', () => {
@@ -627,16 +627,16 @@ describe('Equator MessageFormat numeric options', () => {
 });
 
 /**
- * The behaviour Equator depends on and does not implement.
+ * The behaviour Thoth depends on and does not implement.
  *
- * MF2 `NormalizeKey` compares a variant key in Unicode Normalization Form C, and Equator's compiled
- * catalogs satisfy it, but not because Equator does anything. `normalizeVariantKey` reshapes a key
+ * MF2 `NormalizeKey` compares a variant key in Unicode Normalization Form C, and Thoth's compiled
+ * catalogs satisfy it, but not because Thoth does anything. `normalizeVariantKey` reshapes a key
  * into the semantic model and copies its value through untouched; the normalization is
  * `messageformat`'s parser, a dependency, doing it on the way in.
  *
  * That is fine and it is not written down anywhere, which is the problem. The evaluator carries its
  * own `NormalizeKey` for artifacts it did not compile, and a reader who believed the toolkit
- * normalized could delete it as duplicated work: leaving Equator's conformance resting entirely on
+ * normalized could delete it as duplicated work: leaving Thoth's conformance resting entirely on
  * an undocumented behaviour of a third-party parser, with nothing that would notice if it changed.
  *
  * So the dependency is pinned here rather than assumed. If a future `messageformat` stops
@@ -648,7 +648,7 @@ describe('MessageFormat key normalization', () => {
   const decomposed = 'Ḍ̇';
   const composed = decomposed.normalize('NFC');
 
-  it('is done by the parser, before Equator sees the key', () => {
+  it('is done by the parser, before Thoth sees the key', () => {
     expect(composed).not.toBe(decomposed);
     const result = parseMessageSemanticModel(
       `.input {$s :string}\n.match $s\n${decomposed} {{hit}}\n* {{miss}}`,
@@ -661,7 +661,7 @@ describe('MessageFormat key normalization', () => {
   });
 
   /**
-   * The other half of the claim, that Equator's own step does *not* normalize, is deliberately not
+   * The other half of the claim, that Thoth's own step does *not* normalize, is deliberately not
    * asserted here, because nothing in this package can assert it. A compiled key is NFC either way,
    * so measuring the outcome cannot tell the two layers apart, and the only input that could is one
    * the parser refuses to produce. Every check available from this side would agree by construction.
@@ -675,7 +675,7 @@ describe('MessageFormat key normalization', () => {
  * A `.match` over a function that formats but does not select.
  *
  * MessageFormat requires a *Bad Selector* error here and requires the selector to match nothing but
- * the catch-all. Equator reported neither: `:currency` and `:unit` reached the evaluator's one
+ * the catch-all. Thoth reported neither: `:currency` and `:unit` reached the evaluator's one
  * numeric resolved value and selected as plain numbers, so `.match {42 :currency currency=EUR} 42
  * {{keyed}}
  * * {{other}}` rendered `keyed`. A variant the standard says is unreachable, chosen silently. The
@@ -704,9 +704,9 @@ describe('a selector that cannot select', () => {
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.diagnostics.map(({ code }) => code)).toContain('EQ1206');
+    expect(result.diagnostics.map(({ code }) => code)).toContain('TH1206');
     const summary = result.diagnostics.find(
-      ({ code }) => code === 'EQ1206',
+      ({ code }) => code === 'TH1206',
     )?.summary;
     // The author is told which function, which variable, and what a selecting one is.
     expect(summary).toContain(label);
@@ -738,7 +738,7 @@ describe('a selector that cannot select', () => {
     );
     expect(refused.ok).toBe(false);
     if (!refused.ok) {
-      expect(refused.diagnostics.map(({ code }) => code)).toContain('EQ1206');
+      expect(refused.diagnostics.map(({ code }) => code)).toContain('TH1206');
     }
     const accepted = parseMessageSemanticModel(
       [
@@ -756,7 +756,7 @@ describe('a selector that cannot select', () => {
    * An unannotated selector never reaches this rule, and that is worth pinning rather than assuming.
    *
    * `messageformat`'s own data-model validation refuses it first, so every shape below stops at
-   * EQ1202: a bare variable, a local that relays an undeclared one, an unannotated `.input`, and
+   * TH1202: a bare variable, a local that relays an undeclared one, an unannotated `.input`, and
    * a bare literal. That is why the rule may walk a declaration chain and find no annotating
    * function without deciding anything: by then the message is already refused. The last row is the
    * one that does reach it, and shows the walk is load-bearing rather than defensive.
@@ -779,7 +779,7 @@ describe('a selector that cannot select', () => {
     const result = parseMessageSemanticModel(source);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.diagnostics.map(({ code }) => code)).toEqual(['EQ1202']);
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(['TH1202']);
   });
 
   it('reads a registered function from its descriptor rather than its name', () => {
@@ -797,7 +797,7 @@ describe('a selector that cannot select', () => {
     });
     expect(refused.ok).toBe(false);
     if (!refused.ok) {
-      expect(refused.diagnostics.map(({ code }) => code)).toContain('EQ1206');
+      expect(refused.diagnostics.map(({ code }) => code)).toContain('TH1206');
     }
     const accepted = parseMessageSemanticModel(source, {
       customFunctions: [tag(true)],

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TestBed } from '@angular/core/testing';
-import { Localization, withFormattingContext } from '@neolorn/equator';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+import { Localization, withFormattingContext } from '@neolorn/thoth';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';

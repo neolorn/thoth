@@ -5,7 +5,7 @@ import {
   resolveLocalizedRoute,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -21,7 +21,7 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-CanonicalCorrectionSingleHopIdentity0123456',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -104,7 +104,7 @@ describe('a canonical correction', () => {
           { status: second.status, location: first.location.length },
           `${path}${query} was corrected to an address that resolves as ${second.status}`,
         ).toMatchObject({ status: 'success' });
-        claimCapability('entry:@neolorn/equator/core');
+        claimCapability('entry:@neolorn/thoth/core');
       });
     }
   }

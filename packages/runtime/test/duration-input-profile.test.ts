@@ -10,7 +10,7 @@ import {
   type LocalizedInputProfile,
   type LocalizedInputStatus,
   type LocalizedInputValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A duration field is the sequence a person types: units to read, with literal text between them.

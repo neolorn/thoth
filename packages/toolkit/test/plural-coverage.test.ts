@@ -21,7 +21,7 @@ import { pluralCategoriesForLocale } from '../src/semantic-model.js';
  * every count then renders the same string: it parses, compiles, ships, and reads as a finished
  * translation. Nothing reported it.
  *
- * The categories come from the CLDR release Equator pins, not from the host `Intl`, so the answer
+ * The categories come from the CLDR release Thoth pins, not from the host `Intl`, so the answer
  * does not change with whichever Node version a build happens to run on.
  *
  * `specs/12-verification.spec.md` section 5 asks for locales that differ in the ways the
@@ -102,11 +102,11 @@ const ALL_SIX = [
 ];
 
 const coverage = (graph: ReturnType<typeof analyze>) =>
-  graph.diagnostics.filter((d) => d.code === 'EQ1308');
+  graph.diagnostics.filter((d) => d.code === 'TH1308');
 
 describe('plural category coverage', () => {
-  it('pins the category table to the CLDR release Equator declares', () => {
-    expect(PLURAL_DATA_PROFILE).toBe('cldr-48.2/equator-plurals-1');
+  it('pins the category table to the CLDR release Thoth declares', () => {
+    expect(PLURAL_DATA_PROFILE).toBe('cldr-48.2/thoth-plurals-1');
     expect(CARDINAL_PLURAL_CATEGORIES['ar']).toEqual([
       'zero',
       'one',
@@ -281,7 +281,7 @@ describe('plural category coverage follows MF2 select', () => {
       });
       return result.ok
         ? []
-        : result.diagnostics.filter((d) => d.code === 'EQ1204');
+        : result.diagnostics.filter((d) => d.code === 'TH1204');
     };
 
     expect(rejected('bogus')).toHaveLength(1);
@@ -389,7 +389,7 @@ describe('plural table lookup', () => {
 });
 
 /**
- * `requireCompleteTargets` turns EQ1307 and EQ1308 from warnings into errors.
+ * `requireCompleteTargets` turns TH1307 and TH1308 from warnings into errors.
  * Three checks above turn the gate on, or use a complete target: none did both, so nothing said
  * that a translator who has actually finished can turn the gate on and have the build pass.
  *

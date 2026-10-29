@@ -3,15 +3,15 @@ import { PLATFORM_ID, inject } from '@angular/core';
 import type {
   LocalizationPersistenceStore,
   LocalizationPersistenceStoreFactory,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 const KEY = 'embedded-tab-locale';
 
 /**
- * A choice kept for as long as this tab is open, which none of Equator's own stores does: memory
+ * A choice kept for as long as this tab is open, which none of Thoth's own stores does: memory
  * ends with the page and local storage outlives the tab.
  *
- * Written against the store port, so it holds to the same rules as the stores Equator ships: a
+ * Written against the store port, so it holds to the same rules as the stores Thoth ships: a
  * store that cannot read where it is asked reports nothing, and one that cannot write returns.
  */
 export const tabSessionStore: LocalizationPersistenceStoreFactory = () => {

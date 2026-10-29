@@ -8,7 +8,7 @@
  */
 import { expect, it } from 'vitest';
 
-import { LocalizationError, localeProfile } from '@neolorn/equator/core';
+import { LocalizationError, localeProfile } from '@neolorn/thoth/core';
 
 import { configured, runtime } from './transaction-runtime-harness.js';
 

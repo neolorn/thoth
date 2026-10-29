@@ -75,7 +75,7 @@ async function listing(root: string): Promise<string[]> {
     )
     .filter(
       (path) =>
-        !path.startsWith('.equator/') && !path.startsWith('src/generated/'),
+        !path.startsWith('.thoth/') && !path.startsWith('src/generated/'),
     )
     .sort();
 }
@@ -110,7 +110,7 @@ describe('check --fix', () => {
       'src/app.ts',
       "import { messages } from '#i18n/shell';\n\nexport const used = [messages.appTitle, messages.farewell, messages.greeting];\n",
     );
-    const configurationPath = resolve(root, 'equator.config.json');
+    const configurationPath = resolve(root, 'thoth.config.json');
     const configurationText = await readFile(configurationPath, 'utf8');
     const configurationBefore = parseConfiguration(configurationText);
     expect(configurationBefore.ok).toBe(true);
@@ -127,7 +127,7 @@ describe('check --fix', () => {
     expect(checked.ok, JSON.stringify(checked.diagnostics)).toBe(true);
     if (!checked.ok) return;
     expect([...checked.value.fixedFiles].sort()).toEqual(
-      ['equator.config.json', ...Object.keys(CATALOGS)].sort(),
+      ['thoth.config.json', ...Object.keys(CATALOGS)].sort(),
     );
 
     for (const [path, { text }] of Object.entries(CATALOGS)) {

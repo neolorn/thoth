@@ -5,7 +5,7 @@ import {
   type FormattingContext,
   type PersonNameFormatOptions,
   type PersonNameValue,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { describe, expect, it } from 'vitest';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
@@ -58,7 +58,7 @@ describe('the generated artifact carries the configured locales and no more', ()
   });
 
   it('declares the derivation the runtime knows how to read', () => {
-    expect(personNames.profile).toBe('cldr-48.2/equator-person-names-1');
+    expect(personNames.profile).toBe('cldr-48.2/thoth-person-names-1');
   });
 });
 
@@ -152,7 +152,7 @@ describe('an Arabic name in the Arabic interface', () => {
 describe('a name whose locale the application did not configure', () => {
   it('orders a Hungarian name given-first, because English says so about Hungarian names', () => {
     // The list that decides this is the *interface*`s. CLDR 48 gives en a surnameFirst list of
-    // ja, ko, vi, yue and zh: Hungarian is not in it. Equator`s hand-written table had `hu` in a
+    // ja, ko, vi, yue and zh: Hungarian is not in it. Thoth`s hand-written table had `hu` in a
     // single global list and rendered this the other way round, in every interface at once.
     const ferenc = personName('hu', { given: 'Ferenc', surname: 'Molnár' });
     expect(render(ferenc, english)).toBe('Ferenc Molnár');
@@ -174,7 +174,7 @@ describe('formatting without the generated artifact', () => {
     const result = formatPersonName(mary, english);
     expect(result.ok && result.value.text).toBe('Dr. Mary Sue Hamish');
     claimCapability('format:formatPersonName');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('refuses data from a derivation it does not read', () => {
@@ -183,7 +183,7 @@ describe('formatting without the generated artifact', () => {
       english,
       {},
       {
-        profile: 'cldr-99/equator-person-names-7',
+        profile: 'cldr-99/thoth-person-names-7',
         patterns: [],
         rows: [],
       },
@@ -191,6 +191,6 @@ describe('formatting without the generated artifact', () => {
     expect(result.ok).toBe(false);
     expect(!result.ok && result.diagnostic.reason).toBe('integrity-mismatch');
     claimCapability('format:formatPersonName');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

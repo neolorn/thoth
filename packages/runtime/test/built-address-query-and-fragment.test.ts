@@ -7,7 +7,7 @@ import {
   LocalizationError,
   type RouteQueryValue,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What follows the path in an address `buildLocalizedRoute` writes, and the locale it writes it in.
@@ -18,7 +18,7 @@ import {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-BuiltAddressQueryAndFragmentTestIdentity012',
     routes: [{ id: 'second', path: 'second', parameterNames: [] }],
   },

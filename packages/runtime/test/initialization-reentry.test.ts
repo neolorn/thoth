@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import type { LocalizationSnapshot } from '@neolorn/equator/core';
+import type { LocalizationSnapshot } from '@neolorn/thoth/core';
 
 import type { LocalizationEventEmitter } from '../src/observability.js';
 import { catalogKey } from './catalog-store-harness.js';

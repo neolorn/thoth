@@ -42,7 +42,7 @@ const STUBS: Readonly<Record<string, string>> = {
     'export type Routes = readonly Route[];',
     '',
   ].join('\n'),
-  '@neolorn/equator':
+  '@neolorn/thoth':
     'export declare function withRouting(options: unknown): unknown;\n',
 };
 
@@ -76,7 +76,7 @@ async function project(
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -159,7 +159,7 @@ describe('the route table a generation writes', () => {
     const root = await project(['shell'], {
       'shell.ts': SHELL,
       'app.config.ts': [
-        "import { withRouting } from '@neolorn/equator';",
+        "import { withRouting } from '@neolorn/thoth';",
         '',
         'export const routing = withRouting({',
         "  indexing: { field: 'audience', values: { staff: 'non-indexable' } },",
@@ -259,7 +259,7 @@ describe('the route table a generation writes', () => {
     const root = await project([], {
       'page.ts': [
         'const handle = {',
-        "  generatedAbi: 'equator-generated/1',",
+        "  generatedAbi: 'thoth-generated/1',",
         "  resultKind: 'plain',",
         "  identity: 'elsewhere:scope:message',",
         '} as const;',

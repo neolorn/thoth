@@ -4,10 +4,10 @@ import {
   DEFAULT_ROUTE_CACHING_FIELD,
   routeCacheHeaders,
   type RouteHttpDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
- * How a page's own `Cache-Control` and `Vary` are read before they narrow Equator's.
+ * How a page's own `Cache-Control` and `Vary` are read before they narrow Thoth's.
  *
  * `route-cache-headers.test.ts` holds what each directive does. This holds the reading itself: a
  * value is read by RFC 9111 section 5.2's grammar rather than split on commas, so a quoted argument,
@@ -141,7 +141,7 @@ describe("how a page's Vary is read", () => {
 });
 
 describe('the route-data field a caching class is read from', () => {
-  it('is `equatorCaching` where a consumer names none', () => {
-    expect(DEFAULT_ROUTE_CACHING_FIELD).toBe('equatorCaching');
+  it('is `thothCaching` where a consumer names none', () => {
+    expect(DEFAULT_ROUTE_CACHING_FIELD).toBe('thothCaching');
   });
 });

@@ -192,7 +192,7 @@ export function claimRecord(
 }
 
 /** The environment variable naming the file a stage's claims go to. The gate sets it. */
-export const CLAIMS_FILE_VARIABLE = 'EQUATOR_CAPABILITY_CLAIMS';
+export const CLAIMS_FILE_VARIABLE = 'THOTH_CAPABILITY_CLAIMS';
 
 /** Where a test's claims wait until the test is known to have passed. */
-export const CLAIMS_META_KEY = 'equatorCapabilityClaims' as const;
+export const CLAIMS_META_KEY = 'thothCapabilityClaims' as const;

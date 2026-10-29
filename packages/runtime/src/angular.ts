@@ -48,7 +48,7 @@ import {
   ɵlistOption,
   ɵnamedOption,
   ɵrecordOption,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import {
   Localization,
   createLocalizationRuntime,
@@ -73,7 +73,7 @@ import {
   type ParticipantTransferRecord,
 } from './participant-runtime';
 import type { RelativeTimePolicy } from './relative-time-policy';
-import { parseAcceptLanguage } from '@neolorn/equator/core';
+import { parseAcceptLanguage } from '@neolorn/thoth/core';
 import type { LocalizationPersistenceStoreFactory } from './persistence';
 import {
   RUNTIME_LIMITS,
@@ -85,7 +85,7 @@ import {
 } from './runtime-safety';
 
 /**
- * The sub-path this application is deployed under, as Equator reads it.
+ * The sub-path this application is deployed under, as Thoth reads it.
  *
  * One fact with one resolution, because three things now depend on it agreeing with itself: the
  * locale is read out of an address with the base taken off, the address bar is written with it put
@@ -104,7 +104,7 @@ import {
  * reduce it through one normalizer that accepts either spelling.
  *
  * Resolved from the tokens rather than by injecting the `LocationStrategy`, which is not provided
- * when an application uses Equator without the Router, and which injects `Localization` and would
+ * when an application uses Thoth without the Router, and which injects `Localization` and would
  * close a cycle on the runtime being constructed. Requires an injection context.
  *
  * Angular's last fallback, the document origin, is deliberately not reproduced: it exists so that
@@ -234,19 +234,19 @@ interface LocaleSourcesFeature extends LocalizationFeature<'locale-sources'> {
 }
 
 /**
- * Everything about routing that Equator cannot derive from the application's sources.
+ * Everything about routing that Thoth cannot derive from the application's sources.
  *
- * The route table is not here: Equator generated it, and the generated `provideLocalization()`
+ * The route table is not here: Thoth generated it, and the generated `provideLocalization()`
  * passes it. What an application owns is the URL policy, the localized path spellings, the
  * parameter codecs, the outcomes of addresses that no longer exist, and the name of its own
- * route-data field, which Equator reads at build time rather than inventing.
+ * route-data field, which Thoth reads at build time rather than inventing.
  *
  * The policy and the projection are the base type's two fields, because they are what reading a
  * locale out of an address needs and the `url` locale source reads them from here.
  */
 export interface RoutingOptions extends LocaleUrlResolutionSetup {
   /**
-   * Read from this file's source text when Equator compiles the owner, and inert at runtime: by the
+   * Read from this file's source text when Thoth compiles the owner, and inert at runtime: by the
    * time this object exists, every route already carries the class it was classified into.
    *
    * Editing it therefore changes generated output, so it takes effect on the next generate: the
@@ -288,7 +288,7 @@ interface ExtensionsFeature extends LocalizationFeature<'extensions'> {
  * How content rendered outside the application's own tree is told which language it is in.
  *
  * A dialog, a menu or a tooltip that a component library attaches to the document body is not
- * inside anything Equator marks up, so its language and direction have to be set by whoever owns
+ * inside anything Thoth marks up, so its language and direction have to be set by whoever owns
  * those roots. Built through `withOverlayLocale`, per injector rather than per configuration.
  */
 export interface LocalizationOverlayAdapter {
@@ -336,20 +336,20 @@ interface ObservabilityFeature extends LocalizationFeature<'observability'> {
 /**
  * The social-preview facts only a deployment can supply.
  *
- * `image` is required rather than optional, and it decides whether Equator emits an Open Graph
+ * `image` is required rather than optional, and it decides whether Thoth emits an Open Graph
  * block at all. [ogp.me](https://ogp.me/) names four properties required on every page (`og:title`,
- * `og:type`, `og:image`, `og:url`) and `og:image` is the one Equator can never derive: an absolute
- * product image URL is consumer content, and putting one in Equator would be the neutrality
+ * `og:type`, `og:image`, `og:url`) and `og:image` is the one Thoth can never derive: an absolute
+ * product image URL is consumer content, and putting one in Thoth would be the neutrality
  * violation this project exists not to commit.
  *
- * So the rule is that **Equator completes an Open Graph block the deployment started**, and emits
+ * So the rule is that **Thoth completes an Open Graph block the deployment started**, and emits
  * none otherwise. A block missing `og:image` claims a page is annotated for sharing when it is not,
  * and an `og:locale` with no other Open Graph tags describes markup that is not there. This is the
- * same division as the cache directives: Equator emits what it fully determines, and the deployment
+ * same division as the cache directives: Thoth emits what it fully determines, and the deployment
  * supplies what only it knows.
  */
 export interface DocumentSocialProjection {
-  /** Absolute URL of the preview image. Required: `og:image` is, and Equator cannot invent one. */
+  /** Absolute URL of the preview image. Required: `og:image` is, and Thoth cannot invent one. */
   readonly image: string;
   /** Alternative text for the preview image. */
   readonly imageAlt?: string;
@@ -361,7 +361,7 @@ export interface DocumentSocialProjection {
   /**
    * The card layout X should use. Defaults to `summary`.
    *
-   * The only card field Equator emits, because X's card processor "first checks for the
+   * The only card field Thoth emits, because X's card processor "first checks for the
    * Twitter-specific property, and if not present, falls back to the supported Open Graph
    * property", so title, description and image are already answered by the block above, and
    * emitting `twitter:title` beside `og:title` would be two places to change one string.
@@ -375,7 +375,7 @@ export interface DocumentSocialProjection {
  * What goes into the document head for the page currently shown, already localized.
  *
  * Assembled by the Router integration from the route's own messages and its resolution, and applied
- * whole: everything Equator wrote before is removed and replaced, so the head never carries a
+ * whole: everything Thoth wrote before is removed and replaced, so the head never carries a
  * mixture of two pages.
  */
 export interface DocumentLocalizationProjection {
@@ -394,7 +394,7 @@ export interface DocumentLocalizationProjection {
    * The committed locale, supplied by the router rather than by the application.
    *
    * Present so the head can carry `og:locale`. It is not something a consumer sets: the locale that
-   * a page's metadata is marked up in is the locale Equator just committed, and letting it be
+   * a page's metadata is marked up in is the locale Thoth just committed, and letting it be
    * passed separately would create a second answer that can disagree with the first.
    */
   readonly locale?: string;
@@ -403,7 +403,7 @@ export interface DocumentLocalizationProjection {
 }
 
 interface TransferSnapshot {
-  readonly profile: 'equator-transfer-state/1';
+  readonly profile: 'thoth-transfer-state/1';
   readonly primaryLocale: string;
   readonly formatting: Omit<FormattingContext, 'pseudoLocale'>;
   readonly route?: LocalizationRouteSnapshot;
@@ -412,7 +412,7 @@ interface TransferSnapshot {
 }
 
 const transferStateKey = makeStateKey<TransferSnapshot>(
-  '@neolorn/equator:localization-state/1',
+  '@neolorn/thoth:localization-state/1',
 );
 
 /** Every kind, keyed so a kind added to the union and left out here does not compile. */
@@ -538,9 +538,9 @@ export function withLocalizationClock(
 /**
  * Where relative phrasing stops.
  *
- * Equator owns the selection rule, largest unit the span reaches, because it is the same rule in
+ * Thoth owns the selection rule, largest unit the span reaches, because it is the same rule in
  * every application. The thresholds are the consumer's, because "3 days ago" is right for a message
- * and wrong for an invoice, and Equator has no basis for choosing between them.
+ * and wrong for an invoice, and Thoth has no basis for choosing between them.
  */
 export function withRelativeTimePolicy(
   policy: RelativeTimePolicy,
@@ -592,13 +592,13 @@ const LOCALE_SOURCES = Object.freeze([
 /**
  * Which sources decide the locale of a first request, and in what order.
  *
- * Equator implements every source; the consumer says which ones are live and which outranks which.
+ * Thoth implements every source; the consumer says which ones are live and which outranks which.
  * First answer wins and an omitted source is disabled, so `withLocaleSources('url', 'default')`
  * is an application that honours links and ignores everything else.
  *
  * **The default is `'url'`, `'stored'`, `'browser'`, `'default'`, in that order, and an application
  * that wants it should not call this function.** Writing the default out changes nothing and
- * creates a second place to maintain: Equator can no longer improve the order for anyone who
+ * creates a second place to maintain: Thoth can no longer improve the order for anyone who
  * restated it, and a reader cannot tell a deliberate choice from a copied line. Call this only to
  * depart from that order: to drop a source, or to rank them differently.
  *
@@ -647,7 +647,7 @@ export function withLocaleSources(
  * The runtime bindings for this application's declared extensions.
  *
  * A binding is a function, so it cannot be generated into a data file and cannot live in
- * configuration: it is written by the application and passed here. Everything Equator generates for
+ * configuration: it is written by the application and passed here. Everything Thoth generates for
  * itself is already closed over by the generated `provideLocalization()`.
  */
 export function withExtensions(
@@ -662,14 +662,14 @@ export function withExtensions(
 }
 
 /**
- * The application's URL policy, and the route data Equator could not derive.
+ * The application's URL policy, and the route data Thoth could not derive.
  *
- * Equator supplies the route table it generated; this supplies the half that is a decision. Both
+ * Thoth supplies the route table it generated; this supplies the half that is a decision. Both
  * meet in one projection, so the `url` locale source, canonical URLs, reciprocal `hreflang`
  * links, and locale redirects all read the same copy: there is no second copy to drift.
  *
  * `indexing`, `sitemap` and `caching` are the exception in this object: they are inputs to code
- * generation rather than to the runtime. Equator reads each field name and value table out of this
+ * generation rather than to the runtime. Thoth reads each field name and value table out of this
  * call's source text when it compiles the owner, and classifies each route then.
  */
 export function withRouting(
@@ -771,7 +771,7 @@ function routingProviders(
 }
 
 /**
- * Stop Equator maintaining the document's `lang` and `dir`.
+ * Stop Thoth maintaining the document's `lang` and `dir`.
  *
  * Maintaining them is the default, because a page whose text is Arabic and whose `dir` is `ltr` is
  * broken in a way no application intends. This exists for the one case that is not a mistake: a
@@ -805,7 +805,7 @@ export function withoutDocumentLocale(): LocalizationFeature<'document-locale'> 
  * as a mistake, so nothing is thrown and nothing is reported. The region stays where it is, saying
  * nothing, and `withoutDocumentLocale()` is what removes it.
  *
- * Without this feature Equator announces the locale's own name for itself, which is correct and
+ * Without this feature Thoth announces the locale's own name for itself, which is correct and
  * says nothing about what the reader is now looking at.
  */
 export function withLocaleAnnouncement(
@@ -823,7 +823,7 @@ export function withLocaleAnnouncement(
  *
  * Takes a factory rather than an adapter. On server-rendered and prerendered routes the overlay
  * state has to be present before components paint, and the server and the client have to agree
- * on overlay-root direction, which is Equator-owned, so an Equator overlay adapter is live
+ * on overlay-root direction, which is Thoth-owned, so a Thoth overlay adapter is live
  * during server rendering, where one adapter per process is one adapter shared by every
  * concurrent request. A factory gives each request its own.
  */
@@ -928,7 +928,7 @@ export class DocumentLocalization {
   private activeProjection: DocumentLocalizationProjection | undefined;
 
   /**
-   * Replaces everything Equator has written in the head with this projection.
+   * Replaces everything Thoth has written in the head with this projection.
    *
    * Throws when a title or description is out of bounds or carries control characters, and when any
    * address in it is not one a reader can safely be sent to. Refusing is deliberate: a head is
@@ -999,7 +999,7 @@ export class DocumentLocalization {
     const previousTitle = this.document.title;
     const previousNodes = [
       ...this.document.head.querySelectorAll<HTMLElement>(
-        '[data-equator-document]',
+        '[data-thoth-document]',
       ),
     ];
     const replacements: Element[] = [];
@@ -1007,7 +1007,7 @@ export class DocumentLocalization {
       const node = this.document.createElement('meta');
       node.setAttribute('name', name);
       node.setAttribute('content', content);
-      node.setAttribute('data-equator-document', 'true');
+      node.setAttribute('data-thoth-document', 'true');
       replacements.push(node);
     };
     const link = (rel: string, href: string, hreflang?: string): void => {
@@ -1015,7 +1015,7 @@ export class DocumentLocalization {
       node.setAttribute('rel', rel);
       node.setAttribute('href', href);
       if (hreflang !== undefined) node.setAttribute('hreflang', hreflang);
-      node.setAttribute('data-equator-document', 'true');
+      node.setAttribute('data-thoth-document', 'true');
       replacements.push(node);
     };
     /**
@@ -1030,7 +1030,7 @@ export class DocumentLocalization {
       const node = this.document.createElement('meta');
       node.setAttribute('property', name);
       node.setAttribute('content', content);
-      node.setAttribute('data-equator-document', 'true');
+      node.setAttribute('data-thoth-document', 'true');
       replacements.push(node);
     };
     try {
@@ -1068,7 +1068,7 @@ export class DocumentLocalization {
         if (social.siteName !== undefined) {
           property('og:site_name', social.siteName);
         }
-        // The part no consumer can get right by hand, and the reason this block is Equator's job.
+        // The part no consumer can get right by hand, and the reason this block is Thoth's job.
         const marked =
           projection.locale === undefined
             ? undefined
@@ -1096,11 +1096,11 @@ export class DocumentLocalization {
     }
   }
 
-  /** Puts the title back to what the document loaded with and removes every tag Equator added. */
+  /** Puts the title back to what the document loaded with and removes every tag Thoth added. */
   dispose(): void {
     this.document.title = this.originalTitle;
     for (const node of this.document.head.querySelectorAll(
-      '[data-equator-document]',
+      '[data-thoth-document]',
     )) {
       node.parentNode?.removeChild(node);
     }
@@ -1196,7 +1196,7 @@ class LocaleAnnouncementCommitHook implements LocalizationCommitHook {
     region.setAttribute('role', 'status');
     region.setAttribute('aria-live', 'polite');
     region.setAttribute('aria-atomic', 'true');
-    region.setAttribute('data-equator-announcer', 'true');
+    region.setAttribute('data-thoth-announcer', 'true');
     // Set through the CSSOM rather than a style attribute or stylesheet, so a strict
     // `style-src` policy that forbids both still renders it.
     for (const [property, value] of [
@@ -1599,10 +1599,10 @@ class InteractionPreservationCommitHook implements LocalizationCommitHook {
    * number was derived from moves. Fragment anchors are re-invoked on every layout until they stick.
    * The shape is: re-apply while the ground is still moving, stop when the visitor takes over.
    *
-   * Equator needs it for a sharper reason than late layout. On a direction change WebKit reveals an
+   * Thoth needs it for a sharper reason than late layout. On a direction change WebKit reveals an
    * already-focused element, overriding the position a moment after it is set, with no call from any
    * script and no way to prevent it: `focus({ preventScroll: true })` is honoured and is not what
-   * moves the page. Reproduced with no Equator and no framework in the document. So the position is
+   * moves the page. Reproduced with no Thoth and no framework in the document. So the position is
    * held rather than merely written.
    *
    * Three things bound it, and they are what keep this from being a fight:
@@ -1801,7 +1801,7 @@ function sanitizeTransferSnapshot(
         ['profile', 'primaryLocale', 'formatting', 'catalogs', 'participants'],
         ['route'],
       ) ||
-      admitted.value['profile'] !== 'equator-transfer-state/1' ||
+      admitted.value['profile'] !== 'thoth-transfer-state/1' ||
       typeof admitted.value['primaryLocale'] !== 'string' ||
       admitted.value['primaryLocale'].length === 0 ||
       admitted.value['primaryLocale'].length > 128
@@ -1860,7 +1860,7 @@ function sanitizeTransferSnapshot(
     );
     if (participants === undefined) return undefined;
     return Object.freeze({
-      profile: 'equator-transfer-state/1',
+      profile: 'thoth-transfer-state/1',
       primaryLocale,
       formatting: formatting as unknown as Omit<
         FormattingContext,
@@ -1881,9 +1881,9 @@ function sanitizeTransferSnapshot(
  * Compose localization from a setup assembled by hand.
  *
  * The ordinary way to do this is `provideLocalization()` from the application's own `#i18n`, which
- * Equator generates with the configuration, catalog set, loaders, recovery payload and startup
+ * Thoth generates with the configuration, catalog set, loaders, recovery payload and startup
  * scopes already closed over. This is the path underneath it, for a caller assembling those parts
- * itself: a test constructing a deliberately broken loader, or a host composing Equator around
+ * itself: a test constructing a deliberately broken loader, or a host composing Thoth around
  * artifacts it produced another way.
  *
  * Two functions of the same name in different modules would be a coin toss at every call site, so
@@ -1981,7 +1981,7 @@ export function provideLocalizationSetup(
         // `REQUEST_CONTEXT` stops being an input to locale resolution altogether. That also ends
         // a collision with a consumer's own `REQUEST_CONTEXT` and an `engine.handle` wiring
         // requirement that was documented nowhere and silent when omitted. A consumer steering
-        // Equator by address still has `RouteHttpDescriptor` and the standalone server API, both of
+        // Thoth by address still has `RouteHttpDescriptor` and the standalone server API, both of
         // which take one explicitly.
         const platformLocation = inject(PlatformLocation, { optional: true });
         // The sub-path the application is deployed under, taken off before the address is read.
@@ -2044,10 +2044,10 @@ export function provideLocalizationSetup(
         const routedAddress = new RoutingCommitHook();
         const routedDocument = new RoutingCommitHook();
         hooks.push(routedAddress, routedDocument);
-        // Announced without being asked for, into a live region Equator owns. A screen reader given
+        // Announced without being asked for, into a live region Thoth owns. A screen reader given
         // no notice that the page changed language reads the new text with the old pronunciation
         // rules, and an application cannot know to opt into a fix for a problem it cannot hear.
-        // Withdrawn by `withoutDocumentLocale()`, which is the statement that Equator does not
+        // Withdrawn by `withoutDocumentLocale()`, which is the statement that Thoth does not
         // touch this document; a region appended to its body is exactly that.
         if (documentLocale === undefined) {
           hooks.push(
@@ -2079,7 +2079,7 @@ export function provideLocalizationSetup(
           // `specs/06-runtime-and-angular.spec.md` section 9 derives this from the route tree. A
           // scope every one of whose uses sits behind a lazy route boundary loads when that
           // route activates, so startup cost follows the first screen rather than the total size
-          // of an application's catalogs, and a scope used anywhere eager, or used nowhere Equator
+          // of an application's catalogs, and a scope used anywhere eager, or used nowhere Thoth
           // can see, stays a startup scope, because the safe direction is to load it.
           //
           // These are also loaded again for the target locale before a coordinated commit, under

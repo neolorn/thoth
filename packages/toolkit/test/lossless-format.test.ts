@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { formatProject } from '../src/project-host.js';
 
 /**
- * What `equator format` is allowed to change.
+ * What `thoth format` is allowed to change.
  *
  * Building a plain object from the semantic model and stringifying it drops every comment, because
  * comments are not in that model: they go when the YAML becomes the model, several steps before
@@ -55,7 +55,7 @@ async function project(catalog: string): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -118,7 +118,7 @@ describe('formatting an authored catalog', () => {
         'messages:',
         '  # Deliberately Arabic in the English catalog: the toggle offers the other language.',
         '  locale-toggle: العربية',
-        '  app-title: Equator # trailing note',
+        '  app-title: Thoth # trailing note',
         '',
       ].join('\n'),
     );
@@ -169,10 +169,10 @@ describe('formatting an authored catalog', () => {
 
   it('drops quotes a scalar does not need', async () => {
     const output = await formatted(
-      ['messages:', '  app-title: "Equator feature lab"', ''].join('\n'),
+      ['messages:', '  app-title: "Thoth feature lab"', ''].join('\n'),
     );
 
-    expect(output).toContain('app-title: Equator feature lab');
+    expect(output).toContain('app-title: Thoth feature lab');
   });
 
   it('keeps a block scalar written as one', async () => {
@@ -196,7 +196,7 @@ describe('formatting an authored catalog', () => {
     const source = [
       '# Shell.',
       'messages:',
-      '  app-title: "Equator"',
+      '  app-title: "Thoth"',
       "  greeting: '{$name}'",
       '',
     ].join('\n');

@@ -30,8 +30,8 @@ import {
   withRecoveryMessage,
   withRouting,
   withFormattingContext,
-} from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
+} from '@neolorn/thoth';
+import { provideLocalizedRouter } from '@neolorn/thoth/router';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -173,7 +173,7 @@ describe('bootstrap when a catalog cannot load', () => {
     application.destroy();
     claimCapability('feature:provideLocalizationSetup', { platform });
     claimCapability('feature:withRecoveryMessage', { platform });
-    claimCapability('entry:@neolorn/equator', { platform });
+    claimCapability('entry:@neolorn/thoth', { platform });
   });
 
   it('publishes no partial runtime behind the recovery surface', async () => {
@@ -207,7 +207,7 @@ describe('bootstrap when a catalog cannot load', () => {
     expect(() => localization.text(messages.appTitle)).toThrow();
 
     application.destroy();
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('prefers the selected retry label over a string on the element', async () => {
@@ -239,7 +239,7 @@ describe('bootstrap when a catalog cannot load', () => {
 
     application.destroy();
     claimCapability('feature:withRecoveryMessage');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('renders the retry label in the locale the reader asked for', async () => {
@@ -288,7 +288,7 @@ describe('bootstrap when a catalog cannot load', () => {
     claimCapability('feature:withPersistence', { platform });
     claimCapability('feature:withLocaleSources', { platform });
     claimCapability('extension:persistence-store', { platform });
-    claimCapability('entry:@neolorn/equator', { platform });
+    claimCapability('entry:@neolorn/thoth', { platform });
   });
 
   it('rejects bootstrap when no recovery presentation is configured', async () => {
@@ -323,9 +323,9 @@ describe('bootstrap when a catalog cannot load', () => {
     expect(injector).toBeDefined();
     injector?.destroy();
     // Released, it leaves nothing behind in the document, the announcement region included.
-    expect(document.querySelector('[data-equator-announcer]')).toBeNull();
+    expect(document.querySelector('[data-thoth-announcer]')).toBeNull();
     claimCapability('feature:provideLocalizationSetup');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -539,6 +539,6 @@ describe('the first navigation when a catalog cannot load', () => {
     TestBed.resetTestingModule();
     claimCapability('feature:withRecoveryMessage', { platform: platformId });
     claimCapability('feature:withRouting', { platform: platformId });
-    claimCapability('entry:@neolorn/equator', { platform: platformId });
+    claimCapability('entry:@neolorn/thoth', { platform: platformId });
   });
 });

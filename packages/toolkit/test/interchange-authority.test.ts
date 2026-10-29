@@ -89,7 +89,7 @@ describe('a returned interchange document', () => {
     const ids = imported.ok ? Object.keys(imported.value.messages) : [];
     expect(ids).not.toContain('welcome');
     expect(imported.diagnostics).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: 'EQ1803' })]),
+      expect.arrayContaining([expect.objectContaining({ code: 'TH1803' })]),
     );
     expect(Object.keys(source.messages).sort()).toEqual(['farewell', 'title']);
   });

@@ -24,11 +24,11 @@ const consumerRoot = resolve(
 );
 const installedRuntimeRoot = resolve(
   consumerRoot,
-  'node_modules/@neolorn/equator',
+  'node_modules/@neolorn/thoth',
 );
 const installedToolkitRoot = resolve(
   consumerRoot,
-  'node_modules/@neolorn/equator-toolkit',
+  'node_modules/@neolorn/thoth-toolkit',
 );
 
 const assertContained = (path: string, owner: string) => {
@@ -70,7 +70,7 @@ const trimRelative = (path: string) => path.replace(/^\.\//u, '');
 const paths = {
   runtimeJavaScript: resolve(runtimeRoot, trimRelative(primaryExport.default)),
   runtimeTypes: resolve(runtimeRoot, trimRelative(primaryExport.types)),
-  toolkitCli: resolve(toolkitRoot, trimRelative(toolkitManifest.bin.equator)),
+  toolkitCli: resolve(toolkitRoot, trimRelative(toolkitManifest.bin.thoth)),
 };
 
 for (const path of Object.values(paths)) {
@@ -88,7 +88,7 @@ const installedPaths = {
   ),
   toolkitCli: resolve(
     installedToolkitRoot,
-    trimRelative(toolkitManifest.bin.equator),
+    trimRelative(toolkitManifest.bin.thoth),
   ),
 };
 
@@ -193,6 +193,6 @@ try {
 // command they need before they run the gate.
 process.stdout.write(
   directPropagation
-    ? 'Equator file-package rebuilds propagate directly.\n'
-    : 'Equator file-package refresh verified: `pnpm run refresh:consumer` propagates it.\n',
+    ? 'Thoth file-package rebuilds propagate directly.\n'
+    : 'Thoth file-package refresh verified: `pnpm run refresh:consumer` propagates it.\n',
 );

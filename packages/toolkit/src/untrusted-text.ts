@@ -31,7 +31,7 @@ import { RESOURCE_LIMITS } from './resource-limits.js';
  * was stored in.
  */
 
-/** No Equator identity, locale, or alias approaches this. Anything that does is not one. */
+/** No Thoth identity, locale, or alias approaches this. Anything that does is not one. */
 const MAXIMUM_IDENTITY_CHARACTERS = 256;
 
 export function untrustedText(

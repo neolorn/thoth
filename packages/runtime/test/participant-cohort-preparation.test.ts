@@ -15,7 +15,7 @@ import {
   LocalizationError,
   type LocalizationDiagnostic,
   type LocalizationParticipantReport,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { diagnosticOf, rejectionOf } from './catalog-store-harness.js';
 import {

@@ -5,7 +5,7 @@ import {
   type LocalizedSlotPart,
   type RuntimeExtensionBinding,
   type RuntimeExtensionDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { digestCanonicalJson } from '../../toolkit/src/canonical-json.js';
 import { defineExtensionRegistry } from '../../toolkit/src/extensions.js';
@@ -188,7 +188,7 @@ describe('the identity a descriptor carries', () => {
     'refuses a %s descriptor stamped with another profile',
     (_kind, fields) => {
       expectRefused(() =>
-        admit(signed(fields, { profile: 'equator-extension-descriptor/2' })),
+        admit(signed(fields, { profile: 'thoth-extension-descriptor/2' })),
       );
     },
   );
@@ -346,7 +346,7 @@ describe('the identity a descriptor carries', () => {
     });
   });
 
-  it('refuses a kind Equator does not define, whichever handler comes with it', () => {
+  it('refuses a kind Thoth does not define, whichever handler comes with it', () => {
     const descriptor = signed({ kind: 'collation-adapter', id: 'test:sort' });
     expectRefused(() => admit(descriptor));
     for (const name of Object.values(HANDLER)) {
@@ -434,7 +434,7 @@ describe('the fields each kind declares', () => {
   );
 
   it.each([
-    ['a syntax Equator does not define', 'upper-snake'],
+    ['a syntax Thoth does not define', 'upper-snake'],
     ['an empty syntax', ''],
   ])('refuses a segment with %s', (_label, syntax) => {
     expectRefused(() => admit(signed({ ...SEGMENT, syntax })));
@@ -449,10 +449,10 @@ describe('the fields each kind declares', () => {
   });
 
   it.each([
-    ['a shape Equator does not define', { shape: 'triple' }],
+    ['a shape Thoth does not define', { shape: 'triple' }],
     ['an empty shape', { shape: '' }],
     ['interactive written as text', { interactive: 'false' }],
-    ['a text projection Equator does not define', { textProjection: 'none' }],
+    ['a text projection Thoth does not define', { textProjection: 'none' }],
     ['an empty text projection', { textProjection: '' }],
   ])('refuses a rich-slot kind with %s', (_label, change) => {
     expectRefused(() => admit(signed({ ...SLOT, ...change })));
@@ -466,7 +466,7 @@ describe('the fields each kind declares', () => {
   });
 
   it.each([
-    ['a result Equator does not define', { result: 'html' }],
+    ['a result Thoth does not define', { result: 'html' }],
     ['an empty result', { result: '' }],
     ['an empty input type name', { inputType: '' }],
     [
@@ -552,7 +552,7 @@ describe('the options a message function descriptor declares', () => {
     ['text', 'string'],
     ['a list', ['string']],
     ['no type', {}],
-    ['a type Equator does not define', { type: 'text' }],
+    ['a type Thoth does not define', { type: 'text' }],
     [
       'a field beside the ones an option declares',
       { type: 'string', unit: 'px' },

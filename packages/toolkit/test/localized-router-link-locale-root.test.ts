@@ -43,7 +43,7 @@ const STUBS = {
     'export type Routes = readonly Route[];',
     '',
   ],
-  '@neolorn/equator': [
+  '@neolorn/thoth': [
     'export declare function createPathPrefixLocalePolicy(options: unknown): unknown;',
     '',
   ],
@@ -69,7 +69,7 @@ async function project(links: readonly string[]): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     json({
       schemaVersion: 1,
       sourceLocale: 'en-US',
@@ -126,7 +126,7 @@ async function project(links: readonly string[]): Promise<string> {
     'src/app.ts',
     [
       "import { messages } from '#i18n/shell';",
-      "import { createPathPrefixLocalePolicy } from '@neolorn/equator';",
+      "import { createPathPrefixLocalePolicy } from '@neolorn/thoth';",
       '',
       'export const title = messages.appTitle.messageId;',
       '',
@@ -168,7 +168,7 @@ async function refusals(root: string): Promise<{
     diagnostics: readonly { readonly code: string; readonly summary: string }[],
   ): readonly string[] =>
     diagnostics
-      .filter(({ code }) => code === 'EQ1411')
+      .filter(({ code }) => code === 'TH1411')
       .map(({ summary }) => summary);
   return {
     generate: only((await generateProject({ project: root })).diagnostics),

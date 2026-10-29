@@ -21,7 +21,7 @@ import {
   ɵtextOption,
   type GeneratedConfiguration,
   type LocalizationSetup,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { compileSet, loadersFor, scope } from './catalog-store-harness.js';
 
@@ -129,7 +129,7 @@ const hosted = (options: object) =>
   } as never);
 
 const GENERATED = {
-  profile: 'equator-route-projection/1',
+  profile: 'thoth-route-projection/1',
   identity: 'sha256-OptionsOfAnotherKindTestIdentity01234567890',
   routes: [
     { id: 'home', path: '', parameterNames: [] },

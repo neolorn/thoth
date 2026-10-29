@@ -1,10 +1,10 @@
 # A defect report.
 #
 # Every field here is either something only the reporter knows or something a maintainer would
-# otherwise have to ask for first. Equator behaves differently across Angular majors, Node lines and
+# otherwise have to ask for first. Thoth behaves differently across Angular majors, Node lines and
 # locales, so a report that names none of them costs a round trip before anyone can try to see it.
 name: Bug report
-description: Something Equator does that it should not, or does not do that it should.
+description: Something Thoth does that it should not, or does not do that it should.
 body:
   - type: markdown
     attributes:
@@ -37,10 +37,10 @@ body:
       required: true
 
   - type: input
-    id: equator-version
+    id: thoth-version
     attributes:
-      label: Equator version
-      description: The version of `@neolorn/equator` and `@neolorn/equator-toolkit`, which share one number.
+      label: Thoth version
+      description: The version of `@neolorn/thoth` and `@neolorn/thoth-toolkit`, which share one number.
       placeholder: 1.0.0-alpha.3
     validations:
       required: true
@@ -66,8 +66,8 @@ body:
     id: diagnostic-code
     attributes:
       label: Diagnostic code
-      description: The code Equator reported, if it reported one. Every code is listed on the diagnostics page.
-      placeholder: EQ1310
+      description: The code Thoth reported, if it reported one. Every code is listed on the diagnostics page.
+      placeholder: TH1310
     validations:
       required: false
 

@@ -16,7 +16,7 @@ import {
   withPersistence,
   withRecoveryMessage,
   withoutDocumentLocale,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { provideLocalization } from '#i18n';
 import { messages } from '#i18n/shell';
 

@@ -59,14 +59,14 @@ const ROUTER_MANIFEST = `${JSON.stringify(
 )}
 `;
 
-// A stub of the Equator package. `withRouting` is recognized the same way every other Equator
+// A stub of the Thoth package. `withRouting` is recognized the same way every other Thoth
 // symbol is: the symbol is resolved and its declaration is required to come from inside
-// @neolorn/equator, so a consumer's own function of the same name configures nothing.
+// @neolorn/thoth, so a consumer's own function of the same name configures nothing.
 const STUB =
   'export declare function withRouting(options: unknown): unknown;\n';
 
 const MANIFEST = `${JSON.stringify(
-  { name: '@neolorn/equator', version: '0.0.0', types: './index.d.ts' },
+  { name: '@neolorn/thoth', version: '0.0.0', types: './index.d.ts' },
   null,
   2,
 )}
@@ -87,8 +87,8 @@ async function analyse(
   const all = {
     'node_modules/@angular/router/index.d.ts': ROUTER_STUB,
     'node_modules/@angular/router/package.json': ROUTER_MANIFEST,
-    'node_modules/@neolorn/equator/index.d.ts': STUB,
-    'node_modules/@neolorn/equator/package.json': MANIFEST,
+    'node_modules/@neolorn/thoth/index.d.ts': STUB,
+    'node_modules/@neolorn/thoth/package.json': MANIFEST,
     ...files,
   };
   for (const [path, contents] of Object.entries(all)) {
@@ -182,7 +182,7 @@ function classes(analysed: Analysed): Readonly<Record<string, string>> {
 function routingProvider(indexing: string): Record<string, string> {
   return {
     'src/app.config.ts': [
-      "import { withRouting } from '@neolorn/equator';",
+      "import { withRouting } from '@neolorn/thoth';",
       '',
       `export const routing = withRouting({ indexing: ${indexing} });`,
       '',
@@ -194,7 +194,7 @@ function routingProvider(indexing: string): Record<string, string> {
 function routingOptions(options: string): Record<string, string> {
   return {
     'src/app.config.ts': [
-      "import { withRouting } from '@neolorn/equator';",
+      "import { withRouting } from '@neolorn/thoth';",
       '',
       `export const routing = withRouting({ ${options} });`,
       '',
@@ -231,7 +231,7 @@ afterEach(async () => {
 /**
  * Which routes are indexable.
  *
- * Equator must not read a field name belonging to a particular consumer, so the field is named by
+ * Thoth must not read a field name belonging to a particular consumer, so the field is named by
  * the consumer through `withRouting()` and read out of that call's source text when the owner is
  * compiled. Routes default to indexable: an application marks its exceptions rather than
  * annotating every route it has.
@@ -248,7 +248,7 @@ describe('route indexing', () => {
   it('reads its own field when the consumer names none', async () => {
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'admin', data: { equatorIndexing: 'private' }, component: Page }, { path: 'draft', data: { equatorIndexing: 'non-indexable' }, component: Page }]",
+        "[{ path: 'admin', data: { thothIndexing: 'private' }, component: Page }, { path: 'draft', data: { thothIndexing: 'non-indexable' }, component: Page }]",
       ),
     );
 
@@ -260,7 +260,7 @@ describe('route indexing', () => {
   });
 
   it("reads the consumer's own field when one is named", async () => {
-    // The point of the option. A project that already classifies its routes points Equator at the
+    // The point of the option. A project that already classifies its routes points Thoth at the
     // field it already has, in its own vocabulary, and writes nothing new on any route.
     const analysed = await analyse({
       ...routingProvider(
@@ -281,14 +281,14 @@ describe('route indexing', () => {
 
   it('stops reading its own field once the consumer names one', async () => {
     // Two fields would mean two answers. Naming a field replaces the default rather than adding to
-    // it, so `equatorIndexing` left behind by an earlier setup cannot quietly override the field
+    // it, so `thothIndexing` left behind by an earlier setup cannot quietly override the field
     // the application actually classifies by.
     const analysed = await analyse({
       ...routingProvider(
         "{ field: 'routeClass', values: { hidden: 'private' } }",
       ),
       ...routeFile(
-        "[{ path: 'admin', data: { equatorIndexing: 'private' }, component: Page }]",
+        "[{ path: 'admin', data: { thothIndexing: 'private' }, component: Page }]",
       ),
     });
 
@@ -296,7 +296,7 @@ describe('route indexing', () => {
     claimCapability('declaration:route-indexing-class');
   });
 
-  it('ignores a withRouting that is not the one Equator exports', async () => {
+  it('ignores a withRouting that is not the one Thoth exports', async () => {
     const analysed = await analyse({
       'src/app.config.ts': [
         'function withRouting(options: unknown): unknown {',
@@ -413,15 +413,15 @@ describe('route identity', () => {
   });
 
   it('refuses a route with an address and nothing to render it', async () => {
-    // Angular's own rule, and the reason Equator has to restate it: `validateNode` throws on a
+    // Angular's own rule, and the reason Thoth has to restate it: `validateNode` throws on a
     // route carrying none of `component`, `loadComponent`, `redirectTo`, `children` or
     // `loadChildren`, but both of its call sites sit inside
     // `if (typeof ngDevMode === 'undefined' || ngDevMode)`. A production build validates no route
     // config at all, so such a route ships and surfaces only for whoever next runs a development
-    // build. Equator reads the same table before either build.
+    // build. Thoth reads the same table before either build.
     const failure = await analyseFailure(routeFile("[{ path: 'orders' }]"));
 
-    const unrenderable = failure.filter(({ code }) => code === 'EQ1405');
+    const unrenderable = failure.filter(({ code }) => code === 'TH1405');
     expect(unrenderable).toHaveLength(1);
     expect(unrenderable[0]?.severity).toBe('error');
     expect(unrenderable[0]?.summary).toContain('/orders');
@@ -437,7 +437,7 @@ describe('route identity', () => {
     );
 
     expect(
-      analysed.diagnostics.filter(({ code }) => code === 'EQ1405'),
+      analysed.diagnostics.filter(({ code }) => code === 'TH1405'),
     ).toEqual([]);
   });
 
@@ -450,7 +450,7 @@ describe('route identity', () => {
       ),
     );
 
-    const refused = failure.filter(({ code }) => code === 'EQ1415');
+    const refused = failure.filter(({ code }) => code === 'TH1415');
     expect(refused).toHaveLength(1);
     expect(refused[0]?.severity).toBe('error');
     expect(refused[0]?.summary).toContain('neither');
@@ -462,7 +462,7 @@ describe('route identity', () => {
       routeFile("[{ path: 'orders', matcher: () => null, component: Page }]"),
     );
 
-    const refused = failure.filter(({ code }) => code === 'EQ1415');
+    const refused = failure.filter(({ code }) => code === 'TH1415');
     expect(refused).toHaveLength(1);
     expect(refused[0]?.summary).toContain('/orders');
   });
@@ -488,7 +488,7 @@ describe('route identity', () => {
     );
 
     expect(identities(analysed)).toEqual(['route:shop']);
-    const hidden = analysed.diagnostics.filter(({ code }) => code === 'EQ1406');
+    const hidden = analysed.diagnostics.filter(({ code }) => code === 'TH1406');
     expect(hidden).toHaveLength(1);
     expect(hidden[0]?.severity).toBe('warning');
     expect(hidden[0]?.summary).toContain('/shop');
@@ -510,7 +510,7 @@ describe('route identity', () => {
     });
 
     expect(identities(analysed)).toEqual([]);
-    const hidden = analysed.diagnostics.filter(({ code }) => code === 'EQ1406');
+    const hidden = analysed.diagnostics.filter(({ code }) => code === 'TH1406');
     expect(hidden).toHaveLength(1);
     expect(hidden[0]?.summary).toContain('spread');
   });
@@ -528,7 +528,7 @@ describe('route identity', () => {
     });
 
     expect(identities(analysed)).toEqual([]);
-    expect(codes(analysed)).toEqual(['EQ1406']);
+    expect(codes(analysed)).toEqual(['TH1406']);
   });
 
   it('keeps a path that no later spread can set', async () => {
@@ -562,7 +562,7 @@ describe('route identity', () => {
     });
 
     expect(identities(analysed)).toEqual([]);
-    const hidden = analysed.diagnostics.filter(({ code }) => code === 'EQ1406');
+    const hidden = analysed.diagnostics.filter(({ code }) => code === 'TH1406');
     expect(hidden).toHaveLength(1);
     expect(hidden[0]?.summary).toContain('computes its `path`');
   });
@@ -611,7 +611,7 @@ describe('route identity', () => {
     expect(analysed.deferredSourcePaths).toContain('src/admin.ts');
 
     const uncovered = analysed.diagnostics.filter(
-      ({ code }) => code === 'EQ1406',
+      ({ code }) => code === 'TH1406',
     );
     expect(uncovered).toHaveLength(1);
     expect(uncovered[0]?.severity).toBe('warning');
@@ -625,7 +625,7 @@ describe('route identity', () => {
     const analysed = await analyse(childRouteApplication());
 
     const uncovered = analysed.diagnostics.filter(
-      ({ code }) => code === 'EQ1406',
+      ({ code }) => code === 'TH1406',
     );
     expect(uncovered).toHaveLength(1);
     expect(uncovered[0]?.summary).toContain('/section');
@@ -670,7 +670,7 @@ describe('route identity', () => {
     expect(identities(analysed)).toEqual([]);
 
     const collision = analysed.diagnostics.filter(
-      ({ code }) => code === 'EQ1404',
+      ({ code }) => code === 'TH1404',
     );
     expect(collision).toHaveLength(1);
     expect(collision[0]?.severity).toBe('warning');
@@ -685,15 +685,15 @@ describe('route identity', () => {
 
     expect(identities(analysed)).toEqual([]);
     expect(
-      analysed.diagnostics.filter(({ code }) => code === 'EQ1404'),
+      analysed.diagnostics.filter(({ code }) => code === 'TH1404'),
     ).toHaveLength(1);
-    expect(analysed.diagnostics[0]?.summary).toContain('equatorRouteId');
+    expect(analysed.diagnostics[0]?.summary).toContain('thothRouteId');
   });
 
-  it('lets a declared identity name what Equator could not', async () => {
+  it('lets a declared identity name what Thoth could not', async () => {
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'الطلبات', data: { equatorRouteId: 'route:orders' }, component: Page }]",
+        "[{ path: 'الطلبات', data: { thothRouteId: 'route:orders' }, component: Page }]",
       ),
     );
 
@@ -706,13 +706,13 @@ describe('route identity', () => {
     // that fails there should fail here, where there is a file and a line to point at.
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'orders', data: { equatorRouteId: 'has spaces' }, component: Page }]",
+        "[{ path: 'orders', data: { thothRouteId: 'has spaces' }, component: Page }]",
       ),
     );
 
     expect(identities(analysed)).toEqual([]);
     expect(
-      analysed.diagnostics.filter(({ code }) => code === 'EQ1404'),
+      analysed.diagnostics.filter(({ code }) => code === 'TH1404'),
     ).toHaveLength(1);
   });
 
@@ -720,7 +720,7 @@ describe('route identity', () => {
     // The index child renders the page, so its route data is the more specific statement about it.
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'admin', children: [{ path: '', data: { equatorRouteId: 'route:dashboard' }, component: Page }] }]",
+        "[{ path: 'admin', children: [{ path: '', data: { thothRouteId: 'route:dashboard' }, component: Page }] }]",
       ),
     );
 
@@ -740,7 +740,7 @@ describe('route identity', () => {
 
     expect(identities(analysed)).toEqual([]);
     expect(
-      analysed.diagnostics.filter(({ code }) => code === 'EQ1404'),
+      analysed.diagnostics.filter(({ code }) => code === 'TH1404'),
     ).toHaveLength(1);
   });
 });
@@ -748,9 +748,9 @@ describe('route identity', () => {
 /**
  * What a route claims about itself in a sitemap.
  *
- * The same shape as the indexing declaration above and for the same reason: Equator reads a field
+ * The same shape as the indexing declaration above and for the same reason: Thoth reads a field
  * name it was given rather than one of its own invention, from source text, because it does not
- * execute consumer code. What differs is that there is no Equator default field. A route that
+ * execute consumer code. What differs is that there is no Thoth default field. A route that
  * claims nothing is published with its address and its alternates, which is a complete entry, where
  * a route with no indexing class has to be sorted into one.
  *
@@ -812,7 +812,7 @@ describe('route sitemap claims', () => {
         "sitemap: { field: 'section', lastmodField: 'updated' }",
       ),
     });
-    expect(codes(analysed)).toContain('EQ1412');
+    expect(codes(analysed)).toContain('TH1412');
     expect(claims(analysed)).toEqual({ 'route:news': undefined });
     claimCapability('declaration:route-sitemap-entry');
   });
@@ -826,7 +826,7 @@ describe('route sitemap claims', () => {
         "sitemap: { field: 'section', values: { editorial: { changefreq: 'fortnightly' } } }",
       ),
     });
-    expect(codes(analysed)).toContain('EQ1412');
+    expect(codes(analysed)).toContain('TH1412');
     expect(claims(analysed)).toEqual({ 'route:news': undefined });
     claimCapability('declaration:route-sitemap-entry');
   });
@@ -840,7 +840,7 @@ describe('route sitemap claims', () => {
         "sitemap: { field: 'section', values: { editorial: { changefreq: 'daily', priority: 1.5 } } }",
       ),
     });
-    expect(codes(analysed)).toContain('EQ1412');
+    expect(codes(analysed)).toContain('TH1412');
     // The bad half is refused and the good half stands. An entry with a changefreq and no priority
     // is a valid entry, so throwing the class away would lose something the consumer got right.
     expect(claims(analysed)).toEqual({ 'route:news': { changefreq: 'daily' } });
@@ -853,14 +853,14 @@ describe('route sitemap claims', () => {
         "[{ path: 'news', component: Page, data: { section: 'editorial' } }]",
       ),
       'src/app.config.ts': [
-        "import { withRouting } from '@neolorn/equator';",
+        "import { withRouting } from '@neolorn/thoth';",
         '',
         "export const routing = withRouting({ sitemap: { field: 'section', values: { editorial: { priority: 0.9 } } } });",
         "export const other = withRouting({ sitemap: { field: 'kind', values: { editorial: { priority: 0.1 } } } });",
         '',
       ].join('\n'),
     });
-    expect(codes(analysed)).toContain('EQ1412');
+    expect(codes(analysed)).toContain('TH1412');
     expect(claims(analysed)).toEqual({ 'route:news': { priority: 0.9 } });
     claimCapability('declaration:route-sitemap-entry');
   });
@@ -882,13 +882,13 @@ describe('route caching', () => {
     );
 
     expect(caching(analysed)).toEqual({ 'route:news': 'absent' });
-    expect(codes(analysed)).not.toContain('EQ1413');
+    expect(codes(analysed)).not.toContain('TH1413');
   });
 
   it('reads its own field when the consumer names none', async () => {
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'home', data: { equatorCaching: 'per-visitor' }, component: Page }, { path: 'account', data: { equatorCaching: 'not-stored' }, component: Page }]",
+        "[{ path: 'home', data: { thothCaching: 'per-visitor' }, component: Page }, { path: 'account', data: { thothCaching: 'not-stored' }, component: Page }]",
       ),
     );
 
@@ -914,18 +914,18 @@ describe('route caching', () => {
       'route:account': 'not-stored',
       'route:news': 'absent',
     });
-    expect(codes(analysed)).not.toContain('EQ1413');
+    expect(codes(analysed)).not.toContain('TH1413');
     claimCapability('declaration:route-caching-class');
   });
 
   it('refuses a value in its own field that names no class', async () => {
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'account', data: { equatorCaching: 'private' }, component: Page }]",
+        "[{ path: 'account', data: { thothCaching: 'private' }, component: Page }]",
       ),
     );
 
-    expect(codes(analysed)).toContain('EQ1413');
+    expect(codes(analysed)).toContain('TH1413');
     expect(caching(analysed)).toEqual({ 'route:account': 'not-stored' });
     claimCapability('declaration:route-caching-class');
   });
@@ -938,12 +938,12 @@ describe('route caching', () => {
         'export class Page {}',
         "let CLASS: string = 'per-visitor';",
         '',
-        "export const routes: Routes = [{ path: 'account', data: { equatorCaching: CLASS }, component: Page }];",
+        "export const routes: Routes = [{ path: 'account', data: { thothCaching: CLASS }, component: Page }];",
         '',
       ].join('\n'),
     });
 
-    expect(codes(analysed)).toContain('EQ1413');
+    expect(codes(analysed)).toContain('TH1413');
     expect(caching(analysed)).toEqual({ 'route:account': 'not-stored' });
     claimCapability('declaration:route-caching-class');
   });
@@ -951,7 +951,7 @@ describe('route caching', () => {
   it('refuses a table value it cannot read, and answers its routes as not-stored', async () => {
     const analysed = await analyse({
       'src/app.config.ts': [
-        "import { withRouting } from '@neolorn/equator';",
+        "import { withRouting } from '@neolorn/thoth';",
         '',
         "let THEMED = 'per-visitor' as const;",
         "export const routing = withRouting({ caching: { field: 'area', values: { themed: THEMED } } });",
@@ -962,7 +962,7 @@ describe('route caching', () => {
       ),
     });
 
-    expect(codes(analysed)).toContain('EQ1413');
+    expect(codes(analysed)).toContain('TH1413');
     expect(caching(analysed)).toEqual({ 'route:home': 'not-stored' });
     claimCapability('declaration:route-caching-class');
   });
@@ -970,7 +970,7 @@ describe('route caching', () => {
   it('refuses a table it cannot read, and answers every route that sets the field as not-stored', async () => {
     const analysed = await analyse({
       'src/app.config.ts': [
-        "import { withRouting } from '@neolorn/equator';",
+        "import { withRouting } from '@neolorn/thoth';",
         '',
         "let TABLE = { themed: 'per-visitor' } as const;",
         "export const routing = withRouting({ caching: { field: 'area', values: TABLE } });",
@@ -981,7 +981,7 @@ describe('route caching', () => {
       ),
     });
 
-    expect(codes(analysed)).toContain('EQ1413');
+    expect(codes(analysed)).toContain('TH1413');
     expect(caching(analysed)).toEqual({
       'route:home': 'not-stored',
       'route:news': 'absent',
@@ -995,7 +995,7 @@ describe('route caching', () => {
         "[{ path: 'home', component: Page, data: { area: 'themed', kind: 'themed' } }]",
       ),
       'src/app.config.ts': [
-        "import { withRouting } from '@neolorn/equator';",
+        "import { withRouting } from '@neolorn/thoth';",
         '',
         "export const routing = withRouting({ caching: { field: 'area', values: { themed: 'per-visitor' } } });",
         "export const other = withRouting({ caching: { field: 'kind', values: { themed: 'not-stored' } } });",
@@ -1003,7 +1003,7 @@ describe('route caching', () => {
       ].join('\n'),
     });
 
-    expect(codes(analysed)).toContain('EQ1413');
+    expect(codes(analysed)).toContain('TH1413');
     expect(caching(analysed)).toEqual({ 'route:home': 'per-visitor' });
     claimCapability('declaration:route-caching-class');
   });

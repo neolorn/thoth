@@ -7,7 +7,7 @@ import {
   type RuntimeParsingAdapterBinding,
   type RuntimeRichSlotKindBinding,
   type LocalizedPart,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 
 type ExtensionKind = RuntimeExtensionDescriptor['kind'];
@@ -21,7 +21,7 @@ function descriptor<Kind extends ExtensionKind>(
   );
   if (value === undefined) {
     throw new Error(
-      `Generated Equator extension descriptor ${kind}/${id} is absent.`,
+      `Generated Thoth extension descriptor ${kind}/${id} is absent.`,
     );
   }
   return value as Extract<RuntimeExtensionDescriptor, { readonly kind: Kind }>;

@@ -124,7 +124,7 @@ function malformedTag(message: string): LocalizationDiagnostic {
  * Of the format `language_TERRITORY`. Default is `en_US`." It is BCP 47 with an underscore and no
  * script subtag, and the spec says nothing at all about the two cases a real locale set runs into:
  * a tag carrying a script (`zh-Hans-CN`) and a tag carrying no territory (`ar`). What follows is
- * therefore Equator's answer where the specification is silent, not a requirement read out of it.
+ * therefore Thoth's answer where the specification is silent, not a requirement read out of it.
  *
  * *The territory is taken from the maximized profile*, so `ar` answers `ar_EG` rather than nothing.
  * A tag without a territory still names one locale, and CLDR's likely-subtags is the standard way to
@@ -186,7 +186,7 @@ export function openGraphAlternates(
 }
 
 /**
- * A locale's writing direction, or `ltr` when the locale is not one Equator can profile.
+ * A locale's writing direction, or `ltr` when the locale is not one Thoth can profile.
  *
  * This lives beside `localeProfile` rather than in the evaluator because direction is a property of
  * the profile and nothing else: it reads one field and swallows the one error that field can

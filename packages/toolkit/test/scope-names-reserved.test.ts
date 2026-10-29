@@ -77,7 +77,7 @@ describe('a scope with a reserved name', () => {
     'refuses a scope named %s, which a generated module already is',
     (scopeId) => {
       const diagnostics = refusals(scopeId);
-      expect(diagnostics.map(({ code }) => code)).toEqual(['EQ1503']);
+      expect(diagnostics.map(({ code }) => code)).toEqual(['TH1503']);
       expect(diagnostics[0]?.summary).toContain(`${scopeId}.ts`);
       expect(diagnostics[0]?.summary).toContain('collides with');
     },
@@ -89,7 +89,7 @@ describe('a scope with a reserved name', () => {
       const diagnostics = refusals(scopeId);
       expect(diagnostics.length).toBeGreaterThan(0);
       for (const diagnostic of diagnostics) {
-        expect(diagnostic.code).toBe('EQ1503');
+        expect(diagnostic.code).toBe('TH1503');
         expect(diagnostic.summary).toMatch(
           new RegExp(`["/]${scopeId}[./]`, 'u'),
         );

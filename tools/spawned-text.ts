@@ -52,7 +52,7 @@ export function spawnSyncToFiles(
   args: readonly string[],
   options: Omit<SpawnSyncOptions, 'encoding' | 'maxBuffer' | 'stdio'> = {},
 ): SpawnedText {
-  const directory = mkdtempSync(join(tmpdir(), 'equator-output-'));
+  const directory = mkdtempSync(join(tmpdir(), 'thoth-output-'));
   try {
     const stdoutPath = join(directory, 'stdout');
     const stderrPath = join(directory, 'stderr');

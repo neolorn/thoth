@@ -1,6 +1,6 @@
 /** Generated from cldr-core 48.2.0 and the IANA registry of 2026-09-17 by tools/generate-locale-profile.ts. */
 export const ENCOMPASSED_LANGUAGE_PROFILE =
-  'cldr-48.2+iana-2026-09-17/equator-encompassed-1' as const;
+  'cldr-48.2+iana-2026-09-17/thoth-encompassed-1' as const;
 
 /**
  * How far apart two language subtags are, for subtags that are the same language written twice.
@@ -8,11 +8,11 @@ export const ENCOMPASSED_LANGUAGE_PROFILE =
  * Keyed by the requested language subtag, then by the supported one, in CLDR distances where a
  * smaller number is a closer match. A pair is present only when the IANA registry says one subtag
  * encompasses the other or that both are encompassed by one macrolanguage, BCP 47 3.1.10, and CLDR
- * ranks the pair at the language dimension. Absent means Equator has nothing to say about the pair,
+ * ranks the pair at the language dimension. Absent means Thoth has nothing to say about the pair,
  * not that the two are unrelated.
  *
  * This is not the whole of CLDR language matching and is not meant to become it. The dimensions it
- * leaves out are the ones Equator already decides categorically, and the language-dimension pairs
+ * leaves out are the ones Thoth already decides categorically, and the language-dimension pairs
  * it leaves out are CLDR's judgments about what a reader will accept instead of their own language,
  * which is a policy rather than an identity.
  */

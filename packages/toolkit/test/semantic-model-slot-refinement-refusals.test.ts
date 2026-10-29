@@ -104,7 +104,7 @@ function analyze(entry: readonly string[]): Analysis {
 
 function refusedAt(...path: readonly string[]): Analysis {
   return {
-    refusals: [{ code: 'EQ1303', path: ['messages', 'subject', ...path] }],
+    refusals: [{ code: 'TH1303', path: ['messages', 'subject', ...path] }],
   };
 }
 
@@ -296,10 +296,10 @@ describe('a within refinement', () => {
     ).toEqual({
       refusals: [
         {
-          code: 'EQ1303',
+          code: 'TH1303',
           path: ['messages', 'subject', 'slots', 'link', 'within'],
         },
-        { code: 'EQ1304', path: ['messages', 'subject'] },
+        { code: 'TH1304', path: ['messages', 'subject'] },
       ],
     });
   });

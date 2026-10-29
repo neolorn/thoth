@@ -57,7 +57,7 @@ describe('an input no function annotates', () => {
         })),
       ).toEqual([
         {
-          code: 'EQ1302',
+          code: 'TH1302',
           summary: `Input "count" cannot refine inferred string input to ${type}.`,
           path: ['messages', 'total', 'inputs', 'count', 'type'],
         },

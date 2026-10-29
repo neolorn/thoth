@@ -7,10 +7,10 @@ import {
   createIntegerParameterCodec,
   createPathPrefixLocalePolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
- * The codecs Equator ships, asked to write a value they refuse.
+ * The codecs Thoth ships, asked to write a value they refuse.
  *
  * Section 2 of `specs/07-routing-rendering-and-seo.spec.md`: declining is an answer and a throw is
  * not, and a codec that throws is a defect in the consumer application. A codec declines a value by
@@ -26,7 +26,7 @@ const POLICY = createPathPrefixLocalePolicy({
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-BuiltInCodecsDeclineTestIdentity01234567890',
     routes: [
       { id: 'topic', path: 'topics/:topic', parameterNames: ['topic'] },

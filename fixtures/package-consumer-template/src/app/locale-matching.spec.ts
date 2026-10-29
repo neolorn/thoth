@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { negotiateLocale, parseAcceptLanguage } from '@neolorn/equator';
+import { negotiateLocale, parseAcceptLanguage } from '@neolorn/thoth';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 
@@ -22,7 +22,7 @@ describe('reading what the client asked for', () => {
       'en',
       'fr',
     ]);
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('drops a range that expresses no preference', () => {
@@ -30,14 +30,14 @@ describe('reading what the client asked for', () => {
     // it as a match would let a header that asked for nothing outrank the source placed after it.
     expect(parseAcceptLanguage('*')).toEqual([]);
     expect(parseAcceptLanguage('ar,*;q=0.1')).toEqual(['ar']);
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('drops a range that is refused outright or malformed', () => {
     expect(parseAcceptLanguage('en;q=0')).toEqual([]);
     expect(parseAcceptLanguage('../etc/passwd')).toEqual([]);
     expect(parseAcceptLanguage('')).toEqual([]);
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -56,7 +56,7 @@ describe('matching a request against what exists', () => {
     // because the region differs is the wrong answer by a wide margin.
     expect(negotiateLocale(['ar-SA'], supported, canonicalize)).toBe('ar-EG');
     expect(negotiateLocale(['en-GB'], supported, canonicalize)).toBe('en-US');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('resolves each range fully before considering the next', () => {
@@ -65,19 +65,19 @@ describe('matching a request against what exists', () => {
     expect(negotiateLocale(['ar-SA', 'en-US'], supported, canonicalize)).toBe(
       'ar-EG',
     );
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('drops trailing subtags one at a time', () => {
     expect(negotiateLocale(['ar-EG-u-nu-arab'], supported, canonicalize)).toBe(
       'ar-EG',
     );
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('answers nothing when no range is related to anything supported', () => {
     expect(negotiateLocale(['ja-JP'], supported, canonicalize)).toBeUndefined();
     expect(negotiateLocale([], supported, canonicalize)).toBeUndefined();
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

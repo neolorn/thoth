@@ -2,7 +2,7 @@
  * What the consumer's event log wrote, and the claims it supports.
  *
  * The consumer installs a `LocalizationObservabilitySink` with `withObservability` that puts each
- * event on the console as one `equator-event` line: the server's standard output, the build's
+ * event on the console as one `thoth-event` line: the server's standard output, the build's
  * output while it prerenders, and a browser's console. The stages read those lines back here.
  */
 import assert from 'node:assert/strict';
@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import type { CapabilityObservation } from './capability-claims.ts';
 import { recordCapabilityClaim } from './capability-evidence.ts';
 
-/** One `equator-event` line, as far as the gate reads it: the sink's event, written as JSON. */
+/** One `thoth-event` line, as far as the gate reads it: the sink's event, written as JSON. */
 export interface LoggedEvent {
   readonly phase: string;
   readonly status: string;
@@ -21,7 +21,7 @@ export interface LoggedEvent {
 
 /** Each event in `text`, in the order it was written. */
 export function loggedEvents(text: string): LoggedEvent[] {
-  return [...text.matchAll(/equator-event (\{[^\n]*\})/gu)].map(
+  return [...text.matchAll(/thoth-event (\{[^\n]*\})/gu)].map(
     ([, json]) => JSON.parse(json!) as LoggedEvent,
   );
 }

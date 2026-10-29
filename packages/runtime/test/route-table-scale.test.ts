@@ -8,12 +8,12 @@ import {
   type GeneratedRouteProjectionEntry,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A route table larger than a hand-written one, resolved and built the ordinary way.
  *
- * Equator is built for a hundred times the size it is used at today, and a table of a few dozen
+ * Thoth is built for a hundred times the size it is used at today, and a table of a few dozen
  * routes hides the difference between a lookup and a search. Every case in this file is ordinary:
  * one address in, one address out. What makes it a case is the table it happens against.
  *
@@ -50,7 +50,7 @@ function largeProjection(): RouteRuntimeProjection {
   }
   return {
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: 'sha256-RouteTableScaleTestIdentity0123456789012345',
       routes,
     },

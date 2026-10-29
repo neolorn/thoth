@@ -1,4 +1,4 @@
-import type { RouteCachingClass } from '@neolorn/equator-toolkit';
+import type { RouteCachingClass } from '@neolorn/thoth-toolkit';
 
 /**
  * The caching class a deploy step reads off the route projection, to write one CDN rule per route.

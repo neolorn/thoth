@@ -38,7 +38,7 @@ describe('bounded authored inputs', () => {
     // The override sits inside the summary ceiling, so it is the replacement that keeps it out of
     // the text rather than the truncation.
     const diagnostic = toolkitDiagnostic(
-      'EQ1701',
+      'TH1701',
       `Order \u202e12345 shipped ${'x'.repeat(3_000)}`,
       { path: Array.from({ length: 100 }, (_, index) => `segment-${index}`) },
     );
@@ -65,14 +65,14 @@ describe('bounded authored inputs', () => {
   it('replaces a control, an override and an isolate inside the bounded text', () => {
     // Inside the bound, because a control past the ceiling is dropped with the rest of the text
     // and says nothing about whether one inside it is replaced.
-    const diagnostic = toolkitDiagnostic('EQ1701', 'a\u0007b\u202ec\u2066d', {
+    const diagnostic = toolkitDiagnostic('TH1701', 'a\u0007b\u202ec\u2066d', {
       path: ['x\u202ey'],
     });
     expect(diagnostic.summary).toBe('a\ufffdb\ufffdc\ufffdd');
     expect(diagnostic.path).toEqual(['x\ufffdy']);
   });
 
-  it('refuses a catalog over the message ceiling with EQ1101, the code its ceilings share', () => {
+  it('refuses a catalog over the message ceiling with TH1101, the code its ceilings share', () => {
     const count = RESOURCE_LIMITS.messagesPerCatalog + 1;
     const lines = ['messages:'];
     for (let index = 0; index < count; index += 1) {
@@ -86,7 +86,7 @@ describe('bounded authored inputs', () => {
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.diagnostics[0]).toMatchObject({ code: 'EQ1101' });
+    expect(result.diagnostics[0]).toMatchObject({ code: 'TH1101' });
     expect(result.diagnostics[0]?.summary).toContain(
       'message implementation ceiling',
     );
@@ -97,9 +97,9 @@ describe('bounded authored inputs', () => {
     // level, so a nesting deep enough overflows the stack before the tree exists.
     const nested = `${'['.repeat(100_000)}${']'.repeat(100_000)}`;
     for (const [what, parse, code] of [
-      ['configuration', () => parseConfiguration(nested), 'EQ1001'],
-      ['extension registry', () => parseExtensionRegistry(nested), 'EQ1805'],
-      ['change plan', () => parseAuthoredChangePlan(nested), 'EQ1805'],
+      ['configuration', () => parseConfiguration(nested), 'TH1001'],
+      ['extension registry', () => parseExtensionRegistry(nested), 'TH1805'],
+      ['change plan', () => parseAuthoredChangePlan(nested), 'TH1805'],
     ] as const) {
       const result = parse();
       expect(result.ok, what).toBe(false);
@@ -119,7 +119,7 @@ describe('bounded authored inputs', () => {
     const result = parseConfiguration(nested);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.diagnostics[0]).toMatchObject({ code: 'EQ1001' });
+    expect(result.diagnostics[0]).toMatchObject({ code: 'TH1001' });
     expect(result.diagnostics[0]?.summary).toContain('depth ceiling');
   });
 
@@ -133,7 +133,7 @@ describe('bounded authored inputs', () => {
     // names the control.
     expect(structural.diagnostics).toContainEqual(
       expect.objectContaining({
-        code: 'EQ1101',
+        code: 'TH1101',
         summary: expect.stringContaining('invisible or bidi controls'),
       }),
     );

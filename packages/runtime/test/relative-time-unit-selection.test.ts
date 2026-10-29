@@ -12,7 +12,7 @@ import {
  * Which unit an elapsed span is said in.
  *
  * `specs/08-formatting-parsing-and-domain.spec.md` section 5 leaves the thresholds to the
- * application and the selection to Equator: the largest unit the span reaches, truncated, signed
+ * application and the selection to Thoth: the largest unit the span reaches, truncated, signed
  * for the past. Each unit is asked at its own size and one millisecond short of it.
  */
 

@@ -26,7 +26,7 @@ export interface NodeRequestLike {
   /**
    * The request headers, lower-cased, with a repeated header carried as a list.
    *
-   * `accept-language`, `cookie` and the `sec-fetch` family are the ones Equator reads.
+   * `accept-language`, `cookie` and the `sec-fetch` family are the ones Thoth reads.
    */
   readonly headers: Readonly<
     Record<string, string | readonly string[] | undefined>
@@ -50,7 +50,7 @@ export interface NodeResponseLike {
  *
  * Takes the message and the origin the request arrived on. The origin is required rather than
  * derived from the `Host` header, because that header is client-controlled and the resulting
- * address decides what Equator treats as same-origin.
+ * address decides what Thoth treats as same-origin.
  *
  * The target is recorded as it arrived. Building the request resolves dot segments and rewrites a
  * backslash, so a structurally unsafe target would otherwise reach the handler as the address it

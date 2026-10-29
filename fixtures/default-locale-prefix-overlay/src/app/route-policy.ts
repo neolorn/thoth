@@ -1,7 +1,7 @@
 import {
   createDefaultLocalePrefixPolicy,
   type LocaleUrlPolicy,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 
 /** The site this deployment answers at, which the router and `server.ts` both compose from. */
@@ -11,8 +11,8 @@ export const SITE_ORIGIN = 'https://site.example';
  * The locales that have an address: every locale this build generated, except `en-Latn-XA`.
  *
  * Read from the generated configuration, which is where the locales are declared, so adding or
- * removing one is an edit to `equator.config.json` and nothing here. A pseudo-locale is in the
- * configuration only in a build made with `equator generate --pseudo`, so a production build gives
+ * removing one is an edit to `thoth.config.json` and nothing here. A pseudo-locale is in the
+ * configuration only in a build made with `thoth generate --pseudo`, so a production build gives
  * `en-Arab-XB` no address, prerenders nothing at it, and advertises no `hreflang` for it.
  *
  * `en-Latn-XA` is left out on purpose: a configured locale with no address, reachable only by a

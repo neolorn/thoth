@@ -17,8 +17,8 @@ function refusedFunctions(source: string): readonly string[] {
   expect(
     result.diagnostics.map(({ code, path: at }) => ({ code, path: at })),
   ).toEqual([
-    { code: 'EQ1203', path },
-    { code: 'EQ1203', path },
+    { code: 'TH1203', path },
+    { code: 'TH1203', path },
   ]);
   return result.diagnostics.map(({ summary }) =>
     summary.includes(':demo:apple')

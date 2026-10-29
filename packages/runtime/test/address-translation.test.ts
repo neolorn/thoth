@@ -12,7 +12,7 @@ import {
   type LocalizedAddressContext,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -28,7 +28,7 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-RouteProjectionTestIdentity012345678901234_',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -40,7 +40,7 @@ const PROJECTION: RouteRuntimeProjection = {
     'route:second': { 'en-US': 'second', 'ar-EG': 'الثاني' },
     article: { 'en-US': 'articles/:slug', 'ar-EG': 'مقالات/:slug' },
   },
-  // A parameter value passes through unchanged; only the static segments localize. Equator's own
+  // A parameter value passes through unchanged; only the static segments localize. Thoth's own
   // identifier codec rather than a two-entry fixture table, which would be a cooperating stub for
   // exactly the case that has to work.
   parameters: { article: { slug: createIdentifierParameterCodec() } },
@@ -111,7 +111,7 @@ function withCodec(codec: RouteParameterCodec<string>): RouteRuntimeProjection {
 describe('a parameter codec that cannot read its own spelling', () => {
   it('refuses to build an address it could not resolve', () => {
     // The failure is refused where it is created rather than where it is followed. Left to build,
-    // `/ar-eg/مقالات/dalil` is an address Equator emits and then cannot place, so it renders as
+    // `/ar-eg/مقالات/dalil` is an address Thoth emits and then cannot place, so it renders as
     // a link that leads nowhere, and it leads nowhere in Arabic only, which is how a codec like
     // this survives every test written in the default locale.
     expect(() =>
@@ -220,7 +220,7 @@ describe('inbound: localized external to canonical internal', () => {
   it('corrects a decoded spelling rather than declining it', () => {
     // Every inbound case above is fed the encoded form, because that is what
     // `document.location.pathname` yields. A decoded spelling can only come from application code,
-    // and it is not an address Equator fails to place: the resolver knows the route and answers
+    // and it is not an address Thoth fails to place: the resolver knows the route and answers
     // `canonical-correction`, a 308 to the encoded form, which is what a server sends a visitor who
     // types it. Handing it straight back has the server correcting it and the client not: the
     // one-address-two-answers split, on the one door where nobody looks.
@@ -242,7 +242,7 @@ describe('inbound: localized external to canonical internal', () => {
   });
 
   it('hands back an address it cannot place, so the app can answer', () => {
-    // Declining is the correct outcome, not a failure. Equator does not own every address in the
+    // Declining is the correct outcome, not a failure. Thoth does not own every address in the
     // application: the consumer's own `**` route and its locale-neutral roots still answer, and
     // they can only do that if the address reaches them unchanged.
     expect(toInternalPath('/ar-eg/nope', CONTEXT)).toBe('/ar-eg/nope');
@@ -604,7 +604,7 @@ describe('policies that carry no locale in the path', () => {
  * one.
  *
  * An application served at `https://example.com/app` sees `/app` in front of every address the
- * browser hands it, and in none of the addresses Equator builds: a policy addresses routes from the
+ * browser hands it, and in none of the addresses Thoth builds: a policy addresses routes from the
  * application's own root. Two callers do this and they must do it the same way: the
  * `LocationStrategy`, which strips to delocalize and restores to write, and locale resolution,
  * which strips to read the prefix out of the address the document is at. The second was missing it,

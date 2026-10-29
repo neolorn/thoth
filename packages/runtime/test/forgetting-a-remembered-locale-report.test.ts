@@ -63,20 +63,20 @@ it('reports the removal of a store that threw as failed, and asks the stores aft
   expect(forgotten).toStrictEqual(['recording']);
   expect(events).toStrictEqual([
     {
-      code: 'EQ-E2008',
+      code: 'TH-E2008',
       phase: 'persistence',
       status: 'failed',
       reason: 'internal-invariant',
       correlationId: 'failing',
     },
     {
-      code: 'EQ-E2008',
+      code: 'TH-E2008',
       phase: 'persistence',
       status: 'unavailable',
       correlationId: 'without-removal',
     },
     {
-      code: 'EQ-E2008',
+      code: 'TH-E2008',
       phase: 'persistence',
       status: 'succeeded',
       correlationId: 'recording',

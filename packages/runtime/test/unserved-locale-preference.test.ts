@@ -4,7 +4,7 @@ import {
   createLocaleNeutralPolicy,
   resolveLocalizedRoute,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A preference for a locale a locale-neutral policy does not serve.
@@ -16,7 +16,7 @@ import {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-UnservedLocalePreferenceTestIdentity0123456',
     routes: [
       { id: 'home', path: '', parameterNames: [] },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { withBasePath, withoutBasePath } from '@neolorn/equator/core';
+import { withBasePath, withoutBasePath } from '@neolorn/thoth/core';
 
 /**
  * The declared base href, reduced to the sub-path it means, and taken off or put on an address.

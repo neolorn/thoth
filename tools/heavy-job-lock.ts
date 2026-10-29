@@ -13,7 +13,7 @@
  * gone is taken over, and the takeover is reported.
  *
  * A job the holder starts runs under the holder's lock. The holder hands its children the lock's
- * token in `EQUATOR_HEAVY_JOB`, and a process that carries the token the file holds neither takes
+ * token in `THOTH_HEAVY_JOB`, and a process that carries the token the file holds neither takes
  * the lock nor releases it. That is what lets the gate start a stage that would take the lock on its
  * own.
  */
@@ -24,7 +24,7 @@ import { dirname, resolve } from 'node:path';
 import { readProcesses as readMachineProcesses } from './process-tree.ts';
 import { workingRoot } from './working-state.ts';
 
-export const HEAVY_JOB_VARIABLE = 'EQUATOR_HEAVY_JOB';
+export const HEAVY_JOB_VARIABLE = 'THOTH_HEAVY_JOB';
 export const heavyJobLockPath = resolve(workingRoot, 'heavy-job.lock');
 
 // A process's start time is read to the millisecond and the lock is written after the process

@@ -23,9 +23,9 @@ import {
   withRouting,
   type LocaleUrlPolicy,
   withFormattingContext,
-} from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth';
+import { provideLocalizedRouter } from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -214,7 +214,7 @@ async function arrive(
   address: string,
 ): Promise<{
   readonly view: string | null;
-  /** The route Equator resolved, which the view alone does not show: see the case below. */
+  /** The route Thoth resolved, which the view alone does not show: see the case below. */
   readonly routeId: string | undefined;
   readonly locale: string | undefined;
   readonly routerUrl: string;
@@ -277,8 +277,8 @@ describe('an arrival under a host policy, in a document at an origin it does not
 
     const arrival = await arrive(HOST, HOST_ORIGINS['ar-EG'], ARABIC_SECOND);
 
-    // Read beside the view, because the Router renders its canonical match whatever Equator
-    // resolved: an address Equator resolves to nothing still shows the page, with the head and the
+    // Read beside the view, because the Router renders its canonical match whatever Thoth
+    // resolved: an address Thoth resolves to nothing still shows the page, with the head and the
     // status of a missing one.
     expect(arrival.routeId).toBe('route:second');
     expect(arrival.view).toBe('second');

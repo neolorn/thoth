@@ -48,35 +48,35 @@ import { compareCodeUnit } from './sorted-records.js';
 import { escapeXml } from './xml-text.js';
 
 /**
- * The Equator XLIFF profile.
+ * The Thoth XLIFF profile.
  *
  * A new profile marks a wire format an older importer must not quietly accept. The profile is
  * written into every unit's contract, which is what makes the refusal specific: a document of
  * another profile is rejected as the wrong profile rather than as a malformed one.
  */
-export const XLIFF_PROFILE = 'equator-xliff-2.2/1' as const;
+export const XLIFF_PROFILE = 'thoth-xliff-2.2/1' as const;
 
 /**
- * Categories Equator puts on the notes it authors.
+ * Categories Thoth puts on the notes it authors.
  *
- * `category` is free text in XLIFF 2.2, so the prefix is what keeps an Equator note distinguishable
- * from a note a translator or a translation-management system wrote. Equator reads back only its
+ * `category` is free text in XLIFF 2.2, so the prefix is what keeps a Thoth note distinguishable
+ * from a note a translator or a translation-management system wrote. Thoth reads back only its
  * own.
  */
-const NOTE_DESCRIPTION = 'equator:description' as const;
-const NOTE_CONTEXT = 'equator:context' as const;
+const NOTE_DESCRIPTION = 'thoth:description' as const;
+const NOTE_CONTEXT = 'thoth:context' as const;
 
 /**
  * The refinement of `state="translated"` that says the translation is deliberately the empty
  * string rather than a blank nobody filled in.
  *
- * `subState` rather than an `equator:empty` attribute on `<source>` and `<target>`. Those two
+ * `subState` rather than an `thoth:empty` attribute on `<source>` and `<target>`. Those two
  * elements carry no `anyAttribute`, so a document carrying that attribute is schema-invalid.
  * `subState` is XLIFF's own extension point for exactly this, a prefixed refinement of the
  * segment's state, so the flag lands next to the `state` it refines, in the part of the document a
- * translation tool already understands, and needs no Equator namespace to say it.
+ * translation tool already understands, and needs no Thoth namespace to say it.
  */
-const SEGMENT_SUBSTATE_EMPTY = 'equator:empty' as const;
+const SEGMENT_SUBSTATE_EMPTY = 'thoth:empty' as const;
 
 /**
  * XLIFF 2.2 Core §3.2.2.6: the `state` attribute belongs to `<segment>`, takes one of exactly
@@ -88,7 +88,7 @@ const XLIFF_SEGMENT_STATES = Object.freeze(
 /**
  * XLIFF 2.2's core namespace, which is version-stamped: the 2.2 core schema declares
  * `targetNamespace="urn:oasis:names:tc:xliff:document:2.2"`, and its `version` attribute admits
- * 2.0, 2.1 and 2.2. Equator paired the `:2.0` namespace with `version="2.2"`, which belongs to no
+ * 2.0, 2.1 and 2.2. Thoth paired the `:2.0` namespace with `version="2.2"`, which belongs to no
  * schema, so every exported document validated against neither.
  *
  * The metadata module namespace below keeps its `:2.0` designation, because XLIFF 2.2 leaves it
@@ -127,7 +127,7 @@ export interface XliffImportRequest extends ToolkitObservabilityOptions {
  * `name` is the qualified name as authored and exists for diagnostics. Every structural comparison
  * uses `namespace` and `localName`, because a prefix is a local choice of whoever serialized the
  * document: `mda:metadata` and `m:metadata` are the same element, and a document that binds `mda:`
- * to something else entirely is a different one. Comparing the authored string accepts Equator's
+ * to something else entirely is a different one. Comparing the authored string accepts Thoth's
  * own output and rejects conformant documents that spell the prefixes differently.
  *
  * `scope` is the in-scope prefix binding at this element, kept because an attribute's prefix has to
@@ -195,7 +195,7 @@ export interface XliffUnitContract {
 /**
  * XML 1.0 (Fifth Edition) §2.3 NameChar, one or more of which is an `xs:NMTOKEN`.
  *
- * Every `id` in XLIFF 2.2 Core is typed `xs:NMTOKEN`. `@` and `/` are not NameChars and an Equator
+ * Every `id` in XLIFF 2.2 Core is typed `xs:NMTOKEN`. `@` and `/` are not NameChars and a Thoth
  * provider identity is spelled `@scope/name`, so `@example/app:shell` on the file and
  * `@example/app:shell:greeting` on every unit made each exported document invalid before anything
  * else in it was considered.
@@ -210,11 +210,11 @@ const XML_NMTOKEN =
 /**
  * The XLIFF id for a catalog's `<file>`.
  *
- * `providerId:scopeId` is the Equator identity and cannot be an NMTOKEN, so the leading `@` goes
- * and the `/` becomes `:`. That is injective over the Equator identity grammars (a provider is
+ * `providerId:scopeId` is the Thoth identity and cannot be an NMTOKEN, so the leading `@` goes
+ * and the `/` becomes `:`. That is injective over the Thoth identity grammars (a provider is
  * `@scope/name` or `name`, and no part of either may contain a `:`), which is what matters, because
  * XLIFF requires file ids to be unique within the document and a translation-management system may
- * hold several Equator catalogs in one.
+ * hold several Thoth catalogs in one.
  *
  * Nothing reads the identity back out of this. The unit contract carries it verbatim, and the
  * importer derives the id from the catalog it was handed rather than parsing it out of the
@@ -337,8 +337,8 @@ function parseXml(document: string): ToolkitResult<XmlElement> {
   if (Buffer.byteLength(document, 'utf8') > RESOURCE_LIMITS.xliffBytes) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1801',
-        'XLIFF document exceeds the Equator byte ceiling.',
+        'TH1801',
+        'XLIFF document exceeds the Thoth byte ceiling.',
       ),
     ]);
   }
@@ -348,7 +348,7 @@ function parseXml(document: string): ToolkitResult<XmlElement> {
   let index = 0;
   if (document.charCodeAt(0) === 0xfeff) index = 1;
   const fail = (summary: string): ToolkitResult<XmlElement> =>
-    toolkitFailure([toolkitDiagnostic('EQ1801', summary)]);
+    toolkitFailure([toolkitDiagnostic('TH1801', summary)]);
 
   while (index < document.length) {
     if (document[index] !== '<') {
@@ -360,7 +360,7 @@ function parseXml(document: string): ToolkitResult<XmlElement> {
       if (text.length > 0) {
         nodes += 1;
         if (nodes > RESOURCE_LIMITS.xliffNodes)
-          return fail('XLIFF exceeds the Equator node ceiling.');
+          return fail('XLIFF exceeds the Thoth node ceiling.');
         const parent = stack.at(-1);
         if (parent === undefined) {
           if (/\S/u.test(text))
@@ -380,7 +380,7 @@ function parseXml(document: string): ToolkitResult<XmlElement> {
       }
       nodes += 1;
       if (nodes > RESOURCE_LIMITS.xliffNodes)
-        return fail('XLIFF exceeds the Equator node ceiling.');
+        return fail('XLIFF exceeds the Thoth node ceiling.');
       index = end + 3;
       continue;
     }
@@ -394,7 +394,7 @@ function parseXml(document: string): ToolkitResult<XmlElement> {
         return fail('XLIFF CDATA contains invalid or unsafe Unicode.');
       nodes += 1;
       if (nodes > RESOURCE_LIMITS.xliffNodes)
-        return fail('XLIFF exceeds the Equator node ceiling.');
+        return fail('XLIFF exceeds the Thoth node ceiling.');
       parent.children.push(text);
       index = end + 3;
       continue;
@@ -453,9 +453,9 @@ function parseXml(document: string): ToolkitResult<XmlElement> {
         return fail('XLIFF contains invalid attributes.');
       nodes += 1 + parsedAttributes.count;
       if (nodes > RESOURCE_LIMITS.xliffNodes)
-        return fail('XLIFF exceeds the Equator node ceiling.');
+        return fail('XLIFF exceeds the Thoth node ceiling.');
       if (stack.length + 1 > RESOURCE_LIMITS.xliffDepth)
-        return fail('XLIFF exceeds the Equator depth ceiling.');
+        return fail('XLIFF exceeds the Thoth depth ceiling.');
       const scope = namespaceScope(
         stack.at(-1)?.scope ?? ROOT_NAMESPACE_SCOPE,
         parsedAttributes.attributes,
@@ -542,7 +542,7 @@ function childElements(
  * The text of an element that is supposed to hold only text.
  *
  * Notes, metadata and `<data>` are text and nothing else, so an element child is not something to
- * interpret: it is a document Equator does not understand, and saying so is the whole job. Nothing
+ * interpret: it is a document Thoth does not understand, and saying so is the whole job. Nothing
  * is flattened here through an `equiv` attribute, which would read a `<note>` holding a `<pc>` as
  * if the code were text. The codes inside a `<source>` or `<target>` are read by `patternText`,
  * where the original data is in scope and the reading can be checked.
@@ -562,7 +562,7 @@ function textContent(element: XmlElement): string | undefined {
 /**
  * A unit's `<originalData>` as id to original text.
  *
- * `undefined` means the element is not one Equator can read (two of them, a duplicate id, a `<cp>`
+ * `undefined` means the element is not one Thoth can read (two of them, a duplicate id, a `<cp>`
  * child) and the unit is refused rather than half-read.
  */
 function originalData(
@@ -590,10 +590,10 @@ function originalData(
 /**
  * The original text one inline code stands for.
  *
- * Equator writes `dataRef` into `<originalData>`, because a conformant XML parser normalizes the
+ * Thoth writes `dataRef` into `<originalData>`, because a conformant XML parser normalizes the
  * newlines in an attribute value to spaces and a declaration block has newlines in it. A document
  * from somewhere else may carry the text in `equiv` instead, which is a legal thing to do and is
- * read here rather than refused: it just cannot be what Equator writes.
+ * read here rather than refused: it just cannot be what Thoth writes.
  */
 function codeText(
   element: XmlElement,
@@ -710,7 +710,7 @@ function sourceFingerprint(
     readonly inputs: CanonicalJsonValue;
     readonly slots: CanonicalJsonValue;
   }>;
-  return digestCanonicalJson('equator-xliff-source-message/1', {
+  return digestCanonicalJson('thoth-xliff-source-message/1', {
     identity: messageIdentity(catalog, messageId),
     kind: message.kind,
     source:
@@ -742,8 +742,8 @@ function contractText(contract: XliffUnitContract): string {
 function unitMetadata(contract: XliffUnitContract): string {
   return [
     '      <mda:metadata>',
-    '        <mda:metaGroup category="equator:unit">',
-    `          <mda:meta type="equator:contract">${escapeXml(contractText(contract))}</mda:meta>`,
+    '        <mda:metaGroup category="thoth:unit">',
+    `          <mda:meta type="thoth:contract">${escapeXml(contractText(contract))}</mda:meta>`,
     '        </mda:metaGroup>',
     '      </mda:metadata>',
   ].join('\n');
@@ -767,7 +767,7 @@ function noteElement(
  * sending the message out with no explanation of what it means or where it appears.
  *
  * Source guidance and target guidance are separate notes rather than one merged blob, because they
- * answer to different owners: the source note is Equator's authored explanation of the message, and
+ * answer to different owners: the source note is Thoth's authored explanation of the message, and
  * the target note is whatever the target catalog itself says about its own translation.
  *
  * Emitted only when the data exists, per `specs/01-standards-profile.spec.md` section 11.
@@ -781,7 +781,7 @@ function unitNotes(
       ? []
       : [
           noteElement(
-            'equator-source-description',
+            'thoth-source-description',
             NOTE_DESCRIPTION,
             'source',
             source.description,
@@ -791,7 +791,7 @@ function unitNotes(
       ? []
       : [
           noteElement(
-            'equator-source-context',
+            'thoth-source-context',
             NOTE_CONTEXT,
             'source',
             source.context,
@@ -801,7 +801,7 @@ function unitNotes(
       ? []
       : [
           noteElement(
-            'equator-target-description',
+            'thoth-target-description',
             NOTE_DESCRIPTION,
             'target',
             target.description,
@@ -811,7 +811,7 @@ function unitNotes(
       ? []
       : [
           noteElement(
-            'equator-target-context',
+            'thoth-target-context',
             NOTE_CONTEXT,
             'target',
             target.context,
@@ -1143,7 +1143,7 @@ function unitContent(
     if (dropped.length > 0) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1802',
+          'TH1802',
           `Translation of ${JSON.stringify(messageId)} never renders ${dropped.length} value(s) the source message renders: ${dropped.map((input) => JSON.stringify(input)).join(', ')}. A message with variants is compared across all of them together, so a value only has to appear in one of them.`,
           { path: ['messages', messageId] },
         ),
@@ -1171,7 +1171,7 @@ function unitContent(
   if (inlineSource === undefined) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1802',
+        'TH1802',
         `Source message ${JSON.stringify(messageId)} has markup that does not nest, so it has no XLIFF inline representation.`,
         { path: ['messages', messageId] },
       ),
@@ -1184,7 +1184,7 @@ function unitContent(
   if (targetText !== undefined && inlineTarget === undefined) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1802',
+        'TH1802',
         `Translation of ${JSON.stringify(messageId)} has a structure the source message does not: a placeholder or a pattern form the source does not have, or markup that does not nest.`,
         { path: ['messages', messageId] },
       ),
@@ -1197,7 +1197,7 @@ function unitContent(
     if (missing.length > 0) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1802',
+          'TH1802',
           `Translation of ${JSON.stringify(messageId)} drops ${missing.length} placeholder(s) the source message has: ${missing.map((key) => JSON.stringify(codeKeyText(key))).join(', ')}.`,
           { path: ['messages', messageId] },
         ),
@@ -1233,7 +1233,7 @@ function exportAdmittedXliff22(
   const { source, target } = request;
   if (source.role !== 'source') {
     return toolkitFailure([
-      toolkitDiagnostic('EQ1802', 'XLIFF export requires a source catalog.'),
+      toolkitDiagnostic('TH1802', 'XLIFF export requires a source catalog.'),
     ]);
   }
   if (
@@ -1244,7 +1244,7 @@ function exportAdmittedXliff22(
   ) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1802',
+        'TH1802',
         'XLIFF target catalog does not match the source authority and scope.',
       ),
     ]);
@@ -1253,7 +1253,7 @@ function exportAdmittedXliff22(
   if (targetLocaleValue === undefined) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1802',
+        'TH1802',
         'XLIFF export requires a target locale or target catalog.',
       ),
     ]);
@@ -1263,20 +1263,20 @@ function exportAdmittedXliff22(
   if (target !== undefined && target.locale !== targetLocale.value) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1802',
+        'TH1802',
         'XLIFF target locale does not match the target catalog.',
       ),
     ]);
   }
   // Every `id` in XLIFF 2.2 Core is an `xs:NMTOKEN`, so the ids are checked rather than assumed.
-  // The Equator identity grammars cannot currently produce anything else once the provider's `@`
+  // The Thoth identity grammars cannot currently produce anything else once the provider's `@`
   // and `/` are folded away, but a grammar that widens later has to fail here, loudly and at the
   // point of export, instead of quietly writing a document no schema accepts.
   const fileId = xliffFileId(source);
   if (!XML_NMTOKEN.test(fileId)) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1802',
+        'TH1802',
         `XLIFF file id ${JSON.stringify(fileId)} is not an xs:NMTOKEN, which XLIFF 2.2 Core requires.`,
       ),
     ]);
@@ -1288,7 +1288,7 @@ function exportAdmittedXliff22(
     if (!XML_NMTOKEN.test(messageId)) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1802',
+          'TH1802',
           `XLIFF unit id ${JSON.stringify(messageId)} is not an xs:NMTOKEN, which XLIFF 2.2 Core requires.`,
           { path: ['messages', messageId] },
         ),
@@ -1305,7 +1305,7 @@ function exportAdmittedXliff22(
     );
     units.push(
       [
-        // The unit id is the message id, not the full Equator identity. It has to be an NMTOKEN and
+        // The unit id is the message id, not the full Thoth identity. It has to be an NMTOKEN and
         // the identity is not one; it only has to be unique inside its <file>, which a message id
         // in a single catalog is; and the identity is carried verbatim in the contract below, so
         // nothing is lost by not spelling it twice.
@@ -1337,7 +1337,7 @@ function exportAdmittedXliff22(
   return toolkitSuccess(
     [
       '<?xml version="1.0" encoding="UTF-8"?>',
-      // `xmlns:equator` is gone with the attribute that needed it. Everything Equator puts in a
+      // `xmlns:thoth` is gone with the attribute that needed it. Everything Thoth puts in a
       // document now goes either in the metadata module or in a `subState`, both of which are
       // XLIFF's own extension points, so the format carries one fewer namespace to get wrong.
       `<xliff xmlns="${XLIFF_NAMESPACE}" xmlns:mda="${XLIFF_METADATA_NAMESPACE}" version="2.2" srcLang="${escapeXml(source.locale)}" trgLang="${escapeXml(targetLocale.value)}">`,
@@ -1419,9 +1419,9 @@ function parseContract(unit: XmlElement): XliffUnitContract | undefined {
       metadataNamespace,
       'metaGroup',
     )) {
-      if (group.attributes['category'] !== 'equator:unit') continue;
+      if (group.attributes['category'] !== 'thoth:unit') continue;
       for (const meta of childElements(group, metadataNamespace, 'meta')) {
-        if (meta.attributes['type'] !== 'equator:contract') continue;
+        if (meta.attributes['type'] !== 'thoth:contract') continue;
         const text = textContent(meta);
         if (text === undefined || Buffer.byteLength(text, 'utf8') > 65_536)
           return undefined;
@@ -1466,7 +1466,7 @@ interface XliffUnitNotes {
   /** Guidance the notes state about the source message. */
   readonly source: XliffGuidance;
   /**
-   * Notes carrying guidance Equator has no field for: a translator's or a tool's own commentary.
+   * Notes carrying guidance Thoth has no field for: a translator's or a tool's own commentary.
    */
   readonly foreign: readonly string[];
   /** A note that is not plain text, or more than one <notes> element. */
@@ -1476,7 +1476,7 @@ interface XliffUnitNotes {
 /**
  * Read the notes on a unit.
  *
- * Only Equator's own categories are absorbed. A note written by a translator or a translation-
+ * Only Thoth's own categories are absorbed. A note written by a translator or a translation-
  * management system stays where it was written: `specs/01-standards-profile.spec.md` section 10
  * refuses XLIFF as an authoring format, so absorbing arbitrary commentary into the catalog would
  * give it a home with no way to edit it and a guaranteed re-export. It is reported instead of
@@ -1508,7 +1508,7 @@ function parseNotes(unit: XmlElement): XliffUnitNotes {
       foreign.push(category ?? '(uncategorized)');
       continue;
     }
-    // Equator always writes appliesTo explicitly, so a note without it was hand-authored. Reading
+    // Thoth always writes appliesTo explicitly, so a note without it was hand-authored. Reading
     // it as source guidance is the reading that changes nothing: source guidance is advisory here.
     const bucket = note.attributes['appliesTo'] === 'target' ? target : source;
     if (category === NOTE_DESCRIPTION) bucket.description = text;
@@ -1523,9 +1523,9 @@ function parseNotes(unit: XmlElement): XliffUnitNotes {
 }
 
 /**
- * One `<target>` as an Equator catalog message.
+ * One `<target>` as a Thoth catalog message.
  *
- * The empty translation is `subState="equator:empty"` on the segment rather than a flag on the
+ * The empty translation is `subState="thoth:empty"` on the segment rather than a flag on the
  * target, so it is a refinement of the state that already says whether the target is a translation
  * at all. An empty target without it stays what it was: a blank nobody filled in, refused rather
  * than imported as a deliberately empty message.
@@ -1556,7 +1556,7 @@ function authoredBidiRefusal(
     if (violation !== undefined) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1103',
+          'TH1103',
           `XLIFF target ${JSON.stringify(messageId)} cannot be imported. ${BIDI_VIOLATION_SUMMARY[violation]}`,
           { path: ['messages', messageId] },
         ),
@@ -1584,7 +1584,7 @@ function importedMessage(
     if ((textContent(target) ?? '').length > 0) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1803',
+          'TH1803',
           `Explicitly empty XLIFF target ${JSON.stringify(messageId)} contains text.`,
         ),
       ]);
@@ -1606,7 +1606,7 @@ function importedMessage(
       if (dropped.length > 0) {
         return toolkitFailure([
           toolkitDiagnostic(
-            'EQ1803',
+            'TH1803',
             `XLIFF target ${JSON.stringify(messageId)} never renders ${dropped.length} value(s) the source message renders: ${dropped.map((input) => JSON.stringify(input)).join(', ')}. A message with variants is compared across all of them together, so a value only has to appear in one of them.`,
             { path: ['messages', messageId] },
           ),
@@ -1622,7 +1622,7 @@ function importedMessage(
       if (missing.length > 0) {
         return toolkitFailure([
           toolkitDiagnostic(
-            'EQ1803',
+            'TH1803',
             `XLIFF target ${JSON.stringify(messageId)} is missing ${missing.length} placeholder(s) the source message has: ${missing.map((key) => JSON.stringify(codeKeyText(key))).join(', ')}.`,
             { path: ['messages', messageId] },
           ),
@@ -1632,7 +1632,7 @@ function importedMessage(
       if (extra.length > 0) {
         return toolkitFailure([
           toolkitDiagnostic(
-            'EQ1803',
+            'TH1803',
             `XLIFF target ${JSON.stringify(messageId)} carries ${extra.length} placeholder(s) the source message does not have: ${extra.map((key) => JSON.stringify(codeKeyText(key))).join(', ')}.`,
             { path: ['messages', messageId] },
           ),
@@ -1644,7 +1644,7 @@ function importedMessage(
   if (body === undefined || body.length === 0) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1803',
+        'TH1803',
         `XLIFF target ${JSON.stringify(messageId)} has unsupported inline structure or an accidental blank value.`,
       ),
     ]);
@@ -1681,14 +1681,14 @@ function importAdmittedXliff22(
   if (request.source.role !== 'source') {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1802',
+        'TH1802',
         'XLIFF import requires the authoritative source catalog.',
       ),
     ]);
   }
   const document = untrustedText(
     request.document,
-    'EQ1801',
+    'TH1801',
     'XLIFF document',
     RESOURCE_LIMITS.xliffBytes,
   );
@@ -1698,11 +1698,11 @@ function importAdmittedXliff22(
   const root = parsed.value;
   // The root is identified by namespace, version and source locale, and by nothing else.
   //
-  // Not by the prefixes the root happens to declare. Requiring `xmlns:mda` and `xmlns:equator` on
+  // Not by the prefixes the root happens to declare. Requiring `xmlns:mda` and `xmlns:thoth` on
   // the root element, spelled that way, is not a conformance requirement: a prefix is chosen by
   // whoever serialized the document, and a namespace may be declared on any element that uses it.
   // A check like that rejects a conformant document from a translation-management system for its
-  // spelling and passes only the documents Equator wrote itself. Prefixes are resolved where they
+  // spelling and passes only the documents Thoth wrote itself. Prefixes are resolved where they
   // are read.
   if (
     root.localName !== 'xliff' ||
@@ -1712,15 +1712,15 @@ function importAdmittedXliff22(
   ) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1802',
-        'XLIFF document does not match the Equator 2.2 profile or source locale.',
+        'TH1802',
+        'XLIFF document does not match the Thoth 2.2 profile or source locale.',
       ),
     ]);
   }
   const targetLocaleValue = request.targetLocale ?? root.attributes['trgLang'];
   if (targetLocaleValue === undefined) {
     return toolkitFailure([
-      toolkitDiagnostic('EQ1802', 'XLIFF document has no target locale.'),
+      toolkitDiagnostic('TH1802', 'XLIFF document has no target locale.'),
     ]);
   }
   const targetLocale = canonicalizeLocale(targetLocaleValue);
@@ -1731,7 +1731,7 @@ function importAdmittedXliff22(
   ) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1802',
+        'TH1802',
         'Requested target locale does not match the XLIFF document.',
       ),
     ]);
@@ -1748,14 +1748,14 @@ function importAdmittedXliff22(
   if (matching.length !== 1) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1802',
-        // Named by the Equator identity an operator recognises, with the XLIFF id it looked for
+        'TH1802',
+        // Named by the Thoth identity an operator recognises, with the XLIFF id it looked for
         // after it: the two differ because an XLIFF id is an NMTOKEN and `@example/app` is not one,
         // and a diagnostic that mentioned only the id would send somebody looking for the wrong
         // string.
         matching.length === 0
-          ? `XLIFF document contains no file for the Equator catalog ${JSON.stringify(catalogIdentity)} (file id ${JSON.stringify(catalogFileId)}).`
-          : `XLIFF document contains ${matching.length} files for the Equator catalog ${JSON.stringify(catalogIdentity)} (file id ${JSON.stringify(catalogFileId)}).`,
+          ? `XLIFF document contains no file for the Thoth catalog ${JSON.stringify(catalogIdentity)} (file id ${JSON.stringify(catalogFileId)}).`
+          : `XLIFF document contains ${matching.length} files for the Thoth catalog ${JSON.stringify(catalogIdentity)} (file id ${JSON.stringify(catalogFileId)}).`,
       ),
     ]);
   }
@@ -1763,12 +1763,12 @@ function importAdmittedXliff22(
   const diagnostics: ToolkitDiagnostic[] = [];
   const fileNotes = childElements(catalogFile, XLIFF_NAMESPACE, 'notes');
   if (fileNotes.length > 0) {
-    // Equator writes no file-level notes, so any that arrive were added by a translator or a tool.
+    // Thoth writes no file-level notes, so any that arrive were added by a translator or a tool.
     // Same rule as unit notes: not absorbed, not dropped quietly.
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1803',
-        'XLIFF file carries notes Equator does not store. They remain in the interchange document only.',
+        'TH1803',
+        'XLIFF file carries notes Thoth does not store. They remain in the interchange document only.',
         { severity: 'warning' },
       ),
     );
@@ -1786,7 +1786,7 @@ function importAdmittedXliff22(
   if (unconforming >= 0) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1802',
+        'TH1802',
         `XLIFF unit ${unconforming + 1} of its file has an id that is not an xs:NMTOKEN, which XLIFF 2.2 Core requires.`,
       ),
     ]);
@@ -1801,8 +1801,8 @@ function importAdmittedXliff22(
     ) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1803',
-          'XLIFF unit identity or protected Equator metadata is invalid.',
+          'TH1803',
+          'XLIFF unit identity or protected Thoth metadata is invalid.',
         ),
       );
       continue;
@@ -1815,7 +1815,7 @@ function importAdmittedXliff22(
     ) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1803',
+          'TH1803',
           `XLIFF unit ${JSON.stringify(contract.identity)} is not part of the authoritative source catalog.`,
         ),
       );
@@ -1827,7 +1827,7 @@ function importAdmittedXliff22(
     ) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1803',
+          'TH1803',
           `XLIFF unit ${JSON.stringify(contract.identity)} is stale for the current source revision.`,
           {
             severity: 'warning',
@@ -1841,7 +1841,7 @@ function importAdmittedXliff22(
     if (notes.malformed) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1803',
+          'TH1803',
           `XLIFF unit ${JSON.stringify(contract.identity)} has unsupported note structure.`,
           { path: ['messages', contract.messageId] },
         ),
@@ -1850,13 +1850,13 @@ function importAdmittedXliff22(
     }
     if (notes.foreign.length > 0) {
       // Not dropped quietly. The note stays in the interchange document, where translator and tool
-      // commentary belongs; the operator is told Equator read it and did not absorb it, because
+      // commentary belongs; the operator is told Thoth read it and did not absorb it, because
       // `specs/01-standards-profile.spec.md` section 11 forbids removing unsupported content
       // silently.
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1803',
-          `XLIFF unit ${JSON.stringify(contract.identity)} carries ${notes.foreign.length} note(s) Equator does not store: ${notes.foreign.map((category) => JSON.stringify(category)).join(', ')}. They remain in the interchange document only.`,
+          'TH1803',
+          `XLIFF unit ${JSON.stringify(contract.identity)} carries ${notes.foreign.length} note(s) Thoth does not store: ${notes.foreign.map((category) => JSON.stringify(category)).join(', ')}. They remain in the interchange document only.`,
           { severity: 'warning', path: ['messages', contract.messageId] },
         ),
       );
@@ -1867,12 +1867,12 @@ function importAdmittedXliff22(
       ) {
         continue;
       }
-      // Source guidance is authored in Equator's own catalogs. An edited copy arriving back through
+      // Source guidance is authored in Thoth's own catalogs. An edited copy arriving back through
       // an interchange document is not authoritative and is not applied, but it is said out loud,
       // because a translator who rewrote it is telling us the original was unclear.
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1803',
+          'TH1803',
           `XLIFF unit ${JSON.stringify(contract.identity)} changes the source ${field}, which the authoring catalog owns. The change was not applied.`,
           { severity: 'warning', path: ['messages', contract.messageId] },
         ),
@@ -1889,7 +1889,7 @@ function importAdmittedXliff22(
     if (!XLIFF_SEGMENT_STATES.has(state)) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1803',
+          'TH1803',
           `XLIFF unit ${JSON.stringify(contract.identity)} has an unknown segment state ${JSON.stringify(state)}.`,
           { path: ['messages', contract.messageId] },
         ),
@@ -1901,7 +1901,7 @@ function importAdmittedXliff22(
       // made. Importing it would put untranslated text into a target catalog and report success.
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1803',
+          'TH1803',
           `XLIFF unit ${JSON.stringify(contract.identity)} is still in its initial state and was not imported as a translation.`,
           { severity: 'warning', path: ['messages', contract.messageId] },
         ),
@@ -1926,7 +1926,7 @@ function importAdmittedXliff22(
     return toolkitFailure([
       ...diagnostics,
       toolkitDiagnostic(
-        'EQ1803',
+        'TH1803',
         'XLIFF import contains no current valid target units.',
       ),
     ]);

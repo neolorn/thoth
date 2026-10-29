@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { derivedScopes } from '../router/src/navigation-scopes.js';
-import type { RouteRuntimeProjection } from '@neolorn/equator/core';
+import type { RouteRuntimeProjection } from '@neolorn/thoth/core';
 
 /**
  * The scopes a navigation loads because the generated route table lists them for its route.
@@ -15,7 +15,7 @@ const LAZY = { providerId: '@example/app', scopeId: 'lazy' };
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-RouteDerivedScopesTestIdentity01234567890123',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },

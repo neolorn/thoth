@@ -1,5 +1,5 @@
 /**
- * One occurrence of one `equator init` configuration flag, folded into the value `init` is handed.
+ * One occurrence of one `thoth init` configuration flag, folded into the value `init` is handed.
  *
  * Beside `cli.ts` rather than inside it, and not published from the barrel. The refusals here are
  * the half of this that matters (a value the schema would reject several steps later, reported
@@ -18,7 +18,7 @@ import {
   type InitOptionDescriptor,
 } from './cli-options.generated.js';
 
-/** An invocation Equator will not act on. The CLI turns this into EQ1701 and exit 2. */
+/** An invocation Thoth will not act on. The CLI turns this into TH1701 and exit 2. */
 export class InvocationError extends Error {}
 
 const INIT_OPTIONS_BY_FLAG: ReadonlyMap<string, InitOptionDescriptor> = new Map(

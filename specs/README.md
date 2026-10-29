@@ -1,20 +1,20 @@
-# Equator specifications
+# Thoth specifications
 
-The normative description of what Equator accepts, produces, refuses, and guarantees. Twelve
+The normative description of what Thoth accepts, produces, refuses, and guarantees. Twelve
 documents, each owning one subject, plus this index.
 
 ## 1. Introduction
 
-Equator is a localization framework for Angular applications, covering the rendering environments
+Thoth is a localization framework for Angular applications, covering the rendering environments
 Angular itself supports: browser, server rendering, prerendering, and hydration. It is delivered as
-two packages, `@neolorn/equator` for the runtime and `@neolorn/equator-toolkit` for the compiler and
+two packages, `@neolorn/thoth` for the runtime and `@neolorn/thoth-toolkit` for the compiler and
 its command line.
 
 An application declares which locales it serves and writes what its messages say. It owns its routes
 and public URLs, its domain values and business rules, its content and the services that supply it,
 its infrastructure, and its translation workflow.
 
-Equator owns the mechanisms that coordinate those and the contracts needed to use them safely:
+Thoth owns the mechanisms that coordinate those and the contracts needed to use them safely:
 locale identity and resolution, message authoring and compilation, generated type contracts, catalog
 loading and caching, runtime state and transitions, Angular integration, routing and rendering
 coherence, formatting and localized input, safe rich content, interchange, verification, and
@@ -58,7 +58,7 @@ Every normative sentence names what it binds.
 
 | Target                 | Is                                                                         |
 | ---------------------- | -------------------------------------------------------------------------- |
-| An Equator release     | The published packages and everything in them.                             |
+| A Thoth release        | The published packages and everything in them.                             |
 | A consumer application | An application that installs a release, for the capabilities it enables.   |
 | A catalog              | An authored source or target catalog offered to the toolkit.               |
 | An artifact            | Compiled output, a descriptor, or an interchange document a release reads. |

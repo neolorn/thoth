@@ -94,7 +94,7 @@ async function until(
 }
 
 const CATALOG = 'i18n/shell/en-US.yaml';
-const TRANSLATION_STATE = '.equator-translation-state.json';
+const TRANSLATION_STATE = '.thoth-translation-state.json';
 
 const catalog = (title: string): string => `messages:\n  app-title: ${title}\n`;
 
@@ -263,7 +263,7 @@ describe('watch', () => {
       fire(CATALOG);
       expect(await until(() => results.length >= 2, WAIT_BOUND_MS)).toBe(true);
       expect(results[1]?.diagnostics.map(({ code }) => code)).toEqual([
-        'EQ1702',
+        'TH1702',
       ]);
 
       // Resolving the record changes no input, and the edit before it is still unpublished.

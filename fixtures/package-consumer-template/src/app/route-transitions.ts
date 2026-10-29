@@ -1,4 +1,4 @@
-import type { RouteLocalizationOptions } from '@neolorn/equator/router';
+import type { RouteLocalizationOptions } from '@neolorn/thoth/router';
 
 /**
  * How a navigation changes the page: the earlier view held until everything the next one needs is

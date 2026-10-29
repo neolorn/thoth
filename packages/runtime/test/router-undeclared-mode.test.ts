@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { refuseUndeclaredMode } from '../router/src/navigation-scopes.js';
-import { LocalizationError } from '@neolorn/equator/core';
+import { LocalizationError } from '@neolorn/thoth/core';
 
 /**
  * The mode the Router integration is configured with.

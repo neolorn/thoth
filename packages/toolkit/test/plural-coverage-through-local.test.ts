@@ -32,7 +32,7 @@ function missingCategories(message: readonly string[]): number {
     ],
   });
   expect(result.ok).toBe(true);
-  return result.diagnostics.filter(({ code }) => code === 'EQ1308').length;
+  return result.diagnostics.filter(({ code }) => code === 'TH1308').length;
 }
 
 const direct = [

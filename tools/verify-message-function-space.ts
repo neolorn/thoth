@@ -2,7 +2,7 @@
  * "What compiles, renders", checked as an invariant rather than as a list of cases.
  *
  * The specification's own words for this are in `specs/04-message-authoring-and-catalogs.spec.md`
- * section 6: where MessageFormat 2 leaves a behaviour implementation-defined, Equator resolves it
+ * section 6: where MessageFormat 2 leaves a behaviour implementation-defined, Thoth resolves it
  * as a refusal at compile time, never as a render-time fallback and never as a render-time throw.
  * Instances of that being untrue look unrelated (a literal operand that is not a number, `:integer`
  * inheriting a fraction-digit minimum above its own maximum, `roundingIncrement`), and fixing each
@@ -35,7 +35,7 @@ const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const consumerToolkit = resolve(
   workspaceRoot,
-  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/equator-toolkit/index.js',
+  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/thoth-toolkit/index.js',
 );
 if (!existsSync(consumerToolkit)) {
   process.stderr.write(
@@ -104,7 +104,7 @@ interface Group {
 const table = (await import(pathToFileURL(tableModule).href)) as OptionTable;
 const tk = await import(pathToFileURL(consumerToolkit).href);
 // The modules rather than the package entry. The compiler's own machinery is not published:
-// nothing outside Equator calls it, so it is not part of the toolkit's surface, and a gate that
+// nothing outside Thoth calls it, so it is not part of the toolkit's surface, and a gate that
 // exercises it reaches the module that declares it. This is the same reach the option table above
 // already makes.
 const { compileLocalArtifacts } = await import(
@@ -120,7 +120,7 @@ const messageFormat = (await import(
 };
 const rt = await import(
   pathToFileURL(
-    resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-equator.mjs'),
+    resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-thoth.mjs'),
   ).href
 );
 
@@ -249,7 +249,7 @@ const SCOPE = 'walk';
  * not what an extension formats but what its declaration carries, so the only difference between a
  * direct case and its twin is which function the option was written on.
  *
- * Nothing is shipped. These are extension descriptors, the mechanism Equator already has, declared
+ * Nothing is shipped. These are extension descriptors, the mechanism Thoth already has, declared
  * the way the conformance runner declares the suite's test functions.
  */
 const seamOptionsFor = (fn: string): readonly string[] => {
@@ -287,7 +287,7 @@ const seamRegistry = tk.defineExtensionRegistry([
 ]);
 if (!seamRegistry.ok) {
   process.stderr.write(
-    'Equator refused this walk own extension descriptors: ' +
+    'Thoth refused this walk own extension descriptors: ' +
       seamRegistry.diagnostics
         .map(({ code, summary }: Diagnostic) => code + ' ' + summary)
         .join('; ') +
@@ -349,7 +349,7 @@ function valuesFor(name: string): readonly string[] {
     case 'constructed':
       return SAMPLED[name] ?? [];
     case 'unsupported':
-      // Written on purpose: an option Equator declines has to be refused, and a walk that skipped
+      // Written on purpose: an option Thoth declines has to be refused, and a walk that skipped
       // it would never notice it being quietly accepted again.
       return ['whatever'];
     default:
@@ -513,7 +513,7 @@ const configuration = tk.parseConfiguration(
     defaultLocale: LOCALE,
     locales: [LOCALE],
   }),
-  { sourcePath: 'equator.config.json' },
+  { sourcePath: 'thoth.config.json' },
 );
 if (!configuration.ok) {
   process.stderr.write(
@@ -651,7 +651,7 @@ const catalog = artifacts.catalogs[0];
 const localization = rt.createLocalizationContext({
   setup: {
     configuration: Object.freeze({
-      generatedAbi: 'equator-generated/1',
+      generatedAbi: 'thoth-generated/1',
       sourceLocale: LOCALE,
       defaultLocale: LOCALE,
       locales: Object.freeze([LOCALE]),
@@ -684,7 +684,7 @@ const localization = rt.createLocalizationContext({
     extensions: extensionBindings,
   },
   bootstrapScopes: [Object.freeze({ providerId: PROVIDER, scopeId: SCOPE })],
-  // A consumer supplies one and Equator refuses to format a date without it. `UTC` because it is
+  // A consumer supplies one and Thoth refuses to format a date without it. `UTC` because it is
   // the one zone whose answer does not depend on where this runs.
   formattingContext: Object.freeze({ timeZone: 'UTC' }),
 });
@@ -696,7 +696,7 @@ const rendered = new Map<number, unknown>();
 for (const semantic of graph.value.scopes[0].messages) {
   const index = Number(semantic.messageId.slice(1));
   const handle = Object.freeze({
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     providerId: semantic.providerId,
     scopeId: semantic.scopeId,
     messageId: semantic.messageId,
@@ -735,7 +735,7 @@ const distinctRenderings = (group: Group | undefined) => {
   if (group === undefined) return 0;
   const values = group.values.filter((index) => rendered.has(index));
   // Every value refused is a complete answer: the option cannot be written at all, so it cannot be
-  // written and ignored. `usage` is the standing case: Equator declines unit conversion by name.
+  // written and ignored. `usage` is the standing case: Thoth declines unit conversion by name.
   if (values.length === 0) return 0;
   const seen = new Set(values.map((index) => rendered.get(index)));
   const baseline = rendered.get(group.baseline);

@@ -72,7 +72,7 @@ describe('build trust', () => {
     expect(result.ok).toBe(false);
     expect('value' in result).toBe(false);
     expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({ code: 'EQ1304', severity: 'error' }),
+      expect.objectContaining({ code: 'TH1304', severity: 'error' }),
     );
   });
 });

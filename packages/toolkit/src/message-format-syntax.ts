@@ -1,5 +1,5 @@
 /**
- * The MessageFormat 2 lexical productions Equator needs on both sides of its package boundary, and
+ * The MessageFormat 2 lexical productions Thoth needs on both sides of its package boundary, and
  * the one rule for reading a typed value out of a literal.
  *
  * `packages/runtime` cannot import from `packages/toolkit`: the toolkit is a build-time tool with
@@ -38,9 +38,9 @@ export type ExtensionValueType =
  * name-char  = name-start / DIGIT / "-" / "."
  * ```
  *
- * Equator constrained a message-function option name to `^[a-z][a-z0-9-]{0,63}$`, which is narrower
+ * Thoth constrained a message-function option name to `^[a-z][a-z0-9-]{0,63}$`, which is narrower
  * than the standard in the direction that costs: it rejects `decimalPlaces`, which the standard's
- * own test suite uses, and it rejects every option name Equator's built-in functions already
+ * own test suite uses, and it rejects every option name Thoth's built-in functions already
  * have, among them `signDisplay`, `roundingMode`, `trailingZeroDisplay`, `currencySign`,
  * `fractionDigits`,
  * `minimumIntegerDigits`, `roundingIncrement`. An extension could not spell an option a built-in
@@ -49,13 +49,13 @@ export type ExtensionValueType =
  *
  * **The optional `[bidi]` wrapper is deliberately outside this production, and that is measured
  * rather than assumed.** The parser strips it: a message writing `{42 :ns:f <LRM>places<LRM>=1}`
- * hands Equator the option name `places`. A descriptor able to declare the wrapped form would be
+ * hands Thoth the option name `places`. A descriptor able to declare the wrapped form would be
  * declaring a second spelling of one option: one no message could ever match, and one that
  * collides with the first under any comparison that normalizes. What a descriptor names is the
  * name, not its presentation.
  *
- * This governs a *message-function* option name only. A rich-slot option name is Equator's own
- * vocabulary rather than MessageFormat's and keeps Equator's lower-kebab identifier convention.
+ * This governs a *message-function* option name only. A rich-slot option name is Thoth's own
+ * vocabulary rather than MessageFormat's and keeps Thoth's lower-kebab identifier convention.
  *
  * Written as one string rather than assembled from parts, because a transcription that has been
  * rearranged can no longer be checked against its source by reading.
@@ -108,7 +108,7 @@ export const MESSAGE_NAME_CHARACTERS = 64;
 
 const messageName = new RegExp(MESSAGE_NAME_PATTERN, 'u');
 
-/** Whether `value` is a MessageFormat `name` an Equator descriptor may declare. */
+/** Whether `value` is a MessageFormat `name` a Thoth descriptor may declare. */
 export function isMessageName(value: string): boolean {
   return (
     [...value].length <= MESSAGE_NAME_CHARACTERS && messageName.test(value)
@@ -139,7 +139,7 @@ export const NUMBER_LITERAL_PATTERN =
  *
  * An option value written in a message is always text, MessageFormat's syntax has literals and
  * variables and no numeric option token, so a check asking "is this a JavaScript number" of a
- * literal answers no for every literal ever written. Equator asked exactly that on both sides,
+ * literal answers no for every literal ever written. Thoth asked exactly that on both sides,
  * which made `integer`, `number` and `boolean` unreachable option types: a descriptor could declare
  * one and no message could satisfy it. The standard is explicit that the two spellings are the same
  * value, requiring of a digit size option that its value "resolves to a numerical integer value 0
@@ -150,7 +150,7 @@ export const NUMBER_LITERAL_PATTERN =
  * already arrived as its native type, from a variable rather than a literal, is accepted as itself.
  *
  * `undefined` means the value does not spell one of `type`. `date-time` accepts a `Date` or the
- * epoch-millisecond number that stands for one, and never a string: Equator does not guess a date
+ * epoch-millisecond number that stands for one, and never a string: Thoth does not guess a date
  * format, which is the one place a lenient reading would silently pick a calendar.
  */
 export function extensionOptionValue(

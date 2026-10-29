@@ -60,7 +60,7 @@ describe('two catalogs for one locale that were read from no file', () => {
     expect(compiled.ok).toBe(false);
     expect(refusals(compiled)).toEqual([
       {
-        code: 'EQ1301',
+        code: 'TH1301',
         summary:
           'Scope @example/app/shell has two catalogs for locale "en-US": a en-US catalog read from no file and a en-US catalog read from no file.',
         path: [],
@@ -82,7 +82,7 @@ describe('a closing tag with nothing open', () => {
     expect(compiled.ok).toBe(false);
     expect(refusals(compiled)).toEqual([
       {
-        code: 'EQ1303',
+        code: 'TH1303',
         summary: 'Rich slot "strong" closes "no open slot".',
         path: ['messages', 'title'],
       },
@@ -142,7 +142,7 @@ describe('a target in a language CLDR lists no plural categories for', () => {
   it('is asked for them where CLDR lists some', () => {
     // Hawaiian has `one` and `other`, so the same target is told what it leaves out.
     expect(refusals(compile('haw')).map(({ code }) => code)).toEqual([
-      'EQ1308',
+      'TH1308',
     ]);
   });
 });

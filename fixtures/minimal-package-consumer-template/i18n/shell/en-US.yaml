@@ -1,5 +1,5 @@
 messages:
-  title: Equator minimal consumer
+  title: Thoth minimal consumer
   welcome: 'Welcome, {$name}!'
   guide: 'Read the {#strong}guide{/strong}.'
   recovery.unavailable: Localization is temporarily unavailable.

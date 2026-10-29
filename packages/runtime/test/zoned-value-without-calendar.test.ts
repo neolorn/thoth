@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 
-import type { ZonedDateTimeValue } from '@neolorn/equator/core';
+import type { ZonedDateTimeValue } from '@neolorn/thoth/core';
 import { formatZonedDateTime, instant } from '../src/formatting.js';
 
 it('keeps the calendar of the context for a zoned value that names none', () => {

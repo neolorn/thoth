@@ -93,7 +93,7 @@ function recordingSink(events: ToolkitObservabilityEvent[]) {
   }) satisfies ToolkitObservabilitySink;
 }
 
-describe('Equator toolkit observability', () => {
+describe('Thoth toolkit observability', () => {
   it('emits exact content-free interchange and compiler events', () => {
     const interchangeEvents: ToolkitObservabilityEvent[] = [];
     const exported = exportXliff22({
@@ -203,7 +203,7 @@ describe('Equator toolkit observability', () => {
         code: TOOLKIT_EVENT_CODES.interchange,
         phase: 'interchange',
         status: 'failed',
-        diagnosticCode: 'EQ1802',
+        diagnosticCode: 'TH1802',
         providerId: '@example/app',
         scopeId: 'shell',
       },
@@ -223,7 +223,7 @@ describe('Equator toolkit observability', () => {
   it('reports migration completion and unchanged replay without plan content', async () => {
     const root = await mkdtemp(resolve(tmpdir(), 'observability-'));
     temporaryRoots.push(root);
-    const path = resolve(root, 'equator.config.json');
+    const path = resolve(root, 'thoth.config.json');
     const before = '{"schemaVersion":1}\n';
     const after = '{"schemaVersion":1,"sourceLocale":"en-US"}\n';
     await writeFile(path, before, 'utf8');
@@ -232,7 +232,7 @@ describe('Equator toolkit observability', () => {
       domain: 'configuration',
       fromVersion: '1',
       toVersion: '1.1',
-      changes: [{ path: 'equator.config.json', before, after }],
+      changes: [{ path: 'thoth.config.json', before, after }],
     });
     expect(plan.ok).toBe(true);
     if (!plan.ok) return;

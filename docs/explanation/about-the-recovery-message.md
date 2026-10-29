@@ -1,7 +1,7 @@
 # About why the recovery message has no default
 
-Every other feature in Equator has a default. The recovery message does not, and `equator generate`
-reports `EQ1310` for an application runtime that composes none.
+Every other feature in Thoth has a default. The recovery message does not, and `thoth generate`
+reports `TH1310` for an application runtime that composes none.
 
 ## Two failures
 
@@ -17,8 +17,8 @@ to walk. The application has one sentence to show, and it has to have been writt
 
 ## Where the wording comes from
 
-The wording is the application's. A default would put Equator's wording, in Equator's register, in a
-language Equator chose, into every application that did not write one.
+The wording is the application's. A default would put Thoth's wording, in Thoth's register, in a
+language Thoth chose, into every application that did not write one.
 
 So it is authored like any other message, one plain key with no placeholders, and passed by handle.
 The failure path is the one place there is nothing to interpolate from, which is why a message with
@@ -27,8 +27,8 @@ inputs is not accepted here.
 ## Where the cost lands
 
 The alternative to a default is a build that stops. The omission is reported at generate time:
-`equator init` names the recovery message as one of two things it leaves for you to write, and
-`generate` reports `EQ1310` while it is still missing.
+`thoth init` names the recovery message as one of two things it leaves for you to write, and
+`generate` reports `TH1310` while it is still missing.
 
 ## What a visitor does next
 

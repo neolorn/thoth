@@ -1,6 +1,6 @@
-# Contributing to Equator
+# Contributing to Thoth
 
-Thank you for your interest in contributing to Equator. This document explains how the project is organized, how to set up a development environment, and what a contribution needs to look like to be merged.
+Thank you for your interest in contributing to Thoth. This document explains how the project is organized, how to set up a development environment, and what a contribution needs to look like to be merged.
 
 ## Table of contents
 
@@ -21,15 +21,15 @@ This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By particip
 
 ## Reporting bugs and requesting features
 
-Use the [issue templates](https://github.com/neolorn/equator/issues/new/choose). For a bug, include the versions of `@neolorn/equator` and `@neolorn/equator-toolkit`, the Angular version, and the smallest reproduction you can provide: the catalog, the configuration, or the route involved.
+Use the [issue templates](https://github.com/neolorn/thoth/issues/new/choose). For a bug, include the versions of `@neolorn/thoth` and `@neolorn/thoth-toolkit`, the Angular version, and the smallest reproduction you can provide: the catalog, the configuration, or the route involved.
 
-For a feature, open an issue before writing code. Equator covers localization in general; a capability that only one application needs belongs in that application, and the issue is where that question is settled.
+For a feature, open an issue before writing code. Thoth covers localization in general; a capability that only one application needs belongs in that application, and the issue is where that question is settled.
 
 Do not report security vulnerabilities in public issues. See [SECURITY.md](SECURITY.md).
 
 ## Development setup
 
-Equator is a pnpm workspace with two packages, `packages/runtime` and `packages/toolkit`, and a set of consumer applications under `fixtures/` used for verification.
+Thoth is a pnpm workspace with two packages, `packages/runtime` and `packages/toolkit`, and a set of consumer applications under `fixtures/` used for verification.
 
 Requirements:
 
@@ -78,7 +78,7 @@ node tools/verify.ts --only verify:consumer,verify:cost-reference
 
 This runs the named stages and the stages they need, on the committed tree, in fresh work trees of its own. `node tools/verify.ts --plan` lists the stages. A stage that passes when its script is run in your checkout can still fail in the suite, which runs it in a fresh work tree without a terminal; this shows that before the full run does.
 
-The suite runs below normal priority, except for the stages that run alone (the browser rows, `verify:browser-specs`, and `verify:cost-budget` with its self-test), which run at normal priority. It schedules at most two thirds of the machine's logical processors: the stages that run at once take shares that fit in that number, and each stage's test runners and builds are handed worker counts from its share. A stage that builds an Angular application cannot be held within fewer than two processors, or three with Angular 22.0: where two thirds of the machine is less than three, the suite schedules three, and a smaller setting is refused. Every Node process also runs helper threads beside its JavaScript that no setting holds, so the suite can use more processor time than it schedules; the summary reports each window where it does, by stage, and on Linux by thread. Set `EQUATOR_VERIFY_PROCESSORS` to a number of logical processors to give it a different share. Set `EQUATOR_VERIFY_PRIORITY_FILE` to a file to change the level while the suite runs: while the file holds the word `normal`, every stage runs at normal priority. On Linux, a process without privilege cannot raise a priority it has lowered, so there the word raises only the stages that start while the file holds it: a stage already below normal stays there, and a stage started at normal is lowered when the word is removed. It does not start a stage while less than a quarter of the machine's memory is free. Only one heavy job goes at a time: the suite, a run of named stages, and a mutation run (`pnpm run mutation`, `pnpm run mutation:toolkit`) take the same lock, and the second to start stops with the name of the first.
+The suite runs below normal priority, except for the stages that run alone (the browser rows, `verify:browser-specs`, and `verify:cost-budget` with its self-test), which run at normal priority. It schedules at most two thirds of the machine's logical processors: the stages that run at once take shares that fit in that number, and each stage's test runners and builds are handed worker counts from its share. A stage that builds an Angular application cannot be held within fewer than two processors, or three with Angular 22.0: where two thirds of the machine is less than three, the suite schedules three, and a smaller setting is refused. Every Node process also runs helper threads beside its JavaScript that no setting holds, so the suite can use more processor time than it schedules; the summary reports each window where it does, by stage, and on Linux by thread. Set `THOTH_VERIFY_PROCESSORS` to a number of logical processors to give it a different share. Set `THOTH_VERIFY_PRIORITY_FILE` to a file to change the level while the suite runs: while the file holds the word `normal`, every stage runs at normal priority. On Linux, a process without privilege cannot raise a priority it has lowered, so there the word raises only the stages that start while the file holds it: a stage already below normal stays there, and a stage started at normal is lowered when the word is removed. It does not start a stage while less than a quarter of the machine's memory is free. Only one heavy job goes at a time: the suite, a run of named stages, and a mutation run (`pnpm run mutation`, `pnpm run mutation:toolkit`) take the same lock, and the second to start stops with the name of the first.
 
 When a browser engine never finishes closing a page in a browser row, the suite closes that page's browser context instead and carries on. When the context does not close either, the suite closes that browser, ends its process if the browser's own close does not finish, and runs the rest of the row in a fresh one. The verdict line and the attempt ledger count each time it did either, so a rising rate shows there.
 
@@ -92,7 +92,7 @@ pnpm run refresh:consumer-locks
 
 `clean` deletes `dist/` and empties `tmp/`. Run it when a build output from an earlier state of the tree is being read by something that should be reading a fresh one, or to discard the work trees and consumer installs the verification suite leaves behind. The suite's attempt ledger stays, because nothing can rebuild it. `pnpm run clean dist` removes the build output alone.
 
-`refresh:consumer` hands the consumer fixtures the packages that are in `dist/` right now. A fixture takes Equator as a `file:` dependency, which pnpm copies into its store, so a fixture that is already installed goes on running the build it was installed with until this runs.
+`refresh:consumer` hands the consumer fixtures the packages that are in `dist/` right now. A fixture takes Thoth as a `file:` dependency, which pnpm copies into its store, so a fixture that is already installed goes on running the build it was installed with until this runs.
 
 `refresh:consumer-locks` regenerates the committed lockfiles of the consumer fixtures. It reaches the network, so run it when a fixture manifest or a dependency range changes and commit what it writes.
 
@@ -108,7 +108,7 @@ pnpm run stage:npm-cache
 
 ## Making a change
 
-The [specifications](specs/README.md) describe what Equator accepts, produces, and guarantees. Read the specification that owns the area you are changing before you change its behavior. If the specification is wrong, open an issue; the specification is corrected in the same change as the code.
+The [specifications](specs/README.md) describe what Thoth accepts, produces, and guarantees. Read the specification that owns the area you are changing before you change its behavior. If the specification is wrong, open an issue; the specification is corrected in the same change as the code.
 
 A change is one coherent unit of work. Keep unrelated changes in separate commits and separate pull requests.
 
@@ -165,7 +165,7 @@ For style, follow the [Google developer documentation style guide](https://devel
 
 ## Dependencies
 
-Equator's runtime has no dependencies beyond `tslib`, and the toolkit's dependencies are pinned to exact versions. Adding a dependency, a polyfill, or a use of an undocumented platform or compiler API is a project decision. Open an issue before proposing one.
+Thoth's runtime has no dependencies beyond `tslib`, and the toolkit's dependencies are pinned to exact versions. Adding a dependency, a polyfill, or a use of an undocumented platform or compiler API is a project decision. Open an issue before proposing one.
 
 ## Releases
 

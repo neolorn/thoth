@@ -1,5 +1,5 @@
 /**
- * Reading a parsed JSON tree, for the two authored files Equator accepts in JSON.
+ * Reading a parsed JSON tree, for the two authored files Thoth accepts in JSON.
  *
  * The project configuration and the authored change plan are both read as a tree rather than as a
  * parsed value, because an author needs to be told where the mistake is and `JSON.parse` keeps no

@@ -1,16 +1,16 @@
-# Equator
+# Thoth
 
 ### Standards-based localization framework for Angular (MessageFormat 2, CLDR, BCP 47, XLIFF 2.2)
 
-[![npm version](https://img.shields.io/npm/v/@neolorn/equator?style=flat-square)](https://www.npmjs.com/package/@neolorn/equator)
+[![npm version](https://img.shields.io/npm/v/@neolorn/thoth?style=flat-square)](https://www.npmjs.com/package/@neolorn/thoth)
 [![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
 [![documentation](https://img.shields.io/badge/read_the-docs-red?style=flat-square)](./docs/README.md)
 
 ## Introduction
 
-**Equator** is an open-source localization framework for Angular applications, with support for [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-78/tr35-messageFormat.html) messages, localized routing, locale-aware formatting and parsing, server-side rendering and prerendering, and [XLIFF 2.2](https://docs.oasis-open.org/xliff/xliff-core/v2.2/xliff-core-v2.2.html) interchange. It is built on [Unicode CLDR](https://cldr.unicode.org/) locale data and designed to be standards-compliant, type-safe, and derived from the application's own sources rather than from hand-maintained registries.
+**Thoth** is an open-source localization framework for Angular applications, with support for [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-78/tr35-messageFormat.html) messages, localized routing, locale-aware formatting and parsing, server-side rendering and prerendering, and [XLIFF 2.2](https://docs.oasis-open.org/xliff/xliff-core/v2.2/xliff-core-v2.2.html) interchange. It is built on [Unicode CLDR](https://cldr.unicode.org/) locale data and designed to be standards-compliant, type-safe, and derived from the application's own sources rather than from hand-maintained registries.
 
-Equator is delivered as two packages. [`@neolorn/equator`](./packages/runtime/) is the runtime: locale resolution, message evaluation, formatting through `Intl`, and the Angular integration for routing, forms, and server rendering. [`@neolorn/equator-toolkit`](./packages/toolkit/) is the compiler and the `equator` command line: it compiles YAML catalogs into typed modules under `#i18n`, analyzes the application's templates and routes to derive scopes and localized addresses, and validates catalogs against the MessageFormat 2 specification. Its `exportXliff22` and `importXliff22` functions exchange translations in XLIFF 2.2.
+Thoth is delivered as two packages. [`@neolorn/thoth`](./packages/runtime/) is the runtime: locale resolution, message evaluation, formatting through `Intl`, and the Angular integration for routing, forms, and server rendering. [`@neolorn/thoth-toolkit`](./packages/toolkit/) is the compiler and the `thoth` command line: it compiles YAML catalogs into typed modules under `#i18n`, analyzes the application's templates and routes to derive scopes and localized addresses, and validates catalogs against the MessageFormat 2 specification. Its `exportXliff22` and `importXliff22` functions exchange translations in XLIFF 2.2.
 
 For a detailed description of the architecture and the contracts between the two packages, see the [specifications](./specs/README.md).
 
@@ -44,7 +44,7 @@ For a detailed description of the architecture and the contracts between the two
   - Locale switching as a transaction: catalogs load first, then the document, routes, focus, and scroll position are updated together, with lifecycle hooks for overlays and transitions.
   - Document `lang` and `dir` management and screen-reader announcements on locale change.
   - Localized assets, selected per locale and direction.
-  - A request handler for Node servers outside Angular, through `@neolorn/equator/http`.
+  - A request handler for Node servers outside Angular, through `@neolorn/thoth/http`.
 - **Formatting and parsing**
   - Numbers, currencies, percentages, units, dates, times, durations, relative times, and lists, formatted by the host's `Intl`. Pinned CLDR 48.2 data serves locale identity, parent locales, display names, and person-name patterns.
   - Canonical value types for decimals, money, dates, times, zoned date-times, measurements, and durations.
@@ -55,7 +55,7 @@ For a detailed description of the architecture and the contracts between the two
   - Observability sinks for runtime outcomes, with bounded cardinality and no content in events.
 - **Interchange and tooling**
   - XLIFF 2.2 export and import through the toolkit's `exportXliff22` and `importXliff22` functions, with translation-state tracking.
-  - The `equator` command line: `init`, `generate`, `check`, `watch`, `format`, `clean`, `uninstall`, and `migrate`, with options derived from the configuration schema.
+  - The `thoth` command line: `init`, `generate`, `check`, `watch`, `format`, `clean`, `uninstall`, and `migrate`, with options derived from the configuration schema.
   - Release-completeness checks per locale, with a per-locale in-progress declaration.
   - Diagnostics with stable codes and a generated [reference](./docs/reference/diagnostics.md); JSON Schemas published for every file format.
   - A testing entry point with deterministic control over catalog loading, locale transitions, and the test environment.
@@ -71,15 +71,15 @@ For a detailed description of the architecture and the contracts between the two
 Install the runtime and the toolkit:
 
 ```sh install
-npm install @neolorn/equator
-npm install --save-dev @neolorn/equator-toolkit
+npm install @neolorn/thoth
+npm install --save-dev @neolorn/thoth-toolkit
 ```
 
 Initialize the project and compile the catalogs:
 
 ```text
-npx equator init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG
-npx equator generate
+npx thoth init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG
+npx thoth generate
 ```
 
 Add a message to `i18n/shell/en-US.yaml`:
@@ -103,7 +103,7 @@ The runtime's [quick start](./packages/runtime/README.md#quick-start) shows the 
 - [How-to guides](./docs/README.md#how-to-guides): step-by-step instructions for specific tasks.
 - [Reference](./docs/README.md#reference): the command line, configuration, entry points, and diagnostics, generated from the packages.
 - [Explanation](./docs/README.md#explanation): how locale resolution, compilation, routing, and the trust model work.
-- [Specifications](./specs/README.md): the normative description of what Equator accepts, produces, and guarantees.
+- [Specifications](./specs/README.md): the normative description of what Thoth accepts, produces, and guarantees.
 
 All code examples in the documentation are executed against the built packages by the verification suite before each release.
 
@@ -120,7 +120,7 @@ Each release is verified on Chromium, Firefox, and WebKit and on every supported
 
 ## Support
 
-Open an [issue](https://github.com/neolorn/equator/issues/new/choose) for bug reports and questions. Security vulnerabilities are handled privately; see [SECURITY.md](./SECURITY.md).
+Open an [issue](https://github.com/neolorn/thoth/issues/new/choose) for bug reports and questions. Security vulnerabilities are handled privately; see [SECURITY.md](./SECURITY.md).
 
 ## Contributing
 

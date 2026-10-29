@@ -13,7 +13,7 @@ import {
   LocalizationError,
   createLocalizationContext,
   type PlainMessageHandle,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -44,7 +44,7 @@ describe('a stand-in for a generated handle', () => {
     });
     await localization.initialize();
 
-    expect(localization.text(messages.appTitle)).toBe('Equator feature lab');
+    expect(localization.text(messages.appTitle)).toBe('Thoth feature lab');
 
     expect(
       refusal(() =>

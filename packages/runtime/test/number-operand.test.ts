@@ -6,7 +6,7 @@ import { render } from './message-harness.js';
 /**
  * MessageFormat's Number Operand, which is not a JavaScript number.
  *
- * `{42 :number}` is the most ordinary message MessageFormat's syntax can express, and Equator threw
+ * `{42 :number}` is the most ordinary message MessageFormat's syntax can express, and Thoth threw
  * while rendering it. A literal reaches the evaluator as its source text, source text is what a
  * literal is, and the numeric functions asked `typeof raw === 'number'`, so the variable form of
  * a value formatted and the written form of the same value did not. Sixty-eight cases of the

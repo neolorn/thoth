@@ -18,7 +18,7 @@ import {
 import {
   type FormattingContext,
   type FormattingResult,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What a formatting call hands back when the platform refuses the options it was given.
@@ -27,7 +27,7 @@ import {
  * decides whether a set of them is one profile. A set it throws on is reported as a refusal the
  * platform made, on the result, for the locale that was asked for. Each set here is first shown to
  * make the platform's own constructor throw, so the refusal is the platform's and not a check of
- * Equator's that happens to precede it.
+ * Thoth's that happens to precede it.
  */
 
 const EN: FormattingContext = Object.freeze({ locale: 'en-US' });

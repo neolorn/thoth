@@ -18,7 +18,7 @@ import {
   localeFromRoute,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import {
   LocaleResolution,
@@ -29,7 +29,7 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [{ id: 'route:second', path: 'second', parameterNames: [] }],
   },

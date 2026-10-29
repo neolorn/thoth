@@ -33,7 +33,7 @@
     {
       "spec": "01-standards-profile.spec.md",
       "section": "3. Locale identity and matching",
-      "statement": "An Equator release MUST canonicalize a locale identity from the pinned CLDR release and the recorded IANA Language Subtag Registry snapshot, and MUST NOT let a host runtime's own registry decide an identity that is stored, compared, or exchanged.",
+      "statement": "A Thoth release MUST canonicalize a locale identity from the pinned CLDR release and the recorded IANA Language Subtag Registry snapshot, and MUST NOT let a host runtime's own registry decide an identity that is stored, compared, or exchanged.",
       "checks": [
         "assurance:toolkit-canonicalizes-with-the-host",
         "assurance:toolkit-canonicalization-skips-the-platform",
@@ -57,7 +57,7 @@
     {
       "spec": "01-standards-profile.spec.md",
       "section": "4. Locked data sources",
-      "statement": "An Equator release MUST record every source it derives data from, or verifies conformance against, in `standards/sources.lock.json`, with the exact release, the acquisition URL, the role, the license, and a digest.",
+      "statement": "A Thoth release MUST record every source it derives data from, or verifies conformance against, in `standards/sources.lock.json`, with the exact release, the acquisition URL, the role, the license, and a digest.",
       "checks": [
         "plant:verify:standards-sources:source-recorded-without-a-role"
       ]
@@ -384,7 +384,7 @@
     {
       "spec": "02-packages-and-platform.spec.md",
       "section": "1. Package topology",
-      "statement": "Node-only code, Node-only dependencies, Node globals, and compiler APIs MUST NOT enter `@neolorn/equator` or a consumer's browser bundle.",
+      "statement": "Node-only code, Node-only dependencies, Node globals, and compiler APIs MUST NOT enter `@neolorn/thoth` or a consumer's browser bundle.",
       "checks": ["plant:verify:packages:core-imports-node"]
     },
     {
@@ -449,7 +449,7 @@
     {
       "spec": "02-packages-and-platform.spec.md",
       "section": "5. Distribution format",
-      "statement": "`@neolorn/equator` MUST be distributed in Angular Package Format with partial Angular compilation.",
+      "statement": "`@neolorn/thoth` MUST be distributed in Angular Package Format with partial Angular compilation.",
       "checks": ["plant:verify:packages:runtime-compiled-in-full"]
     },
     {
@@ -508,7 +508,7 @@
     {
       "spec": "02-packages-and-platform.spec.md",
       "section": "8. Install and import behavior",
-      "statement": "A runtime module MUST be free of side effects on import, and importing `@neolorn/equator` MUST NOT: - load locale data or a catalog; - start a timer, watcher, worker, or network request; - read or mutate the document, the Router, storage, or global state; - register a platform effect or application state; - install a service worker or a persistence mechanism.",
+      "statement": "A runtime module MUST be free of side effects on import, and importing `@neolorn/thoth` MUST NOT: - load locale data or a catalog; - start a timer, watcher, worker, or network request; - read or mutate the document, the Router, storage, or global state; - register a platform effect or application state; - install a service worker or a persistence mechanism.",
       "checks": [
         "assurance:runtime-import-starts-a-timer",
         "assurance:runtime-import-creates-the-outcome-channel"
@@ -2535,7 +2535,7 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "7. Locale switching",
-      "statement": "An Equator release MUST NOT read it from the host's own display-name implementation where the pinned release has one, because the engines disagree: over sixteen locales on the four engines a release gates on, three differed, and a server-rendered label then changed under the visitor on hydration.",
+      "statement": "A Thoth release MUST NOT read it from the host's own display-name implementation where the pinned release has one, because the engines disagree: over sixteen locales on the four engines a release gates on, three differed, and a server-rendered label then changed under the visitor on hydration.",
       "checks": ["assurance:locale-self-name-read-from-the-engine"]
     },
     {
@@ -4275,7 +4275,7 @@
       "section": "5. Static analysis",
       "statement": "A release MUST recognize the runtime's public symbols and generated-handle metadata rather than local spelling or an import alias, and MUST follow a handle through a re-export, a constant alias, destructuring, readonly property access, a finite tuple, record, or map, a provable literal-union selection, a template local, control flow, and a generic forwarding helper that keeps the dependent handle contract.",
       "checks": [
-        "assurance:consumer-withrouting-read-as-equator",
+        "assurance:consumer-withrouting-read-as-thoth",
         "assurance:generated-provider-unrecognized"
       ]
     },
@@ -5141,7 +5141,7 @@
       "spec": "12-verification.spec.md",
       "section": "5. Representative locales",
       "statement": "A fixture matrix verifies mechanisms, and a release MUST NOT turn one into a production locale default.",
-      "reason": "This is a rule about where a release's defaults come from. A default that happens to equal a fixture's locale list and one copied from it are the same value, so no program can tell the two apart; what a program can see is that no default locale set ships, which equator init already requires the application to supply."
+      "reason": "This is a rule about where a release's defaults come from. A default that happens to equal a fixture's locale list and one copied from it are the same value, so no program can tell the two apart; what a program can see is that no default locale set ships, which thoth init already requires the application to supply."
     },
     {
       "spec": "12-verification.spec.md",
@@ -5249,7 +5249,7 @@
       "spec": "12-verification.spec.md",
       "section": "10. Cost and resource measurement",
       "statement": "A release MUST assert the shape of a cost rather than an absolute duration wherever the measurement runs on a machine it does not control.",
-      "reason": "This decides how a cost check is written, as a ratio between its own measurements rather than a number of milliseconds. The form of a check's limit is fixed when the check is written, and withdrawing Equator's behavior does not change it."
+      "reason": "This decides how a cost check is written, as a ratio between its own measurements rather than a number of milliseconds. The form of a check's limit is fixed when the check is written, and withdrawing Thoth's behavior does not change it."
     },
     {
       "spec": "12-verification.spec.md",

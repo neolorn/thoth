@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type {
   RuntimeExtensionBinding,
   RuntimeIdentifierSegmentDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { defineExtensionRegistry } from '../../toolkit/src/extensions.js';
 import {
   RuntimeExtensions,

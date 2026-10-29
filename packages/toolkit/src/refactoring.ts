@@ -156,7 +156,7 @@ function changedSourceFiles(
     if (source === undefined) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1805',
+          'TH1805',
           `Semantic refactor cannot read analyzed source ${JSON.stringify(path)}.`,
         ),
       ]);
@@ -174,7 +174,7 @@ function changedSourceFiles(
       if (replacement === undefined) {
         return toolkitFailure([
           toolkitDiagnostic(
-            'EQ1805',
+            'TH1805',
             `Semantic refactor could not safely rewrite an analyzed ${usage.surface} handle.`,
             { path: ['sources', path] },
           ),
@@ -240,7 +240,7 @@ function changedCatalogFiles(
       if (sourceMessages[request.to.messageId] !== undefined) {
         return toolkitFailure([
           toolkitDiagnostic(
-            'EQ1805',
+            'TH1805',
             'Semantic refactor destination message already exists.',
           ),
         ]);
@@ -272,7 +272,7 @@ function changedCatalogFiles(
     if (destinationMessages[request.to.messageId] !== undefined) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1805',
+          'TH1805',
           'Semantic move destination message already exists.',
         ),
       ]);
@@ -298,7 +298,7 @@ function changedCatalogFiles(
   if (!found) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1805',
+        'TH1805',
         'Semantic refactor source message is unavailable.',
       ),
     ]);
@@ -381,7 +381,7 @@ function planAdmittedMessageRefactor(
     return toolkitFailure([
       ...identityDiagnostics,
       toolkitDiagnostic(
-        'EQ1805',
+        'TH1805',
         'Version 1 semantic refactors require distinct identities within one application-local provider.',
       ),
     ]);

@@ -10,7 +10,7 @@ import {
   ɵrememberPageOutcome,
   ɵtakePageOutcome,
   type RouteHttpDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Exactly which members a declared outcome's descriptor has.
@@ -115,7 +115,7 @@ describe('where the open channels are held', () => {
     ɵopenPageOutcomeChannel(request);
 
     const held = (globalThis as unknown as Record<symbol, unknown>)[
-      Symbol.for('@neolorn/equator/page-outcome-channels')
+      Symbol.for('@neolorn/thoth/page-outcome-channels')
     ];
 
     expect(held).toBeInstanceOf(WeakMap);

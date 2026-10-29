@@ -3,7 +3,7 @@ import {
   type InstantValue,
   type LocalizationDiagnostic,
   type LocalizedFormattedValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { decimal, formatRelativeTime } from './formatting';
 
 /**
@@ -19,10 +19,10 @@ import { decimal, formatRelativeTime } from './formatting';
  * - **Which unit fits an elapsed span** is mechanism. The rule is the same everywhere: take the
  *   largest unit whose threshold the span reaches. Four applications should not each write it.
  * - **Where the thresholds sit, and when to stop being relative**, is a product decision. "3 days
- *   ago" is right for a chat message and wrong for an invoice date, and Equator has no basis for
+ *   ago" is right for a chat message and wrong for an invoice date, and Thoth has no basis for
  *   preferring either.
  *
- * So Equator owns the selection and the consumer owns the numbers, which is the same division used
+ * So Thoth owns the selection and the consumer owns the numbers, which is the same division used
  * for locale resolution and persistence: the mechanism ships, the policy is declared.
  */
 
@@ -60,12 +60,12 @@ const MILLISECONDS: Readonly<Record<RelativeTimeUnit, number>> = Object.freeze({
  *
  * Every field is optional, and an empty policy names every unit with no ceiling. These are product
  * decisions rather than locale data: an hour old is recent for a chat message and stale for a
- * status page, and Equator has no basis for preferring either.
+ * status page, and Thoth has no basis for preferring either.
  */
 export interface RelativeTimePolicy {
   /**
    * Smallest unit worth naming. A span shorter than this reports as this unit with a value of
-   * zero, which is how "just now" is expressed without Equator inventing wording for it.
+   * zero, which is how "just now" is expressed without Thoth inventing wording for it.
    */
   readonly smallestUnit?: RelativeTimeUnit;
   /**
@@ -116,7 +116,7 @@ export interface RelativeTimePolicyRefused {
  * diagnostic where the policy itself cannot be applied.
  *
  * Check `unit` to tell a selection from the rest, and `elapsedMilliseconds` to tell a span that is
- * out of range from a refused policy. Equator writes no absolute date itself, because the wording, the
+ * out of range from a refused policy. Thoth writes no absolute date itself, because the wording, the
  * fields and the zone of that date are the application's.
  */
 export type RelativeTimeDecision =
@@ -140,7 +140,7 @@ function epochMilliseconds(instant: InstantValue): number {
  * Choose the unit and signed value for a relative timestamp.
  *
  * Returns an out-of-range decision rather than a unit when the span exceeds what the policy is
- * willing to express relatively. Equator does not substitute an absolute date itself: the wording,
+ * willing to express relatively. Thoth does not substitute an absolute date itself: the wording,
  * the format and the zone of that date are the consumer's, and guessing them here would be the
  * product decision this function exists to avoid making.
  *

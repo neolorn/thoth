@@ -53,7 +53,7 @@ export const consumerProfiles = new Map<string, RowProfile>([
       angularTooling: '22.2.1',
       typescript: '6.0.3',
       rxjs: '7.8.2',
-      label: 'Equator development row',
+      label: 'Thoth development row',
     },
   ],
   [
@@ -78,7 +78,7 @@ export const consumerProfiles = new Map<string, RowProfile>([
   // `isolatedModules` is already on. The fixture template sets it, so every row compiles under it
   // and this one inherits it; repeating it here would name a setting the list does not vary.
   //
-  // `verbatimModuleSyntax` is left out because it cannot change an Equator diagnostic. TypeScript
+  // `verbatimModuleSyntax` is left out because it cannot change a Thoth diagnostic. TypeScript
   // 6.0 describes it as not transforming or eliding imports and exports that are not marked
   // type-only, so that they are written in the output file's format, which is a rule about emit.
   // What a name resolves to, and therefore what analysis sees, is the same with it and without it.
@@ -167,7 +167,7 @@ export const nodeConsumerProfiles = new Map<string, VariantProfile>(
       `node-${lineOf(version)}-consumer`,
       {
         row: 'package-consumer',
-        label: `Equator development row on Node ${version}`,
+        label: `Thoth development row on Node ${version}`,
         node: version,
       },
     ]),

@@ -9,7 +9,7 @@ import {
   type GeneratedConfiguration,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A route parameter codec that throws where an address is built or a projection is read.
@@ -27,7 +27,7 @@ const POLICY = createPathPrefixLocalePolicy({
 });
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],
@@ -42,7 +42,7 @@ const projectionWith = (
   historical?: RouteRuntimeProjection['historical'],
 ): RouteRuntimeProjection => ({
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-RouteCodecThrowsBuildingTestIdentity0123456',
     routes: [
       { id: 'article', path: 'articles/:slug', parameterNames: ['slug'] },

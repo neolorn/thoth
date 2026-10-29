@@ -4,7 +4,7 @@ import { createLocalizationRuntime } from '../src/localization.js';
 import type {
   GeneratedConfiguration,
   LocalizationSetup,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What a switcher option calls its locale comes from the build, not from the engine rendering it.
@@ -17,7 +17,7 @@ import type {
 
 function runtimeFor(localeNames?: Readonly<Record<string, string>>) {
   const configuration: GeneratedConfiguration = {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
     locales: ['en-US', 'ar-EG'],
@@ -39,8 +39,8 @@ function runtimeFor(localeNames?: Readonly<Record<string, string>>) {
     setup: {
       configuration,
       catalogSet: {
-        profile: 'equator-catalog-set/1',
-        generatedAbi: 'equator-generated/1',
+        profile: 'thoth-catalog-set/1',
+        generatedAbi: 'thoth-generated/1',
         applicationContractFingerprint: 'sha256-application-contract-fixture',
         semanticRegistryFingerprint: 'sha256-semantic-registry-fixture',
         providers: [
@@ -55,11 +55,11 @@ function runtimeFor(localeNames?: Readonly<Record<string, string>>) {
                     scopeId: 'shell',
                     catalogLocale: 'en-US',
                   },
-                  compiledIrProfile: 'equator-compiled-ir/1',
-                  schema: 'equator-compiled-catalog/1',
+                  compiledIrProfile: 'thoth-compiled-ir/1',
+                  schema: 'thoth-compiled-catalog/1',
                   requiredFeatures: [],
-                  standardsProfile: 'equator-1',
-                  generatedAbi: 'equator-generated/1',
+                  standardsProfile: 'thoth-1',
+                  generatedAbi: 'thoth-generated/1',
                   applicationContractFingerprint:
                     'sha256-application-contract-fixture',
                   semanticRegistryFingerprint:
@@ -69,7 +69,7 @@ function runtimeFor(localeNames?: Readonly<Record<string, string>>) {
                 },
                 modulePath: './home.shell.en-US.js',
                 resources: {
-                  profile: 'equator-resource-summary/1',
+                  profile: 'thoth-resource-summary/1',
                   decodedBytes: 0,
                   messages: 0,
                   identifiers: 0,

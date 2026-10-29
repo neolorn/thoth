@@ -45,7 +45,7 @@ describe('an input used under two operand types', () => {
 
   it('is refused on its message', () => {
     expect(refusals('{$value :string} and {$value :number}')).toEqual([
-      { code: 'EQ1302', path: ['messages', 'subject'] },
+      { code: 'TH1302', path: ['messages', 'subject'] },
     ]);
   });
 });

@@ -10,7 +10,7 @@ import {
   findEvaluationCandidate,
 } from '../src/evaluator.js';
 import { RuntimeExtensions } from '../src/extensions.js';
-import { LocalizationError, type MessageHandle } from '@neolorn/equator/core';
+import { LocalizationError, type MessageHandle } from '@neolorn/thoth/core';
 
 import { COUNT, parse } from './message-harness.js';
 
@@ -44,9 +44,9 @@ function sourceCatalog(departure: Departure = {}): CompiledCatalog {
     outputParts: 64,
   };
   return {
-    profile: 'equator-compiled-ir/1',
-    generatedAbi: departure.generatedAbi ?? 'equator-generated/1',
-    standardsProfile: 'equator-1',
+    profile: 'thoth-compiled-ir/1',
+    generatedAbi: departure.generatedAbi ?? 'thoth-generated/1',
+    standardsProfile: 'thoth-1',
     key: { providerId: 'shell', scopeId: 'shell', catalogLocale: 'en' },
     applicationContractFingerprint: 'test',
     semanticRegistryFingerprint: 'test',
@@ -71,7 +71,7 @@ function sourceCatalog(departure: Departure = {}): CompiledCatalog {
 }
 
 const HANDLE = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   providerId: 'shell',
   scopeId: 'shell',
   messageId: 'cart.count',
@@ -117,7 +117,7 @@ describe('a fallback to the source catalog', () => {
 
   it('refuses a source artifact built against another generated ABI', () => {
     expectRefused(
-      shownInFrench(sourceCatalog({ generatedAbi: 'equator-generated/0' })),
+      shownInFrench(sourceCatalog({ generatedAbi: 'thoth-generated/0' })),
     );
   });
 

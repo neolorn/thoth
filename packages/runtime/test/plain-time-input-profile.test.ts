@@ -11,7 +11,7 @@ import {
   type LocalizedInputStatus,
   type LocalizedInputValue,
   type PlainTimeValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A time field is read against a stated clock: which hour cycle, how far the fields go, what

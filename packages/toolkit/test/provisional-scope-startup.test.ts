@@ -140,7 +140,7 @@ describe('the scope table a compilation writes', () => {
  * The reading an application performs on the table it declared.
  *
  * `startup` is part of the runtime's scope contract, so an application may ask which scopes its
- * first render needs. It compiles that reading against the real table, and Equator compiles the
+ * first render needs. It compiles that reading against the real table, and Thoth compiles the
  * same lines against the overlay, so a field the overlay drops out of the type is reported back to
  * the application as a property that does not exist on a table it wrote correctly.
  */

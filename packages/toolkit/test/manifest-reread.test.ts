@@ -63,7 +63,7 @@ async function published() {
   const request = {
     ownerRoot: owner,
     generatedRoot: resolve(owner, 'src/generated/i18n'),
-    workRoot: resolve(owner, '.equator'),
+    workRoot: resolve(owner, '.thoth'),
     ownerId: OWNER_ID,
     plan: plan.value,
   };
@@ -96,7 +96,7 @@ describe('output freshness', () => {
       ...request,
       ownerRoot: otherRoot,
       generatedRoot: resolve(otherRoot, 'src/generated/i18n'),
-      workRoot: resolve(otherRoot, '.equator'),
+      workRoot: resolve(otherRoot, '.thoth'),
       plan: other.value,
     };
     expect((await applyOutputPlan(otherRequest)).ok).toBe(true);
@@ -112,7 +112,7 @@ describe('output freshness', () => {
 
     const inspected = await inspectOutputFreshness(request);
     expect(inspected.ok).toBe(false);
-    expect(inspected.diagnostics.map(({ code }) => code)).toEqual(['EQ1603']);
+    expect(inspected.diagnostics.map(({ code }) => code)).toEqual(['TH1603']);
   });
 
   it('fails as stale when the manifest disappears between its two reads', async () => {
@@ -125,6 +125,6 @@ describe('output freshness', () => {
 
     const inspected = await inspectOutputFreshness(request);
     expect(inspected.ok).toBe(false);
-    expect(inspected.diagnostics.map(({ code }) => code)).toEqual(['EQ1603']);
+    expect(inspected.diagnostics.map(({ code }) => code)).toEqual(['TH1603']);
   });
 });

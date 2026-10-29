@@ -66,7 +66,7 @@ describe('a compilation whose application has a component with no template to re
       compiled.diagnostics
         .filter(({ severity }) => severity === 'error')
         .map(({ code }) => code),
-    ).toEqual(['EQ1402']);
+    ).toEqual(['TH1402']);
     expect('value' in compiled).toBe(false);
   });
 

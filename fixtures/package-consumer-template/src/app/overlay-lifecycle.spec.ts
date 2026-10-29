@@ -9,7 +9,7 @@ import {
   type LocalizationOverlayAdapter,
   type LocalizationSnapshot,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -29,7 +29,7 @@ import { runtimeExtensions } from './runtime-extensions';
  * Overlays are not browser-side wherever an application server-renders: overlay state has to be
  * present before components paint on server-rendered and prerendered routes, overlay-root context
  * divergence is a hydration hazard, and the server and client have to agree on overlay-root
- * direction. Direction is Equator-owned, so an Equator overlay adapter is live during server
+ * direction. Direction is Thoth-owned, so a Thoth overlay adapter is live during server
  * rendering.
  *
  * Persistence stores take a factory for the same reason: request-scoped state must be created by

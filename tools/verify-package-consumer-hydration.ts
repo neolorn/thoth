@@ -201,21 +201,21 @@ interface ScrollState {
 // What the page functions below keep on the page's global object between one evaluation and the
 // next, and the globals the page gains from scripts evaluated into it.
 type PageGlobals = typeof globalThis & {
-  __equatorServerElements?: Element[];
-  __equatorCspViolations?: CspViolation[];
-  __equatorAnnouncementObserver?: MutationObserver;
-  __equatorDocumentLocaleObserver?: MutationObserver;
-  __equatorAnnouncementObservations?: AnnouncementObservation[];
-  __equatorInlineStartWitness?: (mode: 'mark' | 'read') => InlineStartWitness;
-  __equatorRectAgainstViewport?: (
+  __thothServerElements?: Element[];
+  __thothCspViolations?: CspViolation[];
+  __thothAnnouncementObserver?: MutationObserver;
+  __thothDocumentLocaleObserver?: MutationObserver;
+  __thothAnnouncementObservations?: AnnouncementObservation[];
+  __thothInlineStartWitness?: (mode: 'mark' | 'read') => InlineStartWitness;
+  __thothRectAgainstViewport?: (
     element: Element,
     selector: string,
   ) => RectAgainstViewport;
-  __equatorScrollRecord?: ScrollRecord;
-  __equatorScrollPlacement?: ScrollPlacement;
-  __equatorDisturbance?: Disturbance;
-  __equatorLeft?: boolean;
-  __equatorShownPersisted?: boolean;
+  __thothScrollRecord?: ScrollRecord;
+  __thothScrollPlacement?: ScrollPlacement;
+  __thothDisturbance?: Disturbance;
+  __thothLeft?: boolean;
+  __thothShownPersisted?: boolean;
   trustedTypes?: unknown;
   axe?: typeof import('axe-core');
 };
@@ -245,7 +245,7 @@ const declaresNoRevalidation =
   ).revalidateSuccess === false;
 // The locales this build generated, which are the ones it prerenders.
 const consumerConfiguration = JSON.parse(
-  await readFile(resolve(consumerRoot, 'equator.config.json'), 'utf8'),
+  await readFile(resolve(consumerRoot, 'thoth.config.json'), 'utf8'),
 ) as ConsumerConfiguration;
 const builtLocales = consumerConfiguration.locales;
 // The name the build gave each locale, from the one line the toolkit writes for them in the
@@ -306,7 +306,7 @@ const describeError = (error: unknown) => {
 
 const failEscaped = (event: string) => (error: unknown) => {
   process.stderr.write(
-    `Equator browser assurance failed.\nEscaped as an ${event}, outside every handler in this file.\n${describeError(error)}\n`,
+    `Thoth browser assurance failed.\nEscaped as an ${event}, outside every handler in this file.\n${describeError(error)}\n`,
   );
   // `process.exit` rather than `process.exitCode`, because an escape can leave the static file
   // server or a browser holding the event loop open, and a gate that fails by hanging is no better
@@ -351,7 +351,7 @@ const deployments = await Promise.all(
 // The pseudo build the consumer stage made beside the production one, for the origin that serves
 // the pseudo-locale. A request that names it by this header is answered by it in place of the
 // production build, so its pages sit at the same addresses and pass the same edge.
-const PSEUDO_BUILD_HEADER = 'x-equator-build';
+const PSEUDO_BUILD_HEADER = 'x-thoth-build';
 const pseudoDeployment = await (async () => {
   const pseudoOrigin = addresses.localeInOrigin
     ? addresses.origin('en-Arab-XB')!
@@ -400,13 +400,13 @@ const prerenderedArabic = (
     }),
     article: Object.freeze({
       selector: `${prerenderedView} h2`,
-      text: 'دليل Equator للترجمة',
+      text: 'دليل Thoth للترجمة',
     }),
   }) as Readonly<
     Record<string, { readonly selector: string; readonly text: string }>
   >
 )[prerenderedPage];
-// Every locale's copy of every prerendered route a deployment writes, and none that Equator did not
+// Every locale's copy of every prerendered route a deployment writes, and none that Thoth did not
 // derive. The article's slug is spelled differently per locale, so its addresses share no path
 // segment after `/articles/`, which is exactly the expansion a hand-written list gets wrong
 // silently. Keyed as the manifest keys them, decoded.
@@ -432,7 +432,7 @@ function prerenderedRouteViews(deployment: Deployment) {
 // `verify:browser-assurance:self-test` has just watched this process exit non-zero for both classes
 // of escape, against the same Angular bundle that installs the handlers being overridden, which
 // is why the hook is here, after the import, and not in a unit test that never loads one.
-const selfTest = process.env['EQUATOR_ASSURANCE_SELF_TEST'];
+const selfTest = process.env['THOTH_ASSURANCE_SELF_TEST'];
 if (selfTest === 'assertion') {
   assert.fail(
     "Self-test escape: an assertion outside this file's own try block.",
@@ -454,7 +454,7 @@ if (selfTest === 'assertion') {
   // real browser, by ending real processes under the second value, and has to finish in the fresh
   // one. A run by hand; it passes, with one occurrence recorded for each engine.
 } else if (selfTest !== undefined) {
-  assert.fail(`Unknown EQUATOR_ASSURANCE_SELF_TEST value: ${selfTest}`);
+  assert.fail(`Unknown THOTH_ASSURANCE_SELF_TEST value: ${selfTest}`);
 }
 
 // Where this run is, and a bound on how long it may stay there.
@@ -471,11 +471,11 @@ if (selfTest === 'assertion') {
 // is here to convert an unbounded wait into a report, not to police timing) and the environment
 // variable is for a machine slow enough to need one.
 const stageTimeoutMs = Number(
-  process.env['EQUATOR_ASSURANCE_STAGE_TIMEOUT_MS'] ?? 120_000,
+  process.env['THOTH_ASSURANCE_STAGE_TIMEOUT_MS'] ?? 120_000,
 );
 assert.ok(
   Number.isSafeInteger(stageTimeoutMs) && stageTimeoutMs > 0,
-  `EQUATOR_ASSURANCE_STAGE_TIMEOUT_MS must be a positive whole number of milliseconds, not ${JSON.stringify(process.env['EQUATOR_ASSURANCE_STAGE_TIMEOUT_MS'])}`,
+  `THOTH_ASSURANCE_STAGE_TIMEOUT_MS must be a positive whole number of milliseconds, not ${JSON.stringify(process.env['THOTH_ASSURANCE_STAGE_TIMEOUT_MS'])}`,
 );
 // What the row is doing right now, kept so the stage bound can report it.
 //
@@ -506,11 +506,11 @@ assert.ok(
 // 1.50.1 regression closed by PR #35116), and newPage timing out on Firefox (#36551, closed). All
 // closed in releases older than the 1.61.1 pinned here, none of them naming a workaround to adopt.
 const callTimeoutMs = Number(
-  process.env['EQUATOR_ASSURANCE_CALL_TIMEOUT_MS'] ?? 30_000,
+  process.env['THOTH_ASSURANCE_CALL_TIMEOUT_MS'] ?? 30_000,
 );
 assert.ok(
   Number.isSafeInteger(callTimeoutMs) && callTimeoutMs > 0,
-  `EQUATOR_ASSURANCE_CALL_TIMEOUT_MS must be a positive whole number of milliseconds, not ${JSON.stringify(process.env['EQUATOR_ASSURANCE_CALL_TIMEOUT_MS'])}`,
+  `THOTH_ASSURANCE_CALL_TIMEOUT_MS must be a positive whole number of milliseconds, not ${JSON.stringify(process.env['THOTH_ASSURANCE_CALL_TIMEOUT_MS'])}`,
 );
 
 // A wait that fails with no console error, no page error and no failed request says nothing about
@@ -566,8 +566,8 @@ const boundCalls = createCallBound({
 // to 9 in 20. An instrument that changes what it measures is not one, and the honest response is a
 // switch rather than an argument about which half did it. Declared here with the rest of the stage
 // state, because the watchdog is armed by the first `enterStage` and reads all of it.
-const traceCalls = process.env['EQUATOR_ASSURANCE_TRACE_CALLS'] === '1';
-const traceRequests = process.env['EQUATOR_ASSURANCE_TRACE_REQUESTS'] === '1';
+const traceCalls = process.env['THOTH_ASSURANCE_TRACE_CALLS'] === '1';
+const traceRequests = process.env['THOTH_ASSURANCE_TRACE_REQUESTS'] === '1';
 
 const rowActivity = {
   lastEvent: 'nothing yet',
@@ -605,7 +605,7 @@ function describeActivity() {
     requestsInFlight: traceRequests ? outstanding.length : 'not tracked',
     outstanding: traceRequests
       ? outstanding
-      : 'set EQUATOR_ASSURANCE_TRACE_REQUESTS=1',
+      : 'set THOTH_ASSURANCE_TRACE_REQUESTS=1',
   };
 }
 
@@ -636,7 +636,7 @@ const enterStage = (name: string) => {
   clearTimeout(stageWatchdog);
   stageWatchdog = setTimeout(() => {
     process.stderr.write(
-      `Equator browser assurance failed.\nStage ${JSON.stringify(name)} did not finish within ${stageTimeoutMs}ms. The bound is what separates a wait for something that is never coming from work in progress.\n` +
+      `Thoth browser assurance failed.\nStage ${JSON.stringify(name)} did not finish within ${stageTimeoutMs}ms. The bound is what separates a wait for something that is never coming from work in progress.\n` +
         `What the row was doing when the bound tripped: ${JSON.stringify(describeActivity(), null, 2)}\n` +
         `A last event that is seconds old with nothing in flight is a wait for something that is never coming, rather than work that is slow.\n`,
     );
@@ -662,7 +662,7 @@ for (const deployment of deployments) {
   assert.deepEqual(
     Object.keys(prerenderManifest.routes ?? {}).sort(),
     [...routeViews.keys()].sort(),
-    `The prerender manifest of the build at ${deployment.origin} does not contain the exact Equator prerender rows`,
+    `The prerender manifest of the build at ${deployment.origin} does not contain the exact Thoth prerender rows`,
   );
   for (const [route, view] of routeViews) {
     const html = await readFile(
@@ -724,7 +724,7 @@ async function serveBrowserAsset(
     return;
   }
 
-  // A directory resolves to the `index.html` inside it, which is the deployment requirement Equator
+  // A directory resolves to the `index.html` inside it, which is the deployment requirement Thoth
   // states in `specs/07-routing-rendering-and-seo.spec.md` section 9, met here rather than
   // assumed.
   //
@@ -816,7 +816,7 @@ const origin = `http://127.0.0.1:${(address as AddressInfo).port}`;
 // kind, because Playwright calls a route handler only for the first address of a navigation that
 // redirects (Playwright 1.63.0, the documentation of `Page.route`). The application's own server
 // cannot add it, because the policy hashes the document's inline scripts and the headers are sent before the body
-// (`writeNodeResponse` in `@neolorn/equator/http` sets every header before it reads a chunk).
+// (`writeNodeResponse` in `@neolorn/thoth/http` sets every header before it reads a chunk).
 //
 // The checks of what the application answers read `origin` directly, without the edge, because
 // the application's answer is what they are about. Pages load from `browserOrigin`.
@@ -925,7 +925,7 @@ const edge = createServer((request, response) => {
               protectedDocument.policy,
             );
             response.setHeader(
-              'x-equator-original-document-sha256',
+              'x-thoth-original-document-sha256',
               createHash('sha256').update(original, 'utf8').digest('hex'),
             );
             response.setHeader(
@@ -1066,7 +1066,7 @@ function localeChoice(page: Page, locale: string) {
 async function holdServerElements(page: Page) {
   await page.evaluate(() => {
     const root = document.querySelector('[ng-server-context]');
-    (globalThis as PageGlobals).__equatorServerElements =
+    (globalThis as PageGlobals).__thothServerElements =
       root === null ? [] : [root, ...root.querySelectorAll('*')];
   });
 }
@@ -1084,7 +1084,7 @@ async function measuredContext(page: Page) {
     policy: document.documentElement.dataset['urlPolicy'],
     clientNavigations: document.documentElement.dataset['clientNavigations'],
     adoptedElements: (
-      (globalThis as PageGlobals).__equatorServerElements ?? []
+      (globalThis as PageGlobals).__thothServerElements ?? []
     ).filter((element) => element.isConnected).length,
   }));
   assert.notEqual(
@@ -1130,7 +1130,7 @@ async function clientRenderContext(page: Page, answered: string) {
 function logOf(page: Page) {
   const lines: string[] = [];
   page.on('console', (message) => {
-    if (message.text().startsWith('equator-event ')) lines.push(message.text());
+    if (message.text().startsWith('thoth-event ')) lines.push(message.text());
   });
   return lines;
 }
@@ -1264,7 +1264,7 @@ async function answer(
  * crawler read, and the head, which is read off the deployment's document here without the seat's
  * own reader, so the seat's reading is held to something it did not produce.
  *
- * The seat is imported from the consumer's installed `@neolorn/equator/testing` after
+ * The seat is imported from the consumer's installed `@neolorn/thoth/testing` after
  * `@angular/compiler`, as a test runner loads a partially compiled library in Node.
  */
 async function verifySeatAgainstDeployments() {
@@ -1274,7 +1274,7 @@ async function verifySeatAgainstDeployments() {
   const load = (specifier: string) =>
     import(pathToFileURL(requireFromConsumer.resolve(specifier)).href);
   await load('@angular/compiler');
-  const { createLocalizedServerSeat } = await load('@neolorn/equator/testing');
+  const { createLocalizedServerSeat } = await load('@neolorn/thoth/testing');
   for (const deployment of deployments) {
     const options = deployment.localeRequestOptions;
     assert.ok(
@@ -1354,7 +1354,7 @@ async function verifySeatAgainstDeployments() {
         policy: options.policy,
         document: seated.body,
       });
-      recordCapabilityClaim(check, 'entry:@neolorn/equator/testing', {
+      recordCapabilityClaim(check, 'entry:@neolorn/thoth/testing', {
         policy: options.policy,
         document: seated.body,
       });
@@ -1372,7 +1372,7 @@ function requestFor(
     ? { path: addresses.path(page, locale), headers: {} }
     : {
         path: addresses.shownPath(page, locale),
-        headers: { cookie: `equator-locale=${locale}` },
+        headers: { cookie: `thoth-locale=${locale}` },
       };
 }
 
@@ -1389,10 +1389,10 @@ async function visitFor<T>(
 ) {
   const { path, headers } = requestFor(page, locale);
   if (addresses.localeInAddress) return visit(siteUrl(path, locale));
-  await browserContext.clearCookies({ name: 'equator-locale' });
+  await browserContext.clearCookies({ name: 'thoth-locale' });
   if (headers.cookie !== undefined) {
     await browserContext.addCookies([
-      { name: 'equator-locale', value: locale, url: browserOrigin },
+      { name: 'thoth-locale', value: locale, url: browserOrigin },
     ]);
   }
   return visit(siteUrl(path, locale));
@@ -1417,11 +1417,11 @@ function readSnapshot(html: string) {
   assert.notEqual(transferScript, null, 'Angular TransferState is absent');
   const transferState = JSON.parse(transferScript!.textContent);
   const localizationState =
-    transferState['@neolorn/equator:localization-state/1'];
+    transferState['@neolorn/thoth:localization-state/1'];
   assert.equal(
     localizationState?.profile,
-    'equator-transfer-state/1',
-    'Equator TransferState is absent',
+    'thoth-transfer-state/1',
+    'Thoth TransferState is absent',
   );
   const dynamicTransfer = transferState['@feature-lab:dynamic-content/1'];
   assert.equal(
@@ -1486,7 +1486,7 @@ function applyStrictBrowserPolicy(html: string, url: string) {
   );
   const documentWithAssuranceStyle = documentWithNonce.replace(
     /<\/head>/iu,
-    `<style data-equator-browser-assurance>${assuranceStyle}</style></head>`,
+    `<style data-thoth-browser-assurance>${assuranceStyle}</style></head>`,
   );
   assert.notEqual(
     documentWithAssuranceStyle,
@@ -1500,11 +1500,11 @@ function applyStrictBrowserPolicy(html: string, url: string) {
   );
 
   // The policy the consumer is served under, and `specs/09-safe-content-and-ux.spec.md` section 6
-  // is what serving it proves: nothing Equator ships needs an inline script, an unsafe evaluation,
+  // is what serving it proves: nothing Thoth ships needs an inline script, an unsafe evaluation,
   // a sanitizer bypass, or a permissive Trusted Types policy. Script comes from the application's
   // own origin and the hashes of what this document actually contains, attribute-position script
   // and plugin content are denied outright, and Trusted Types are required for script, so a
-  // consumer already running under a strict policy pays nothing to add Equator to it.
+  // consumer already running under a strict policy pays nothing to add Thoth to it.
   const scriptHashes = inlineHashSources(documentWithAssuranceStyle, 'script');
   const styleHashes = inlineHashSources(documentWithAssuranceStyle, 'style');
   const policy = [
@@ -1528,9 +1528,9 @@ function applyStrictBrowserPolicy(html: string, url: string) {
 
 async function recordPolicyViolations(context: BrowserContext) {
   await context.addInitScript(() => {
-    (globalThis as PageGlobals).__equatorCspViolations = [];
+    (globalThis as PageGlobals).__thothCspViolations = [];
     document.addEventListener('securitypolicyviolation', (event) => {
-      (globalThis as PageGlobals).__equatorCspViolations!.push({
+      (globalThis as PageGlobals).__thothCspViolations!.push({
         blockedUri: event.blockedURI,
         columnNumber: event.columnNumber,
         directive: event.effectiveDirective,
@@ -1645,7 +1645,7 @@ async function collectPolicyDiagnostics(
 ) {
   if (page.isClosed()) return;
   const violations = await page.evaluate(
-    () => (globalThis as PageGlobals).__equatorCspViolations ?? [],
+    () => (globalThis as PageGlobals).__thothCspViolations ?? [],
   );
   diagnostics.cspViolations.push(...violations);
 }
@@ -1706,7 +1706,7 @@ async function launchBrowserRow(
     );
   } catch (error) {
     throw new Error(
-      `${row.label} could not start for Equator browser assurance. ` +
+      `${row.label} could not start for Thoth browser assurance. ` +
         `Install the pinned engines with "pnpm exec playwright install chromium firefox webkit" and retry. ` +
         `Original error: ${error instanceof Error ? error.message : String(error)}`,
       { cause: error },
@@ -1781,15 +1781,15 @@ const WCAG_22_AA = Object.freeze([
   'wcag21aa',
   'wcag22aa',
 ]);
-// The elements Equator renders, where every rule applies. A directive's host is the application's
+// The elements Thoth renders, where every rule applies. A directive's host is the application's
 // element, and its role, size and place on the page are the application's choice, which
 // specification 09 section 9 leaves to the application.
-const EQUATOR_RENDERED = Object.freeze([
-  'body > div[data-equator-announcer]',
+const THOTH_RENDERED = Object.freeze([
+  'body > div[data-thoth-announcer]',
   'localized-message',
   'localization-recovery',
 ]);
-// The values Equator writes onto elements it does not render: the lang attributes on the root and
+// The values Thoth writes onto elements it does not render: the lang attributes on the root and
 // on each message, and the ARIA states and labels its directives put on their hosts. These rules
 // read a value, or whether the host's role allows the attribute at all, without judging the host
 // itself, so they run over the whole document.
@@ -1808,12 +1808,12 @@ async function auditAccessibility(page: Page, row: BrowserRow, where: string) {
     await page.evaluate(axeSource);
   }
   const include: string[] = [];
-  for (const selector of EQUATOR_RENDERED) {
+  for (const selector of THOTH_RENDERED) {
     if ((await page.locator(selector).count()) > 0) include.push(selector);
   }
   assert.ok(
     include.length > 0,
-    `${row.id} ${where}: nothing Equator renders is on the page`,
+    `${row.id} ${where}: nothing Thoth renders is on the page`,
   );
   const violations = await page.evaluate(
     async ({ include, tags, rules }) => {
@@ -1830,7 +1830,7 @@ async function auditAccessibility(page: Page, row: BrowserRow, where: string) {
           })
         ).violations,
       ];
-      // An element Equator renders is in both runs, so a value rule can report it twice.
+      // An element Thoth renders is in both runs, so a value rule can report it twice.
       return [
         ...new Set(
           found.map(
@@ -1847,17 +1847,17 @@ async function auditAccessibility(page: Page, row: BrowserRow, where: string) {
   assert.deepEqual(
     violations,
     [],
-    `${row.id} ${where}: what Equator renders or writes violates WCAG 2.2 AA: ${violations.join('; ')}`,
+    `${row.id} ${where}: what Thoth renders or writes violates WCAG 2.2 AA: ${violations.join('; ')}`,
   );
 }
 
 async function assertDirectAccessibility(page: Page, row: BrowserRow) {
   assert.equal(await page.getByRole('main').count(), 1);
   assert.equal(await page.getByRole('heading', { level: 1 }).count(), 1);
-  // Equator builds this region itself. Nothing in the consumer's templates renders it, which is the
+  // Thoth builds this region itself. Nothing in the consumer's templates renders it, which is the
   // property under test: an application that forgets to place an announcer still has one.
   const announcer = page.locator(
-    'body > div[data-equator-announcer][role="status"]',
+    'body > div[data-thoth-announcer][role="status"]',
   );
   assert.equal(await announcer.count(), 1);
   assert.equal(await announcer.getAttribute('aria-live'), 'polite');
@@ -1929,7 +1929,7 @@ async function assertKeyboardLocaleAccessibility(page: Page, check: string) {
     await assertKeyboardLocaleNavigation(page);
     return;
   }
-  const announcer = page.locator('div[data-equator-announcer][role="status"]');
+  const announcer = page.locator('div[data-thoth-announcer][role="status"]');
   // Two events, one ordered stream, both timed.
   //
   // The assertion below is about the order of two things: the document committing to a locale, and
@@ -1941,13 +1941,13 @@ async function assertKeyboardLocaleAccessibility(page: Page, check: string) {
   // `lang` on the document element is watched rather than polled, so the record is of the mutation
   // itself rather than of a sample that happened to catch it.
   await page.evaluate(() => {
-    (globalThis as PageGlobals).__equatorAnnouncementObserver?.disconnect();
-    (globalThis as PageGlobals).__equatorDocumentLocaleObserver?.disconnect();
-    (globalThis as PageGlobals).__equatorAnnouncementObservations = [];
-    const target = document.querySelector('[data-equator-announcer]');
+    (globalThis as PageGlobals).__thothAnnouncementObserver?.disconnect();
+    (globalThis as PageGlobals).__thothDocumentLocaleObserver?.disconnect();
+    (globalThis as PageGlobals).__thothAnnouncementObservations = [];
+    const target = document.querySelector('[data-thoth-announcer]');
     if (target === null) throw new Error('Locale announcer is absent');
     const record = (extra: { kind: string }) => {
-      (globalThis as PageGlobals).__equatorAnnouncementObservations!.push({
+      (globalThis as PageGlobals).__thothAnnouncementObservations!.push({
         at: Math.round(performance.now() * 100) / 100,
         busyArabic: document
           .querySelector('[data-locale-choice="ar-EG"]')
@@ -1974,7 +1974,7 @@ async function assertKeyboardLocaleAccessibility(page: Page, check: string) {
       childList: true,
       subtree: true,
     });
-    (globalThis as PageGlobals).__equatorAnnouncementObserver = observer;
+    (globalThis as PageGlobals).__thothAnnouncementObserver = observer;
     const documentObserver = new MutationObserver(() =>
       record({ kind: 'document-locale' }),
     );
@@ -1982,7 +1982,7 @@ async function assertKeyboardLocaleAccessibility(page: Page, check: string) {
       attributes: true,
       attributeFilter: ['lang', 'dir'],
     });
-    (globalThis as PageGlobals).__equatorDocumentLocaleObserver =
+    (globalThis as PageGlobals).__thothDocumentLocaleObserver =
       documentObserver;
   });
 
@@ -1993,7 +1993,7 @@ async function assertKeyboardLocaleAccessibility(page: Page, check: string) {
    * selection restored to a specific wrong offset was computed wrongly, and waiting for a second
    * component to overwrite it would certify the disagreement.
    *
-   * Focus is waited for too, because Equator's interaction restore runs between `.focus()` and the
+   * Focus is waited for too, because Thoth's interaction restore runs between `.focus()` and the
    * read and can take focus back from the control the visitor just moved to. A failed wait names
    * the element holding focus, which is the diagnosis; an immediate read says only `false`.
    *
@@ -2047,7 +2047,7 @@ async function assertKeyboardLocaleAccessibility(page: Page, check: string) {
     assert.notEqual(controlHandle, null, `${selector} control is absent`);
     const previousAnnouncement = (await announcer.textContent())?.trim() ?? '';
     await page.evaluate(() => {
-      (globalThis as PageGlobals).__equatorAnnouncementObservations = [];
+      (globalThis as PageGlobals).__thothAnnouncementObservations = [];
     });
     await control.focus();
     await waitForFocus(
@@ -2063,14 +2063,13 @@ async function assertKeyboardLocaleAccessibility(page: Page, check: string) {
     await page.waitForURL((url) => url.pathname === expectedPath);
     await page.waitForFunction((previous) => {
       const text =
-        document
-          .querySelector('[data-equator-announcer]')
-          ?.textContent.trim() ?? '';
+        document.querySelector('[data-thoth-announcer]')?.textContent.trim() ??
+        '';
       return text.length > 0 && text !== previous;
     }, previousAnnouncement);
     // Read once, on purpose, and not through `waitForFocus`. By this line the commit is
     // observably finished: the document locale changed, the URL changed, and the announcer spoke.
-    // Restoring focus across that commit is Equator's own work, so if focus is not back by the time
+    // Restoring focus across that commit is Thoth's own work, so if focus is not back by the time
     // the commit is visible, it is late, and a wait here would hide exactly the defect the
     // assertion exists to catch.
     assert.equal(
@@ -2084,7 +2083,7 @@ async function assertKeyboardLocaleAccessibility(page: Page, check: string) {
     // The whole stream, kept for the failure message: the filtered announcements are what the
     // assertions are about, and the unfiltered sequence is what makes a failure readable.
     const observed = await page.evaluate(
-      () => (globalThis as PageGlobals).__equatorAnnouncementObservations ?? [],
+      () => (globalThis as PageGlobals).__thothAnnouncementObservations ?? [],
     );
     const sequence = JSON.stringify(observed, null, 2);
     const committedAnnouncements = observed.filter(
@@ -2151,11 +2150,11 @@ async function assertKeyboardLocaleAccessibility(page: Page, check: string) {
     });
   } finally {
     await page.evaluate(() => {
-      (globalThis as PageGlobals).__equatorAnnouncementObserver?.disconnect();
-      (globalThis as PageGlobals).__equatorDocumentLocaleObserver?.disconnect();
-      delete (globalThis as PageGlobals).__equatorAnnouncementObserver;
-      delete (globalThis as PageGlobals).__equatorDocumentLocaleObserver;
-      delete (globalThis as PageGlobals).__equatorAnnouncementObservations;
+      (globalThis as PageGlobals).__thothAnnouncementObserver?.disconnect();
+      (globalThis as PageGlobals).__thothDocumentLocaleObserver?.disconnect();
+      delete (globalThis as PageGlobals).__thothAnnouncementObserver;
+      delete (globalThis as PageGlobals).__thothDocumentLocaleObserver;
+      delete (globalThis as PageGlobals).__thothAnnouncementObservations;
     });
   }
 }
@@ -2177,7 +2176,7 @@ async function assertKeyboardLocaleAccessibility(page: Page, check: string) {
  * `Math.abs(scrollX)`, and `fromLeftEdge`, the document x of the viewport's left edge, is
  * `maximum - Math.abs(scrollX)`. In LTR both are `scrollX` and the distinction does not arise.
  *
- * **Which of the two Equator ought to preserve across a direction change is an open product
+ * **Which of the two Thoth ought to preserve across a direction change is an open product
  * question and this file does not settle it.** The assertion below reads `fromLeftEdge`, because
  * that is the quantity `LocalizationInteractionRestore` computes and restores (`angular.ts:974`),
  * so the check is falsifiable against a commit that lands anywhere else without asserting that the
@@ -2234,7 +2233,7 @@ const SCROLL_STATE_SOURCE = `() => {
 //
 // `mode` is a runtime argument now rather than something interpolated into source, so there is one
 // definition of this and the wait calls the same one the marks and reads call.
-const INLINE_START_WITNESS_SOURCE = `globalThis.__equatorInlineStartWitness = (mode) => {
+const INLINE_START_WITNESS_SOURCE = `globalThis.__thothInlineStartWitness = (mode) => {
   const rtl = document.documentElement.dir === 'rtl';
   const x = rtl ? globalThis.innerWidth - 2 : 2;
   const y = Math.round(globalThis.innerHeight / 3);
@@ -2253,23 +2252,23 @@ const INLINE_START_WITNESS_SOURCE = `globalThis.__equatorInlineStartWitness = (m
           : '.' + Array.from(element.classList).join('.'));
   if (mode === 'mark' && identifiable) {
     document
-      .querySelectorAll('[data-equator-inline-start-witness]')
+      .querySelectorAll('[data-thoth-inline-start-witness]')
       .forEach((previous) =>
-        previous.removeAttribute('data-equator-inline-start-witness'),
+        previous.removeAttribute('data-thoth-inline-start-witness'),
       );
-    held.setAttribute('data-equator-inline-start-witness', '');
+    held.setAttribute('data-thoth-inline-start-witness', '');
   }
   return {
     marked: identifiable,
     cell: held === null ? null : held.closest('[data-inline-cell]')?.dataset.inlineCell ?? null,
     holds:
       held !== null &&
-      held.closest('[data-equator-inline-start-witness]') !== null,
+      held.closest('[data-thoth-inline-start-witness]') !== null,
     at: { x, y },
     dir: document.documentElement.dir,
     found: describe(held),
     expected: describe(
-      document.querySelector('[data-equator-inline-start-witness]'),
+      document.querySelector('[data-thoth-inline-start-witness]'),
     ),
   };
 };`;
@@ -2289,7 +2288,7 @@ const INLINE_START_WITNESS_SOURCE = `globalThis.__equatorInlineStartWitness = (m
  * Rounded, and no layout forced beyond the one `getBoundingClientRect`, because an instrument
  * whose cost changes the outcome is not an instrument. It runs twice a row.
  */
-const RECT_AGAINST_VIEWPORT_SOURCE = `globalThis.__equatorRectAgainstViewport = (element, selector) => {
+const RECT_AGAINST_VIEWPORT_SOURCE = `globalThis.__thothRectAgainstViewport = (element, selector) => {
   const rect = element.getBoundingClientRect();
   const width = globalThis.innerWidth;
   const height = globalThis.innerHeight;
@@ -2353,16 +2352,16 @@ async function clickLocaleChoice(page: Page, locale: string) {
   await page.locator(selector).evaluate((element, name) => {
     if (!(element instanceof HTMLElement))
       throw new Error('Locale control is invalid');
-    const record = (globalThis as PageGlobals).__equatorScrollRecord;
+    const record = (globalThis as PageGlobals).__thothScrollRecord;
     if (
       record !== undefined &&
-      (globalThis as PageGlobals).__equatorRectAgainstViewport !== undefined
+      (globalThis as PageGlobals).__thothRectAgainstViewport !== undefined
     ) {
       // An array rather than a field: this row clicks twice with one recorder installed, and a
       // field would quietly keep the second and describe it as the click the placement pairs with.
       record.clicks ??= [];
       record.clicks.push({
-        ...(globalThis as PageGlobals).__equatorRectAgainstViewport!(
+        ...(globalThis as PageGlobals).__thothRectAgainstViewport!(
           element,
           name,
         ),
@@ -2377,7 +2376,7 @@ async function clickLocaleChoice(page: Page, locale: string) {
 const inlineStartWitness = (page: Page, mode: 'mark' | 'read') =>
   page.evaluate(
     (requested) =>
-      (globalThis as PageGlobals).__equatorInlineStartWitness!(requested),
+      (globalThis as PageGlobals).__thothInlineStartWitness!(requested),
     mode,
   );
 
@@ -2390,7 +2389,7 @@ const RECORDER_SOURCE = `() => {
   // Where the placement sits on this clock, which is a negative number: it happened before the
   // recorder was installed. Without it every reading below is measured from a zero whose relation
   // to the one deliberate scroll in this check is not stated anywhere.
-  const placement = globalThis.__equatorScrollPlacement;
+  const placement = globalThis.__thothScrollPlacement;
   record.placement =
     placement === undefined
       ? null
@@ -2430,7 +2429,7 @@ const RECORDER_SOURCE = `() => {
       api,
       detail,
       // The consumer bundle is minified, so this names functions rather than lines. That is enough
-      // to separate Equator from Angular from the engine, which is the question.
+      // to separate Thoth from Angular from the engine, which is the question.
       // fromCharCode rather than an escape: this source is produced by a template literal, so a
       // backslash-n here becomes a real newline inside a string literal in the emitted page code,
       // and the page fails to parse. Cost fourteen runs of nothing before it was noticed.
@@ -2466,7 +2465,7 @@ const RECORDER_SOURCE = `() => {
   //
   // The set is switched as a whole because the measurement behind it covers the whole set, and
   // nothing in it separates these three. They are the window's own scroll entry points, and the things that call
-  // them in this row are countable: Equator's
+  // them in this row are countable: Thoth's
   // restore calls scrollTo once per commit, the hold re-applies it a handful of times inside a
   // 150ms window, Angular's scroll-position restoration calls it once per navigation, and this
   // file's own disturbance calls it once. A wrapper on a function called single-digit times per row
@@ -2584,13 +2583,13 @@ const RECORDER_SOURCE = `() => {
     attributeOldValue: true,
   });
 
-  // What Equator captured, at the moment it captured it.
+  // What Thoth captured, at the moment it captured it.
   //
-  // Equator takes the position by reading scrollX and scrollY off the view, so the read is the
-  // capture: wrapping the getter records the value Equator saw and when it saw it, with nothing
+  // Thoth takes the position by reading scrollX and scrollY off the view, so the read is the
+  // capture: wrapping the getter records the value Thoth saw and when it saw it, with nothing
   // added to the runtime and nothing prevented. That is what separates the two accounts. A capture
-  // before the reset means Equator held a good position and something else lost it. A capture after
-  // means Equator restored a zero it had read faithfully, and the question becomes when in the
+  // before the reset means Thoth held a good position and something else lost it. A capture after
+  // means Thoth restored a zero it had read faithfully, and the question becomes when in the
   // transaction the position is taken, which is what a switch moves.
   //
   // The recorder reads the same two properties on every scroll event, so it says so while it does,
@@ -2673,7 +2672,7 @@ const RECORDER_SOURCE = `() => {
     observer.disconnect();
     globalThis.removeEventListener('scroll', onScroll);
   };
-  globalThis.__equatorScrollRecord = record;
+  globalThis.__thothScrollRecord = record;
 }`;
 
 // Frame timestamps compress to the gaps between them, because a five-second run at 60fps is three
@@ -2698,7 +2697,7 @@ function frameGaps(frames: readonly number[]) {
 async function describeRecord(page: Page) {
   const record = await page.evaluate<RecordedScroll | null>(
     `(() => {
-      const held = globalThis.__equatorScrollRecord;
+      const held = globalThis.__thothScrollRecord;
       if (held === undefined) return null;
       held.stop();
       return {
@@ -2721,7 +2720,7 @@ async function describeRecord(page: Page) {
     : `${JSON.stringify(record.positions)}, over ${JSON.stringify(frameGaps(record.frames))}, ` +
         `and the calls that could have moved it: ${JSON.stringify(record.calls)}, ` +
         `out of ${JSON.stringify(record.callsWatched)}: an empty array is an absence for those and ` +
-        `says nothing about the rest, which are behind EQUATOR_ASSURANCE_TRACE_CALLS=1, ` +
+        `says nothing about the rest, which are behind THOTH_ASSURANCE_TRACE_CALLS=1, ` +
         `nor about the engine, which moves the page without calling anything, ` +
         `with what the engine originated: ${JSON.stringify(record.events)}, ` +
         `what left or entered the document: ${JSON.stringify(record.mutations)}, ` +
@@ -2755,14 +2754,14 @@ async function placeVisitorMidPage(page: Page, target: string | null = null) {
   await page.evaluate((selector) => {
     globalThis.scrollTo(240, 360);
     const element = selector === null ? null : document.querySelector(selector);
-    (globalThis as PageGlobals).__equatorScrollPlacement = {
+    (globalThis as PageGlobals).__thothScrollPlacement = {
       pageClock: performance.now(),
       scrollRestoration: history.scrollRestoration,
       readyState: document.readyState,
       target:
         element === null
           ? null
-          : (globalThis as PageGlobals).__equatorRectAgainstViewport!(
+          : (globalThis as PageGlobals).__thothRectAgainstViewport!(
               element,
               selector!,
             ),
@@ -2836,7 +2835,7 @@ async function exerciseLocaleContinuity(page: Page, row: BrowserRow) {
   // before the commit is the element there after it.
   //
   // **Not a number, and deliberately not one.** Every numeric form of this check recomputes an
-  // expression Equator also computes, so it agrees with the implementation by construction on what
+  // expression Thoth also computes, so it agrees with the implementation by construction on what
   // the quantity *means* and can only ever check the arithmetic. A check drawn from the same source
   // as its subject is why a restore that returned the visitor to the wrong content passed this gate
   // on three engines: the assertion and the runtime shared a definition, and the definition was the
@@ -2907,10 +2906,10 @@ async function exerciseLocaleContinuity(page: Page, row: BrowserRow) {
   // The block axis is not asserted here, against `after`, and the reason is worth keeping: that
   // reading is taken the instant the direction flip lands, before the hold has done its work.
   //
-  // **The block position is Equator's to keep, and the movement it keeps it against is WebKit's.**
+  // **The block position is Thoth's to keep, and the movement it keeps it against is WebKit's.**
   // On a writing-direction change WebKit reveals an element that already has focus, moving both
-  // axes some milliseconds after Equator has written the position, with no scroll call from any
-  // script in between. Reproduced with no Equator and no framework in the page;
+  // axes some milliseconds after Thoth has written the position, with no scroll call from any
+  // script in between. Reproduced with no Thoth and no framework in the page;
   // `focus({ preventScroll: true })` is honoured and is not what does it. `holdScroll` re-applies
   // the position against exactly that, so "Block scroll moved during the RTL commit" is a condition
   // worth failing on, read at a moment when the answer has settled. Read at the instant of the flip
@@ -2920,22 +2919,22 @@ async function exerciseLocaleContinuity(page: Page, row: BrowserRow) {
   // WebKit / Scrolling, *"A focused element is revealed after a writing-direction change,
   // overriding the scroll position the page just set"*. The hold stays whatever happens to it:
   // it is what makes three engines agree, and a fix would arrive in one engine's future version
-  // while Equator keeps supporting the ones already out. What the bug number changes is that the
+  // while Thoth keeps supporting the ones already out. What the bug number changes is that the
   // next person to read this can see whether the behaviour is still WebKit's position.
   //
-  // Equator holds the position against it for a bounded window, so the honest moment to read the
+  // Thoth holds the position against it for a bounded window, so the honest moment to read the
   // page is once it has settled, which is where the inline axis was already being read. Both axes
   // are asserted there, together, in one wait. `after` stays as evidence, because where the page
   // went in between is exactly what a failure needs to show.
 
   // One outcome, required of all three engines, rather than a disjunction that also accepts the
-  // inline-start. The engines do not disagree here: they land where Equator sends them, every time.
+  // inline-start. The engines do not disagree here: they land where Thoth sends them, every time.
   // Accepting the inline-start as well admits a frame of a restore in progress as an outcome, and
   // the row then passes with the restore deleted outright, because a page that never restored and
   // a page mid-restore read identically.
   //
-  // The wait is the honest instrument here for the same reason it is for focus: Equator has
-  // scheduled the scroll and the browser applies it over frames, with nothing of Equator's running
+  // The wait is the honest instrument here for the same reason it is for focus: Thoth has
+  // scheduled the scroll and the browser applies it over frames, with nothing of Thoth's running
   // in between. The failure prints where the page went and when, so a restore that lands somewhere
   // else and a restore that never happens are different reports rather than the same timeout.
   //
@@ -2956,14 +2955,14 @@ async function exerciseLocaleContinuity(page: Page, row: BrowserRow) {
   const settled = await page
     .waitForFunction(
       // Both axes, one moment. The inline axis is an element, whatever the visitor had at their
-      // inline-start edge, because a number there would be a formula Equator also computes. The
+      // inline-start edge, because a number there would be a formula Thoth also computes. The
       // block axis has no such element to hand: the strip's cells are 900px tall, so a block move
       // of a few hundred pixels finds the same cell and an element check cannot see it.
       // What is asserted instead is the reading taken before the commit, carried in from outside
       // the page. That is a value the harness observed, not an expression it recomputed.
       (expectedBlock) =>
-        (globalThis as PageGlobals).__equatorInlineStartWitness!('read')
-          .holds && Math.abs(globalThis.scrollY - expectedBlock) <= 2,
+        (globalThis as PageGlobals).__thothInlineStartWitness!('read').holds &&
+        Math.abs(globalThis.scrollY - expectedBlock) <= 2,
       before.block,
       {
         // An interval rather than animation frames. The reason first given for this was a
@@ -3035,7 +3034,7 @@ async function exerciseLocaleContinuity(page: Page, row: BrowserRow) {
         `A null "expected" there means the commit replaced the node rather than moving it, which is a different defect from a restore that landed wrongly. ` +
         `Everything below is evidence rather than the expectation. ` +
         `Before ${JSON.stringify(before)}, at the first read after the commit ${JSON.stringify(after)}, ` +
-        `and once the five seconds had expired ${JSON.stringify(settledAt)}, in which \`fromInlineStart\` is the quantity Equator holds. ` +
+        `and once the five seconds had expired ${JSON.stringify(settledAt)}, in which \`fromInlineStart\` is the quantity Thoth holds. ` +
         `Sampled for a further 300ms from there, distinct positions only: ${JSON.stringify(trajectory)}. ` +
         `The sampling begins after the wait expires, so it describes where the page has come to rest and says nothing about what happened during the commit. ` +
         `Every position the page took between the commit and the expiry, and the animation frames that ran while it did: ${during}. ` +
@@ -3045,9 +3044,9 @@ async function exerciseLocaleContinuity(page: Page, row: BrowserRow) {
 
   await page.evaluate(
     `(() => {
-      globalThis.__equatorScrollRecord?.stop();
-      delete globalThis.__equatorScrollRecord;
-      delete globalThis.__equatorScrollPlacement;
+      globalThis.__thothScrollRecord?.stop();
+      delete globalThis.__thothScrollRecord;
+      delete globalThis.__thothScrollPlacement;
     })()`,
   );
 
@@ -3060,12 +3059,12 @@ async function exerciseLocaleContinuity(page: Page, row: BrowserRow) {
   const persistedCookies = await page.context().cookies();
   if (
     !persistedCookies.some(
-      ({ name, value }) => name === 'equator-locale' && value === 'ar-EG',
+      ({ name, value }) => name === 'thoth-locale' && value === 'ar-EG',
     )
   ) {
     // Both readings are taken, because a short message cannot tell an engine that declined to store
     // the cookie from a harness reading the wrong place for it, and only one of those findings is
-    // about Equator.
+    // about Thoth.
     const documentCookie = await page
       .evaluate('document.cookie')
       .then((value) => JSON.stringify(value))
@@ -3073,12 +3072,12 @@ async function exerciseLocaleContinuity(page: Page, row: BrowserRow) {
     assert.fail(
       `The locale switch was not remembered by withPersistence(cookieStore(localeCookie)). ` +
         `The switch itself landed, everything asserted above this is about the page after it committed, so what is missing is the cookie meant to outlive it. ` +
-        `The lab writes it from script, as \`equator-locale=ar-EG; Path=/; Max-Age=31536000; SameSite=Lax\` with no \`Secure\`, over ${browserOrigin}. ` +
+        `The lab writes it from script, as \`thoth-locale=ar-EG; Path=/; Max-Age=31536000; SameSite=Lax\` with no \`Secure\`, over ${browserOrigin}. ` +
         `What the document reports: ${documentCookie}. ` +
         `Every cookie this context holds, for every origin: ${JSON.stringify(persistedCookies)}. ` +
         `In the document but not in the context is this harness reading the wrong place. ` +
         `In neither is the engine declining a first-party cookie over loopback, which is a finding about the engine. ` +
-        `In both, under another name or value, is Equator writing something other than what it documents.`,
+        `In both, under another name or value, is Thoth writing something other than what it documents.`,
     );
   }
   const remembered = await measuredContext(page);
@@ -3199,8 +3198,8 @@ async function exerciseLocaleContinuity(page: Page, row: BrowserRow) {
  * So the movement is supplied on purpose, on every engine, every run. A one-shot disturbance is
  * armed, the page is committed to Arabic, and the first scroll event arriving once the commit has
  * landed *and* the visitor is back at their element scrolls the page to the origin. That is a
- * movement Equator did not request and no visitor made, delivered inside the hold's window by
- * construction rather than by timing: the trigger is Equator's own restore landing, so it can
+ * movement Thoth did not request and no visitor made, delivered inside the hold's window by
+ * construction rather than by timing: the trigger is Thoth's own restore landing, so it can
  * arrive neither early nor late.
  *
  * Two things are then required, and the second is what makes this a check rather than a hope: the
@@ -3261,7 +3260,7 @@ async function assertUnrequestedMovementIsUndone(page: Page) {
       to: null,
       armed: true,
     };
-    (globalThis as PageGlobals).__equatorDisturbance = disturbance;
+    (globalThis as PageGlobals).__thothDisturbance = disturbance;
     globalThis.addEventListener(
       'scroll',
       () => {
@@ -3271,8 +3270,7 @@ async function assertUnrequestedMovementIsUndone(page: Page) {
         // the witness says.
         if (document.documentElement.dir !== 'rtl') return;
         if (
-          !(globalThis as PageGlobals).__equatorInlineStartWitness!('read')
-            .holds
+          !(globalThis as PageGlobals).__thothInlineStartWitness!('read').holds
         )
           return;
         disturbance.armed = false;
@@ -3295,9 +3293,8 @@ async function assertUnrequestedMovementIsUndone(page: Page) {
   const undone = await page
     .waitForFunction(
       (expectedBlock) =>
-        (globalThis as PageGlobals).__equatorDisturbance!.firedAt !== null &&
-        (globalThis as PageGlobals).__equatorInlineStartWitness!('read')
-          .holds &&
+        (globalThis as PageGlobals).__thothDisturbance!.firedAt !== null &&
+        (globalThis as PageGlobals).__thothInlineStartWitness!('read').holds &&
         Math.abs(globalThis.scrollY - expectedBlock) <= 2,
       before.block,
       { polling: 100, timeout: 5_000 },
@@ -3307,7 +3304,7 @@ async function assertUnrequestedMovementIsUndone(page: Page) {
       () => false,
     );
   const record = await page.evaluate(
-    () => (globalThis as PageGlobals).__equatorDisturbance!,
+    () => (globalThis as PageGlobals).__thothDisturbance!,
   );
   if (!undone) {
     const restingAt = await logicalScrollState(page);
@@ -3323,7 +3320,7 @@ async function assertUnrequestedMovementIsUndone(page: Page) {
     assert.fail(
       record.firedAt === null
         ? `The deliberate disturbance never fired, so this run proved nothing about the hold. Its two arming conditions are that the Arabic commit has landed and that the visitor is back at their element; one of them was never met. Observed ${JSON.stringify(record)}, from ${JSON.stringify(before)}, resting at ${JSON.stringify(restingAt)}, with ${JSON.stringify(stillThere)} at the inline-start edge. ${axes}Every position the page took, with the direction it was in at each: ${during}.`
-        : `A movement Equator did not request and no visitor made was not undone. The page was scrolled from ${JSON.stringify(record.from)} to ${JSON.stringify(record.to)}, and five seconds later it is at ${JSON.stringify(restingAt)} with ${JSON.stringify(stillThere)} at the inline-start edge, against a block offset of ${before.block} before the commit. The hold either did not run, closed too early, or was closed by something on this page that reads as visitor input. ${axes}Every position the page took, with the direction it was in at each: ${during}.`,
+        : `A movement Thoth did not request and no visitor made was not undone. The page was scrolled from ${JSON.stringify(record.from)} to ${JSON.stringify(record.to)}, and five seconds later it is at ${JSON.stringify(restingAt)} with ${JSON.stringify(stillThere)} at the inline-start edge, against a block offset of ${before.block} before the commit. The hold either did not run, closed too early, or was closed by something on this page that reads as visitor input. ${axes}Every position the page took, with the direction it was in at each: ${during}.`,
     );
   }
   assert.notEqual(
@@ -3342,14 +3339,14 @@ async function assertUnrequestedMovementIsUndone(page: Page) {
   // happened. If the wrapper is uninstalled, misnamed, or shadowed by something the page does, this
   // is empty and says so on a green run rather than on the next red one.
   //
-  // Equator's own restore also calls it, and this deliberately does not assert that: what is being
+  // Thoth's own restore also calls it, and this deliberately does not assert that: what is being
   // proven is that the instrument records a call, not what the runtime called.
   const watched = await page.evaluate<{
     watched: string[];
     calls: { api: string; detail: string }[];
   } | null>(
     `(() => {
-      const held = globalThis.__equatorScrollRecord;
+      const held = globalThis.__thothScrollRecord;
       return held === undefined
         ? null
         : { watched: held.callsWatched ?? [], calls: held.calls ?? [] };
@@ -3365,10 +3362,10 @@ async function assertUnrequestedMovementIsUndone(page: Page) {
   );
 
   await page.evaluate(() => {
-    (globalThis as PageGlobals).__equatorScrollRecord?.stop();
-    delete (globalThis as PageGlobals).__equatorScrollRecord;
-    delete (globalThis as PageGlobals).__equatorScrollPlacement;
-    delete (globalThis as PageGlobals).__equatorDisturbance;
+    (globalThis as PageGlobals).__thothScrollRecord?.stop();
+    delete (globalThis as PageGlobals).__thothScrollRecord;
+    delete (globalThis as PageGlobals).__thothScrollPlacement;
+    delete (globalThis as PageGlobals).__thothDisturbance;
   });
   await clickLocaleChoice(page, 'en-US');
   await page.waitForFunction(
@@ -3513,7 +3510,7 @@ async function verifyExerciseSheets(
             ?.getAttribute('content') ?? null,
       ),
       'noindex',
-      `${check}: the exercise route declares equatorIndexing non-indexable, and the head does not keep it out of an index`,
+      `${check}: the exercise route declares thothIndexing non-indexable, and the head does not keep it out of an index`,
     );
     recordCapabilityClaim(check, 'declaration:route-indexing-class', observed);
     claimSheetParameter(
@@ -3674,7 +3671,7 @@ async function verifyLocaleAliases(
 /**
  * The pseudo-locale in this engine, from the pseudo build the consumer stage made beside the
  * production one: its exercise sheet rendered on request and adopted, and drawn by a client
- * navigation from home. Every message on it is one `equator generate --pseudo` transformed, and
+ * navigation from home. Every message on it is one `thoth generate --pseudo` transformed, and
  * its number is written in the digits the formatting declaration gives the locale.
  */
 async function verifyPseudoLocale(
@@ -3699,7 +3696,7 @@ async function verifyPseudoLocale(
   await recordPolicyViolations(pseudoContext);
   if (!addresses.localeInAddress) {
     await pseudoContext.addCookies([
-      { name: 'equator-locale', value: locale, url: browserOrigin },
+      { name: 'thoth-locale', value: locale, url: browserOrigin },
     ]);
   }
   const open = async () => {
@@ -3723,7 +3720,7 @@ async function verifyPseudoLocale(
             .querySelector('[data-route-view="exercise"]')
             ?.textContent.includes('⟦') ?? false,
       ),
-      `${check} carries no message that equator generate --pseudo transformed`,
+      `${check} carries no message that thoth generate --pseudo transformed`,
     );
     const { decimal } = exerciseInputs;
     assert.equal(
@@ -4100,7 +4097,7 @@ async function verifyTypedFields(
     assert.equal(
       await field.inputValue(),
       text,
-      `The LocalizedInput field of @neolorn/equator/forms for ${kind} does not show its value as this engine writes it`,
+      `The LocalizedInput field of @neolorn/thoth/forms for ${kind} does not show its value as this engine writes it`,
     );
     await field.fill('');
     assert.notEqual(
@@ -4143,7 +4140,7 @@ async function verifyTypedFields(
   await typed('instant');
   recordCapabilityClaim(check, 'control:instant', observed);
   recordCapabilityClaim(check, 'directive:LocalizedInput', observed);
-  recordCapabilityClaim(check, 'entry:@neolorn/equator/forms', observed);
+  recordCapabilityClaim(check, 'entry:@neolorn/thoth/forms', observed);
 }
 
 async function verifyRenderingModes(
@@ -4195,7 +4192,7 @@ async function verifyRenderingModes(
   );
   await assertTrustedTypesPolicy(prerenderPage, prerenderResponse, row);
   assert.equal(
-    prerenderResponse!.headers()['x-equator-original-document-sha256'],
+    prerenderResponse!.headers()['x-thoth-original-document-sha256'],
     prerenderArtifact!.digest,
     `${row.label} prerender response did not originate from the built static artifact`,
   );
@@ -4329,7 +4326,7 @@ async function verifyRenderingModes(
   assert.doesNotMatch(
     shell,
     /\bng-server-context=/u,
-    `${row.label}: item is RenderMode.Client in the table provideLocalizedServerRendering from @neolorn/equator/ssr installs, and the server rendered it`,
+    `${row.label}: item is RenderMode.Client in the table provideLocalizedServerRendering from @neolorn/thoth/ssr installs, and the server rendered it`,
   );
   assert.doesNotMatch(
     shell,
@@ -4355,11 +4352,7 @@ async function verifyRenderingModes(
     'feature:provideLocalizedServerRendering',
     shellAnswered,
   );
-  recordCapabilityClaim(
-    shellCheck,
-    'entry:@neolorn/equator/ssr',
-    shellAnswered,
-  );
+  recordCapabilityClaim(shellCheck, 'entry:@neolorn/thoth/ssr', shellAnswered);
   // item declares no caching class, so what its shell carries is the deployment's: the pageCaching
   // floor where the table says it declares one, and otherwise, where the address states its locale,
   // the shared directive, which asks a cache to revalidate a stale success unless the deployment
@@ -4458,7 +4451,7 @@ async function verifyRenderingModes(
   );
   await itemHead('ar-EG');
 
-  // A locale switch re-renders every localized surface on the page. If Equator emitted inline
+  // A locale switch re-renders every localized surface on the page. If Thoth emitted inline
   // script or style anywhere in that path, it would appear here, and it would be
   // invisible to the violation count, because this harness's policy carries hashes and a nonce
   // that a strict deployed policy does not.
@@ -4503,7 +4496,7 @@ async function verifyDeclaredShells(
       pathToFileURL(
         resolve(
           consumerRoot,
-          'node_modules/@neolorn/equator/fesm2022/neolorn-equator-core.mjs',
+          'node_modules/@neolorn/thoth/fesm2022/neolorn-thoth-core.mjs',
         ),
       ).href
     );
@@ -4846,9 +4839,9 @@ async function verifyClientRenderedSheet(
       addresses.pageCaching === 'not-stored'
         ? 'private, no-store'
         : 'private, no-cache',
-      `${check}: the route declares equatorCaching per-visitor, and a shared cache may keep the shell the @neolorn/equator/http handler answered for it`,
+      `${check}: the route declares thothCaching per-visitor, and a shared cache may keep the shell the @neolorn/thoth/http handler answered for it`,
     );
-    recordCapabilityClaim(check, 'entry:@neolorn/equator/http', {
+    recordCapabilityClaim(check, 'entry:@neolorn/thoth/http', {
       platform,
       document: renderedDocument,
       policy,
@@ -4863,7 +4856,7 @@ async function verifyClientRenderedSheet(
             ?.getAttribute('content') ?? null,
       ),
       'noindex',
-      `${check}: the route declares equatorIndexing non-indexable, and the head the browser wrote does not keep it out of an index`,
+      `${check}: the route declares thothIndexing non-indexable, and the head the browser wrote does not keep it out of an index`,
     );
     recordCapabilityClaim(check, 'declaration:route-indexing-class', {
       engine,
@@ -4900,8 +4893,8 @@ async function verifyClientRenderedSheet(
  * strictest policy a consumer realistically deploys carries neither: plain `script-src 'self'`
  * and `style-src 'self'`, with no hashes and no nonce.
  *
- * So "zero CSP violations" alone does not establish that Equator is safe under such a policy: the
- * allowances could be covering Equator's own output. What settles it is that Equator's runtime work
+ * So "zero CSP violations" alone does not establish that Thoth is safe under such a policy: the
+ * allowances could be covering Thoth's own output. What settles it is that Thoth's runtime work
  * adds none: whatever inline content exists is present at load, and boot, hydration and a locale
  * switch introduce nothing further.
  */
@@ -4958,7 +4951,7 @@ async function readLifecycleResourceSnapshot(page: Page) {
     activeAnimations: document
       .getAnimations()
       .filter((animation) => animation.playState !== 'finished').length,
-    announcer: document.querySelectorAll('[data-equator-announcer]').length,
+    announcer: document.querySelectorAll('[data-thoth-announcer]').length,
     busy: document.querySelectorAll('[aria-busy="true"]').length,
     canonical: document.querySelectorAll('link[rel="canonical"]').length,
     domElements: document.querySelectorAll('*').length,
@@ -5146,9 +5139,9 @@ async function verifyBackForwardRestore(
     );
     // Marks the document, so a reload cannot pass for the page coming back from memory.
     await restorePage.evaluate(() => {
-      (globalThis as PageGlobals).__equatorLeft = true;
+      (globalThis as PageGlobals).__thothLeft = true;
       globalThis.addEventListener('pageshow', (event) => {
-        (globalThis as PageGlobals).__equatorShownPersisted = event.persisted;
+        (globalThis as PageGlobals).__thothShownPersisted = event.persisted;
       });
     });
     if (restores) {
@@ -5164,9 +5157,9 @@ async function verifyBackForwardRestore(
     // session, because a write always states a lifetime, so a write cannot pass for the cookie left
     // alone.
     const storedAt = new URL(restorePage.url()).origin;
-    await restoreContext.clearCookies({ name: 'equator-locale' });
+    await restoreContext.clearCookies({ name: 'thoth-locale' });
     await restoreContext.addCookies([
-      { name: 'equator-locale', value: 'ar-EG', url: storedAt },
+      { name: 'thoth-locale', value: 'ar-EG', url: storedAt },
     ]);
     if (restores) {
       // A restored page fires `pageshow` and no `load`, so the step back is waited for only as far
@@ -5174,8 +5167,8 @@ async function verifyBackForwardRestore(
       await restorePage.goBack({ waitUntil: 'commit' });
       await restorePage.waitForFunction(
         () =>
-          (globalThis as PageGlobals).__equatorShownPersisted !== undefined ||
-          (globalThis as PageGlobals).__equatorLeft !== true,
+          (globalThis as PageGlobals).__thothShownPersisted !== undefined ||
+          (globalThis as PageGlobals).__thothLeft !== true,
       );
     } else {
       await restorePage.evaluate(() =>
@@ -5189,8 +5182,8 @@ async function verifyBackForwardRestore(
     );
     assert.deepEqual(
       await restorePage.evaluate(() => ({
-        left: (globalThis as PageGlobals).__equatorLeft === true,
-        persisted: (globalThis as PageGlobals).__equatorShownPersisted === true,
+        left: (globalThis as PageGlobals).__thothLeft === true,
+        persisted: (globalThis as PageGlobals).__thothShownPersisted === true,
       })),
       { left: true, persisted: true },
       `${row.label} did not bring the page back from its back-forward cache, so nothing here reached the listener`,
@@ -5219,7 +5212,7 @@ async function verifyBackForwardRestore(
     );
     assert.deepEqual(
       (await restoreContext.cookies(storedAt))
-        .filter(({ name }) => name === 'equator-locale')
+        .filter(({ name }) => name === 'thoth-locale')
         .map(({ value, expires }) => ({ value, expires })),
       [{ value: 'ar-EG', expires: -1 }],
       `${row.label} wrote the locale cookie on a restore, which resolves a locale rather than choosing one`,
@@ -5289,7 +5282,7 @@ async function verifyLocaleSources(
       await recordPolicyViolations(visitContext);
       if (cookie !== undefined) {
         await visitContext.addCookies([
-          { name: 'equator-locale', value: cookie, url: new URL(url).origin },
+          { name: 'thoth-locale', value: cookie, url: new URL(url).origin },
         ]);
       }
       const visitPage = boundCalls(await visitContext.newPage(), 'page');
@@ -5414,7 +5407,7 @@ async function verifyHydration(
   );
   assert.equal(
     await page.locator('[data-dynamic-title]').textContent(),
-    'The Equator localization handbook',
+    'The Thoth localization handbook',
   );
   assert.equal(
     await page
@@ -5470,7 +5463,7 @@ async function catalogModulesOf(browserRoot: string) {
  * the sentence withRecoveryMessage selects, in the page's locale, until the retry brings the
  * catalogs back.
  *
- * The retry is Equator's either way, and how it reaches the catalog is the engine's. The HTML
+ * The retry is Thoth's either way, and how it reaches the catalog is the engine's. The HTML
  * standard drops a module whose fetch failed, so an engine that follows it fetches the catalog
  * again and the page recovers where it stands. An engine that still keeps the failure answers the
  * import with it and sends nothing; the attempt then fails with a reason the application reads, and
@@ -5538,7 +5531,7 @@ async function verifyRecovery(row: BrowserRow, context: BrowserContext) {
     await readCatalogMessage(consumerRoot, locale, 'recovery.unavailable'),
     `LocalizationRecovery did not show the ${locale} sentence withRecoveryMessage selects`,
   );
-  // Marked with the language subtag, as Equator marks every message it renders.
+  // Marked with the language subtag, as Thoth marks every message it renders.
   assert.equal(
     await recovery.getAttribute('lang'),
     new Intl.Locale(locale).language,
@@ -5634,13 +5627,13 @@ async function verifyRecoveryOnDrawnPage(
   // this one leave one behind. It stays away until the recovery has been read: the page reads
   // the store only once its scripts run, which is after the visit returns.
   const before = (await context.cookies()).filter(
-    ({ name }) => name === 'equator-locale',
+    ({ name }) => name === 'thoth-locale',
   );
-  await context.clearCookies({ name: 'equator-locale' });
+  await context.clearCookies({ name: 'thoth-locale' });
   try {
     await verifyRecoveryOverRefusedTransfer(row, context, page, locale);
   } finally {
-    await context.clearCookies({ name: 'equator-locale' });
+    await context.clearCookies({ name: 'thoth-locale' });
     await context.addCookies(before);
   }
 }
@@ -5699,7 +5692,7 @@ async function verifyRecoveryOverRefusedTransfer(
         const text = transfer?.firstChild;
         if (!(text instanceof Text)) return false;
         const refused = text.data.replace(
-          /("profile":"equator-transfer-state(?:\/|\\u002F))1"/u,
+          /("profile":"thoth-transfer-state(?:\/|\\u002F))1"/u,
           '$10"',
         );
         if (refused === text.data) return false;
@@ -5831,9 +5824,9 @@ async function verifyLocalizedNotFound(
       if (decides !== 'url') {
         return missing.goto(missingUrl, { waitUntil: 'networkidle' });
       }
-      await missingBrowserContext.clearCookies({ name: 'equator-locale' });
+      await missingBrowserContext.clearCookies({ name: 'thoth-locale' });
       await missingBrowserContext.addCookies([
-        { name: 'equator-locale', value: 'en-US', url: missingOrigin },
+        { name: 'thoth-locale', value: 'en-US', url: missingOrigin },
       ]);
       const response = await navigateWithScriptGate(
         missing,
@@ -5849,7 +5842,7 @@ async function verifyLocalizedNotFound(
       return response;
     },
   );
-  // The status is Equator's, and the page is the application's: a not-found page answered 200
+  // The status is Thoth's, and the page is the application's: a not-found page answered 200
   // tells a crawler the address exists.
   assert.equal(
     missingResponse?.status(),
@@ -5881,7 +5874,7 @@ async function verifyLocalizedNotFound(
     );
     assert.deepEqual(
       (await missingBrowserContext.cookies(missingOrigin))
-        .filter(({ name }) => name === 'equator-locale')
+        .filter(({ name }) => name === 'thoth-locale')
         .map(({ value }) => value),
       ['en-US'],
       `${row.label}: the stored choice under the not-found page is no longer en-US, so nothing here had the address outrank it`,
@@ -5906,7 +5899,7 @@ async function verifyUnprefixedNotFound(
   //
   // The path deliberately opens with a segment no language tag can be: `/no-such-page` would
   // not test this, because `no` is Norwegian and `no-such-page` parses as a language tag, so
-  // Equator reads it as intent toward an unsupported locale and answers 404 where it stands.
+  // Thoth reads it as intent toward an unsupported locale and answers 404 where it stands.
   if (addresses.entryRedirects) {
     const unprefixedBrowserContext = await isolatedContext(context);
     const unprefixed = boundCalls(
@@ -6069,7 +6062,7 @@ async function verifySwitchOnDrawnPages(
   diagnostics: BrowserDiagnostics,
 ) {
   const before = (await context.cookies()).filter(
-    ({ name }) => name === 'equator-locale',
+    ({ name }) => name === 'thoth-locale',
   );
   const visit = async (
     label: string,
@@ -6134,7 +6127,7 @@ async function verifySwitchOnDrawnPages(
       return { engine, policy, clientNavigations };
     });
   } finally {
-    await context.clearCookies({ name: 'equator-locale' });
+    await context.clearCookies({ name: 'thoth-locale' });
     await context.addCookies(before);
   }
 }
@@ -6181,12 +6174,12 @@ async function switchOnPage(
   );
   await settled(
     (expected) =>
-      document.querySelector('[data-equator-announcer]')?.textContent ===
+      document.querySelector('[data-thoth-announcer]')?.textContent ===
       expected,
     title,
   );
   assert.equal(
-    await page.locator('[data-equator-announcer]').textContent(),
+    await page.locator('[data-thoth-announcer]').textContent(),
     title,
     `${check}: the change was not announced in the page's Arabic title that withLocaleAnnouncement gives as the wording`,
   );
@@ -6198,16 +6191,16 @@ async function switchOnPage(
   await settled(() =>
     document
       .querySelector('[data-dynamic-title]')
-      ?.textContent.includes('دليل Equator للترجمة'),
+      ?.textContent.includes('دليل Thoth للترجمة'),
   );
   assert.match(
     (await page.locator('[data-dynamic-title]').textContent()) ?? '',
-    /دليل Equator للترجمة/u,
+    /دليل Thoth للترجمة/u,
     `${check}: the dynamic content's LocalizationParticipant did not bring its Arabic article`,
   );
   assert.deepEqual(
     (await page.context().cookies(new URL(page.url()).origin))
-      .filter(({ name }) => name === 'equator-locale')
+      .filter(({ name }) => name === 'thoth-locale')
       .map(({ value }) => value),
     ['ar-EG'],
     `${check}: withPersistence did not remember the choice in its cookieStore`,
@@ -6247,7 +6240,7 @@ async function measuredEmbeddedContext(page: Page) {
   const reported = await page.evaluate(() => ({
     clientNavigations: document.documentElement.dataset['clientNavigations'],
     adoptedElements: (
-      (globalThis as PageGlobals).__equatorServerElements ?? []
+      (globalThis as PageGlobals).__thothServerElements ?? []
     ).filter((element) => element.isConnected).length,
   }));
   return {
@@ -6634,7 +6627,7 @@ async function verifyEmbeddedPanel(row: BrowserRow, languages: string) {
 }
 
 /**
- * The recovery in an application whose router Equator does not hold: the page around the panel
+ * The recovery in an application whose router Thoth does not hold: the page around the panel
  * moves its history while the panel cannot start, and the recovery stays in place across that
  * client navigation. The panel's settings page is rendered in the browser only, so its start is the
  * one that loads catalogs, and every catalog module is refused.
@@ -6725,15 +6718,13 @@ async function verifyLocaleSwitches(
     () =>
       document.documentElement.lang === 'ar-EG' &&
       document.documentElement.dir === 'rtl' &&
-      document
-        .querySelector('h1')
-        ?.textContent.includes('مختبر ميزات Equator') &&
+      document.querySelector('h1')?.textContent.includes('مختبر ميزات Thoth') &&
       document
         .querySelector('[data-incremental-message]')
         ?.textContent.includes('حد الترجمة التدريجي جاهز.') &&
       document
         .querySelector('[data-dynamic-title]')
-        ?.textContent.includes('دليل Equator للترجمة'),
+        ?.textContent.includes('دليل Thoth للترجمة'),
   );
   await page.waitForURL(
     (url) =>
@@ -6790,9 +6781,7 @@ async function verifyLocaleSwitches(
     () =>
       document.documentElement.lang === 'en-US' &&
       document.documentElement.dir === 'ltr' &&
-      document
-        .querySelector('h1')
-        ?.textContent.includes('Equator feature lab') &&
+      document.querySelector('h1')?.textContent.includes('Thoth feature lab') &&
       document
         .querySelector('[data-incremental-message]')
         ?.textContent.includes('Incremental localization boundary ready.'),
@@ -6932,7 +6921,7 @@ async function verifyDynamicArticle(row: BrowserRow, page: Page) {
   await page.waitForURL((url) => isShown(url, 'article', 'en-US'));
   await page.waitForFunction(
     () =>
-      document.title === 'The Equator localization handbook' &&
+      document.title === 'The Thoth localization handbook' &&
       document
         .querySelector('[data-route-view="article"]')
         ?.getAttribute('data-entity-id') === 'handbook',
@@ -6995,11 +6984,11 @@ async function verifyDynamicArticle(row: BrowserRow, page: Page) {
   }
   await page.waitForFunction(
     () =>
-      document.title === 'دليل Equator للترجمة' &&
+      document.title === 'دليل Thoth للترجمة' &&
       document.documentElement.lang === 'ar-EG' &&
       document
         .querySelector('[data-dynamic-title]')
-        ?.textContent.includes('دليل Equator للترجمة'),
+        ?.textContent.includes('دليل Thoth للترجمة'),
   );
   assert.equal(
     await page.locator('link[rel="canonical"]').getAttribute('href'),
@@ -7407,7 +7396,7 @@ try {
     // public. Different body, different `Location`, same cache key.
     const negotiatedEntry = await answer('/', {
       redirect: 'manual',
-      headers: { cookie: 'equator-locale=ar-EG' },
+      headers: { cookie: 'thoth-locale=ar-EG' },
     });
     assert.equal(negotiatedEntry.status, 307);
     assert.equal(
@@ -7427,7 +7416,7 @@ try {
     // into an error about a URL that was perfectly valid.
     const unusableEntry = await answer('/', {
       redirect: 'manual',
-      headers: { cookie: 'equator-locale=zz-ZZ' },
+      headers: { cookie: 'thoth-locale=zz-ZZ' },
     });
     assert.equal(unusableEntry.status, 307);
     assert.equal(
@@ -7437,12 +7426,12 @@ try {
     // And a preference for a locale this policy *does* address, which this build did not generate.
     // `zz-ZZ` above was refused by the policy alone and proves nothing about the build; `en-Arab-XB`
     // has a prefix written for it in `route-policy.ts` and exists only under
-    // `equator generate --pseudo`. Until the served policy was narrowed to the generated locale set
+    // `thoth generate --pseudo`. Until the served policy was narrowed to the generated locale set
     // this answered `/en-arab-xb`, and the address behind it rendered as a success in markup
     // labelled `lang="en-Arab-XB"` with English text inside it (4.16).
     const unbuiltEntry = await answer('/', {
       redirect: 'manual',
-      headers: { cookie: 'equator-locale=en-Arab-XB' },
+      headers: { cookie: 'thoth-locale=en-Arab-XB' },
     });
     assert.equal(unbuiltEntry.status, 307);
     assert.equal(
@@ -7656,7 +7645,7 @@ try {
     );
   }
 
-  // Follow it. Asserting the redirect and stopping there proves Equator can name the address, not
+  // Follow it. Asserting the redirect and stopping there proves Thoth can name the address, not
   // that anything serves it, and this is precisely the address that does not serve itself.
   //
   // The build writes the page at the decoded spelling on disk while the browser asks for it encoded.
@@ -7687,7 +7676,7 @@ try {
     assert.equal(encodedDocument.documentElement.lang, 'ar-EG');
     assert.equal(
       encodedDocument.title,
-      '\u062f\u0644\u064a\u0644 Equator \u0644\u0644\u062a\u0631\u062c\u0645\u0629',
+      '\u062f\u0644\u064a\u0644 Thoth \u0644\u0644\u062a\u0631\u062c\u0645\u0629',
     );
     assert.equal(
       encodedDocument
@@ -7700,7 +7689,7 @@ try {
   assert.equal(articleResponse.status, 200);
   const articleDocument = new JSDOM(await articleResponse.text()).window
     .document;
-  assert.equal(articleDocument.title, 'The Equator localization handbook');
+  assert.equal(articleDocument.title, 'The Thoth localization handbook');
   assert.equal(
     articleDocument
       .querySelector('meta[name="description"]')
@@ -7808,7 +7797,7 @@ try {
   // above gives: this deployment has two halves that answer, and which one answers an address
   // moves with the engine's version. The prerendered file carries the language on the document and
   // no robots meta, whichever half hands it over; `Content-Language` and `X-Robots-Tag` are set by
-  // the half that runs Equator. So a header assertion here would be a claim about the plumbing, and
+  // the half that runs Thoth. So a header assertion here would be a claim about the plumbing, and
   // what the sitemap promises is a page: at this address, in this language, open to a crawler.
   for (const published of publishedUrls) {
     const path = new URL(published).pathname;
@@ -7826,7 +7815,7 @@ try {
       sitemapLocales.get(published),
       `${published} is served in the wrong language`,
     );
-    // Equator writes this element only for a page it classes out of the index, so its absence is
+    // Thoth writes this element only for a page it classes out of the index, so its absence is
     // the assertion. An indexable page carries no robots meta at all.
     assert.equal(
       servedDocument.querySelector('meta[name="robots"]'),
@@ -7846,14 +7835,14 @@ try {
     // under a locale whose title is not that string.
     //
     // `second` declares `'Second route, declared in English'`. Angular's `DefaultTitleStrategy`
-    // writes a declared title after `NavigationEnd`, which is after Equator has written the
+    // writes a declared title after `NavigationEnd`, which is after Thoth has written the
     // localized one, so on a server render this is where the two writers meet. The provider line in
     // `app.config.ts` is what decides it: take it out and this document says the English string
     // under `lang="ar-EG"`, with nothing thrown and nothing logged.
     render('titled-request', 'ar-EG', 'second'),
     // 8.4. The route whose slug no codec can translate, server-rendered.
     //
-    // `dossierSlugCodec` is identity, so left to itself Equator advertises the English slug under
+    // `dossierSlugCodec` is identity, so left to itself Thoth advertises the English slug under
     // the Arabic prefix. The page's component loads the record and declares the per-locale
     // spellings, and this is the only place that proves the declaration survives a server render:
     // it lands on a promise after the route activates, so a render that serialized the head before
@@ -7865,12 +7854,12 @@ try {
 
   assert.equal(alpha.document.documentElement.lang, 'en-US');
   assert.equal(alpha.document.documentElement.dir, 'ltr');
-  assert.equal(alpha.document.title, 'Equator feature lab');
+  assert.equal(alpha.document.title, 'Thoth feature lab');
   assert.equal(
     alpha.document
       .querySelector('meta[name="description"]')
       ?.getAttribute('content'),
-    'Equator localization runtime feature laboratory.',
+    'Thoth localization runtime feature laboratory.',
   );
   assert.equal(
     alpha.document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
@@ -7887,7 +7876,7 @@ try {
   );
   assert.match(
     alpha.document.querySelector('h1')?.textContent ?? '',
-    /Equator feature lab/,
+    /Thoth feature lab/,
   );
   assert.equal(
     alpha.document
@@ -7897,7 +7886,7 @@ try {
   );
   assert.equal(bravo.document.documentElement.lang, 'ar-EG');
   assert.equal(bravo.document.documentElement.dir, 'rtl');
-  assert.equal(bravo.document.title, 'مختبر ميزات Equator');
+  assert.equal(bravo.document.title, 'مختبر ميزات Thoth');
 
   // Asserted on the rendered document, and asserted twice: what the title is, and what it is not.
   // The second is the load-bearing one: the failure mode is a *different valid title*, not a
@@ -7964,7 +7953,7 @@ try {
   );
   assert.match(
     bravo.document.querySelector('h1')?.textContent ?? '',
-    /مختبر ميزات Equator/,
+    /مختبر ميزات Thoth/,
   );
   assert.equal(
     bravo.document
@@ -8040,7 +8029,7 @@ try {
 
   // The rest of the block, including the four ogp.me calls required, and the description in Arabic
   // rather than the source locale.
-  assert.deepEqual(openGraph(bravo, 'og:title'), ['مختبر ميزات Equator']);
+  assert.deepEqual(openGraph(bravo, 'og:title'), ['مختبر ميزات Thoth']);
   assert.deepEqual(openGraph(bravo, 'og:type'), ['website']);
   assert.deepEqual(openGraph(bravo, 'og:image'), [
     'https://site.example/social/preview.png',
@@ -8095,7 +8084,7 @@ try {
   assert.equal(bravo.transfer.formatting.locale, 'ar-EG');
   assert.deepEqual(alpha.transfer.participants, [
     {
-      profile: 'equator-participant-state/1',
+      profile: 'thoth-participant-state/1',
       participantId: 'feature-article',
       coordination: 'required',
       current: {
@@ -8146,14 +8135,12 @@ try {
   assert.equal(
     JSON.stringify(alpha.transfer).includes('consumer-owned-dynamic-payload'),
     false,
-    'Equator TransferState retained consumer payload',
+    'Thoth TransferState retained consumer payload',
   );
   assert.equal(
-    JSON.stringify(alpha.transfer).includes(
-      'The Equator localization handbook',
-    ),
+    JSON.stringify(alpha.transfer).includes('The Thoth localization handbook'),
     false,
-    'Equator TransferState retained consumer article text',
+    'Thoth TransferState retained consumer article text',
   );
   assert.equal(
     alpha.dynamicTransfer.article.payloadMarker,
@@ -8161,27 +8148,27 @@ try {
   );
   assert.equal(
     alpha.dynamicTransfer.article.title,
-    'The Equator localization handbook',
+    'The Thoth localization handbook',
   );
   assert.equal(alpha.dynamicTransfer.article.supplyingLocale, 'en-US');
   assert.equal(bravo.dynamicTransfer.article.supplyingLocale, 'ar-EG');
   assert.equal(
     alpha.document.querySelector('[data-dynamic-title]')?.textContent.trim(),
-    'The Equator localization handbook',
+    'The Thoth localization handbook',
   );
   assert.equal(
     bravo.document.querySelector('[data-dynamic-title]')?.textContent.trim(),
-    'دليل Equator للترجمة',
+    'دليل Thoth للترجمة',
   );
   // An attribute-position label has to be in the server's HTML, not written on hydration. A
   // crawler and a screen reader on a page that has not hydrated read the markup as delivered.
   assert.equal(
     alpha.document.querySelector('[data-label]')?.getAttribute('aria-label'),
-    'Equator feature lab',
+    'Thoth feature lab',
   );
   assert.equal(
     bravo.document.querySelector('[data-label]')?.getAttribute('aria-label'),
-    'مختبر ميزات Equator',
+    'مختبر ميزات Thoth',
   );
   assert.equal(
     alpha.document.querySelector('[data-label-alt]')?.getAttribute('alt'),
@@ -8228,7 +8215,7 @@ try {
         'consumer-owned-dynamic-payload',
       ),
       false,
-      'Equator TransferState retained consumer payload during endurance',
+      'Thoth TransferState retained consumer payload during endurance',
     );
     assert.equal(
       snapshot.dynamicTransfer.article.payloadMarker,
@@ -8329,7 +8316,7 @@ try {
 if (verificationFailure !== undefined) {
   const details = describeError(verificationFailure);
   process.stderr.write(
-    `Equator browser assurance failed.\n${details}\n${JSON.stringify(verificationDiagnostics, null, 2)}\n`,
+    `Thoth browser assurance failed.\n${details}\n${JSON.stringify(verificationDiagnostics, null, 2)}\n`,
   );
   process.exitCode = 1;
 }

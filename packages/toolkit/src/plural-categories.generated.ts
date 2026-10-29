@@ -1,5 +1,5 @@
 /** Generated from cldr-core 48.2.0 by tools/generate-locale-profile.ts. */
-export const PLURAL_DATA_PROFILE = 'cldr-48.2/equator-plurals-1' as const;
+export const PLURAL_DATA_PROFILE = 'cldr-48.2/thoth-plurals-1' as const;
 
 /**
  * Cardinal plural categories each language requires, keyed by CLDR language subtag.

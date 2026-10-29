@@ -17,10 +17,10 @@ import {
   LocalizationError,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
- * One cookie, written by two halves of Equator, asserted once.
+ * One cookie, written by two halves of Thoth, asserted once.
  *
  * The browser store and the server handler write the same cookie for the same visitor: the handler
  * sets it on the response of the first request, and the store rewrites it once the application has
@@ -49,7 +49,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-LocaleCookieDefaultsTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -150,7 +150,7 @@ async function serverHeader(
   return written ?? '';
 }
 
-describe('the cookie both halves of Equator write', () => {
+describe('the cookie both halves of Thoth write', () => {
   it('is Secure by default, on both of them', async () => {
     expect(await clientHeader({}, 'ar-EG')).toContain('; Secure');
     expect(await serverHeader({}, '/ar-eg/second')).toContain('; Secure');
@@ -166,7 +166,7 @@ describe('the cookie both halves of Equator write', () => {
 
   it('is the same header when a deployment turns Secure off, which is what a loopback lab does', async () => {
     const options: CookieStoreOptions = {
-      name: 'equator-locale',
+      name: 'thoth-locale',
       secure: false,
     };
 
@@ -238,7 +238,7 @@ describe('a cookie configuration neither half will write', () => {
   it('is refused by the browser store where it is configured', () => {
     for (const [what, options, rule] of refused) {
       expect(() => cookieStore(options), what).toThrow(rule);
-      expect(() => cookieStore(options), what).toThrow(/Equator cookieStore/u);
+      expect(() => cookieStore(options), what).toThrow(/Thoth cookieStore/u);
     }
   });
 
@@ -277,7 +277,7 @@ describe('a cookie configuration neither half will write', () => {
           cookie: options,
         });
       expect(create, what).toThrow(rule);
-      expect(create, what).toThrow(/Equator createLocaleRequestHandler/u);
+      expect(create, what).toThrow(/Thoth createLocaleRequestHandler/u);
     }
   });
 

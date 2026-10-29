@@ -1,6 +1,6 @@
 # Routing, rendering, and SEO
 
-Where a page localized with Equator lives, what identifies it across locales, what a request to it
+Where a page localized with Thoth lives, what identifies it across locales, what a request to it
 receives, and what the document then says about itself to a crawler.
 
 Locale identity and the resolution order behind a first request are
@@ -473,7 +473,7 @@ current state onto the control the application binds, and MUST render no markup 
 consumer application writes the loop and the markup, and MUST NOT spell a locale out in a template.
 
 That name comes from the toolkit's pinned locale data and travels in the generated configuration,
-one string per configured locale. An Equator release MUST NOT read it from the host's own
+one string per configured locale. A Thoth release MUST NOT read it from the host's own
 display-name implementation where the pinned release has one, because the engines disagree: over
 sixteen locales on the four engines a release gates on, three differed, and a server-rendered label
 then changed under the visitor on hydration. A locale the pinned release has no name for carries

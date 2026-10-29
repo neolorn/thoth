@@ -7,18 +7,18 @@ import type { GeneratedRouteProjection } from './routing';
  * The version stamp on the interface between generated code and the runtime.
  *
  * Both halves carry it and the runtime checks them against each other, so generated output from one
- * version of Equator and a runtime from another refuse each other rather than half working.
+ * version of Thoth and a runtime from another refuse each other rather than half working.
  */
-export const GENERATED_ABI = 'equator-generated/1' as const;
+export const GENERATED_ABI = 'thoth-generated/1' as const;
 /** The version stamp on a compiled catalog, checked before one is read. */
-export const COMPILED_IR_PROFILE = 'equator-compiled-ir/1' as const;
+export const COMPILED_IR_PROFILE = 'thoth-compiled-ir/1' as const;
 /** The version stamp on the descriptor listing a build's compiled catalogs. */
-export const CATALOG_SET_PROFILE = 'equator-catalog-set/1' as const;
+export const CATALOG_SET_PROFILE = 'thoth-catalog-set/1' as const;
 /** The version stamp on one extension declaration. */
 export const EXTENSION_DESCRIPTOR_PROFILE =
-  'equator-extension-descriptor/1' as const;
+  'thoth-extension-descriptor/1' as const;
 /** The version stamp on the resource counts carried beside a compiled catalog. */
-export const RESOURCE_SUMMARY_PROFILE = 'equator-resource-summary/1' as const;
+export const RESOURCE_SUMMARY_PROFILE = 'thoth-resource-summary/1' as const;
 
 /**
  * Which way a language is written: left to right, or right to left.
@@ -31,10 +31,10 @@ export type LocaleDirection = 'ltr' | 'rtl';
 /**
  * A direction that may be left undetermined.
  *
- * `auto` is not a third writing direction. It says Equator does not know, and defers to the
+ * `auto` is not a third writing direction. It says Thoth does not know, and defers to the
  * renderer's first-strong rule (UAX #9 P2/P3), which is what `dir="auto"` and `<bdi>` already
  * do in a browser. Deferring leaves the question open, which is what
- * `specs/03-locale-identity-and-resolution.spec.md` section 10 requires: Equator never determines
+ * `specs/03-locale-identity-and-resolution.spec.md` section 10 requires: Thoth never determines
  * the authoritative language of consumer content.
  */
 export type ContentDirection = LocaleDirection | 'auto';
@@ -190,7 +190,7 @@ export interface GeneratedScope {
   /**
    * Whether the first render uses this scope.
    *
-   * Absent means yes, so a configuration that does not carry the field loads everything. Equator
+   * Absent means yes, so a configuration that does not carry the field loads everything. Thoth
    * derives it from the route tree rather than asking an application to declare it: a scope used
    * only behind a lazy route boundary is loaded when that route activates.
    */
@@ -226,9 +226,9 @@ export interface GeneratedConfiguration {
    *
    * A switcher's label is the one thing about a locale the visitor reads in the locale's own
    * language, and `Intl.DisplayNames` answers it from whatever CLDR snapshot the visitor's engine
-   * happens to carry. Measured across the four engines Equator gates on, three of sixteen locales
-   * disagreed, and Equator server-renders the switcher on Node, so the label could change under a
-   * visitor on hydration, from a value Equator itself had published, with nothing wrong anywhere.
+   * happens to carry. Measured across the four engines Thoth gates on, three of sixteen locales
+   * disagreed, and Thoth server-renders the switcher on Node, so the label could change under a
+   * visitor on hydration, from a value Thoth itself had published, with nothing wrong anywhere.
    *
    * The build decides it instead, once, and sends one string per configured locale. A locale
    * absent from the table is one the toolkit's CLDR has no name for; the runtime asks the engine
@@ -365,11 +365,11 @@ export interface ArtifactAddress {
   /** The compiled-shape version stamp the artifact carries. */
   readonly compiledIrProfile: typeof COMPILED_IR_PROFILE;
   /** The schema of the file itself. */
-  readonly schema: 'equator-compiled-catalog/1';
+  readonly schema: 'thoth-compiled-catalog/1';
   /** Runtime capabilities it needs, which a host without them refuses on. */
   readonly requiredFeatures: readonly string[];
   /** The standards profile its messages were compiled under. */
-  readonly standardsProfile: 'equator-1';
+  readonly standardsProfile: 'thoth-1';
   /** The generated interface version it matches. */
   readonly generatedAbi: typeof GENERATED_ABI;
   /** The message-contract digest it was built against. */
@@ -486,7 +486,7 @@ export interface RuntimeMessageFunctionDescriptor extends RuntimeExtensionDescri
 }
 
 /**
- * The declaration half of a value type a message family may vary over, beyond Equator's own.
+ * The declaration half of a value type a message family may vary over, beyond Thoth's own.
  *
  * Says what a segment value may look like; the code that normalizes one arrives as a binding.
  */
@@ -499,7 +499,7 @@ export interface RuntimeIdentifierSegmentDescriptor extends RuntimeExtensionDesc
 }
 
 /**
- * The declaration half of a named region messages may place, beyond the ones Equator ships.
+ * The declaration half of a named region messages may place, beyond the ones Thoth ships.
  *
  * The catalog places it and names it; what it renders as is decided in application code, which is
  * what keeps a catalog from naming a component.
@@ -521,7 +521,7 @@ export interface RuntimeRichSlotKindDescriptor extends RuntimeExtensionDescripto
 }
 
 /**
- * The declaration half of a way of writing a value type Equator does not know.
+ * The declaration half of a way of writing a value type Thoth does not know.
  *
  * A domain's own quantity, code or identifier. The code that writes it arrives as a binding.
  */
@@ -536,7 +536,7 @@ export interface RuntimeFormattingAdapterDescriptor extends RuntimeExtensionDesc
 }
 
 /**
- * The declaration half of a way of reading a value type Equator does not know out of typed text.
+ * The declaration half of a way of reading a value type Thoth does not know out of typed text.
  *
  * The other half of a formatting adapter, for a field that has to round-trip.
  */
@@ -578,10 +578,10 @@ export interface MessageFunctionInvocation {
    *
    * MessageFormat resolves an operand that is itself an annotated expression to a value that can
    * carry options, "with options on the expression taking priority over any options of the
-   * operand". Equator does this for extensions as for its own numeric functions; otherwise
+   * operand". Thoth does this for extensions as for its own numeric functions; otherwise
    * `.input {$x :ns:f a=1}` followed by `.local $y = {$x :ns:f}` would reach the second call with
    * nothing, and the same message would give two answers depending on which function it names. The
-   * narrowing is Equator's: a descriptor says which options a function accepts, and inheritance
+   * narrowing is Thoth's: a descriptor says which options a function accepts, and inheritance
    * must not be a way for a name it never declared to arrive anyway.
    *
    * An option written as a variable whose input was omitted or is null is absent: its name is not a
@@ -613,7 +613,7 @@ export interface MessageFunctionResult {
    *
    * This was a single `selectKey`, which could express neither. A function could not match `1.0`
    * and `1` at once, and could not say that `1.0` was the better of the two, so the ranking channel
-   * Equator's own `:number` uses had no counterpart an extension could reach. An empty list is a
+   * Thoth's own `:number` uses had no counterpart an extension could reach. An empty list is a
    * value that supports selection and matches nothing, which is different from a function that does
    * not select at all: the first reaches the catch-all, the second is refused at compile time.
    */
@@ -759,7 +759,7 @@ export interface RecoveryRepresentation {
 }
 
 /**
- * One locale's person-name profile, as Equator generates it: the pattern cube plus the scalars.
+ * One locale's person-name profile, as Thoth generates it: the pattern cube plus the scalars.
  *
  * Positional rather than named. Named fields would outweigh the data several times over in a
  * generated artifact, and nothing reads a row by hand: `formatPersonName` is the only reader.
@@ -810,7 +810,7 @@ export interface PersonNameProfileSet {
 
 /*
  * Why this is not a member of `FormattingContext`, which is where locale data would naturally sit:
- * a formatting context is part of the snapshot Equator serializes into the SSR transfer payload, so
+ * a formatting context is part of the snapshot Thoth serializes into the SSR transfer payload, so
  * a table on it would be sent to the browser inside every rendered response, on top of the copy
  * already in the bundle. It reaches `formatPersonName` as an argument instead.
  */
@@ -855,10 +855,10 @@ export interface LocalizationSetup {
   /** The installed extensions, each pairing a declaration with the code that implements it. */
   readonly extensions?: readonly RuntimeExtensionBinding[];
   /**
-   * The route table Equator derived from this owner's sources.
+   * The route table Thoth derived from this owner's sources.
    *
    * Supplied by the generated `provideLocalization()`, never by the application: it is the half of
-   * a route projection Equator already knows. `withRouting()` carries the other half (the URL
+   * a route projection Thoth already knows. `withRouting()` carries the other half (the URL
    * policy, and the localized paths, parameter codecs, and historical outcomes an application
    * owns) so no application declares the same route table twice, which is how two copies of it
    * drift apart.
@@ -962,7 +962,7 @@ export interface LocalizationDiagnostic {
   readonly code: LocalizationFailureCode;
   /** Whether this is a defect, an honest absence, or the application's own result. */
   readonly outcome: LocalizationOutcomeClass;
-  /** A fixed sentence from Equator's own vocabulary. Never assembled out of what was caught. */
+  /** A fixed sentence from Thoth's own vocabulary. Never assembled out of what was caught. */
   readonly message: string;
   /** The locale the work was for, which on a change is the one being moved to. */
   readonly targetLocale?: string;
@@ -983,7 +983,7 @@ export interface LocalizationDiagnostic {
 }
 
 /**
- * What Equator throws, carrying the diagnostic rather than only a sentence.
+ * What Thoth throws, carrying the diagnostic rather than only a sentence.
  *
  * Thrown where there is no result to return one in: a misconfiguration, a value that cannot be
  * built. Work with an outcome reports through a result instead.
@@ -1027,7 +1027,7 @@ export interface LocalizationSnapshot {
   /** The generated interface version the catalogs were built against. */
   readonly generatedAbi: typeof GENERATED_ABI;
   /** The standards profile the messages were compiled under. */
-  readonly standardsProfile: 'equator-1';
+  readonly standardsProfile: 'thoth-1';
   /** Which catalog set answered for each package, which is what distinguishes two builds. */
   readonly catalogSetIds: Readonly<Record<string, string>>;
   /** The zone, calendar, numbering system and hour cycle every formatting call inherits. */
@@ -1078,8 +1078,8 @@ export type LocalizationParticipantCoordination = 'required' | 'progressive';
 /**
  * What a participant fetched, named in the application's own terms.
  *
- * Equator carries these and never interprets them. They exist so a report can be traced back to the
- * thing it is about without Equator knowing what that thing is.
+ * Thoth carries these and never interprets them. They exist so a report can be traced back to the
+ * thing it is about without Thoth knowing what that thing is.
  */
 export interface LocalizationParticipantIdentity {
   /** What was fetched, by whatever identity the application gives it. */
@@ -1088,7 +1088,7 @@ export interface LocalizationParticipantIdentity {
   readonly representationId?: string;
   /** Which version, so a stale answer can be recognized as stale. */
   readonly revision?: string;
-  /** Ties this to work outside Equator, when the application supplied something to tie it to. */
+  /** Ties this to work outside Thoth, when the application supplied something to tie it to. */
   readonly correlationId?: string;
 }
 
@@ -1303,7 +1303,7 @@ export interface LocalizationParticipantContext {
 /**
  * A region of a page whose content belongs to the application rather than to a catalog.
  *
- * Equator loads catalogs. It never sees an article body, a product description, or a row out of a
+ * Thoth loads catalogs. It never sees an article body, a product description, or a row out of a
  * database, so anything localized outside a catalog changes locale by taking part in the same
  * transaction: `prepare` is asked for the new locale, the transition waits for it, and `commit`
  * swaps the payload the consumer kept in its own store.
@@ -1328,9 +1328,9 @@ export interface LocalizationParticipantContext {
  * different outcome.
  *
  * On a pseudo-locale page the consequence is the point rather than a compromise: every message
- * that went through Equator carries the pseudo-locale's transformation and this content does not,
+ * that went through Thoth carries the pseudo-locale's transformation and this content does not,
  * which is exactly what an unlocalized string is supposed to look like. Content that never went
- * through Equator is the largest class of them.
+ * through Thoth is the largest class of them.
  */
 export interface LocalizationParticipant {
   /** What this participant is called. Appears in diagnostics and in the participant state list. */
@@ -1457,7 +1457,7 @@ export type LocaleChangeResult =
        * snapshot. The answer is an address, and `address` is it: this page's own address at the
        * origin that serves the locale asked for.
        *
-       * In a browser Equator has started moving the document there by the time this resolves, so
+       * In a browser Thoth has started moving the document there by the time this resolves, so
        * nothing after the call is guaranteed to run. On the server nothing moved, because there is
        * no document to move; the address is still the honest answer to what was asked.
        *
@@ -1556,12 +1556,12 @@ export interface LocalizedValuePart {
    * The direction of the value's own content, which is not the same question as `direction`.
    *
    * `direction` answers "which locale produced this", and for an interpolated value that is always
-   * the message's own locale, since Equator does not ask a consumer to tag every input.
+   * the message's own locale, since Thoth does not ask a consumer to tag every input.
    * `contentDirection` answers "which way does this text run", and it is the one that decides
    * isolation. A customer name typed in Arabic inside an English message has `direction: 'ltr'`
    * and does not run left-to-right.
    *
-   * `auto` where Equator defers rather than decides: the value is consumer content, so the
+   * `auto` where Thoth defers rather than decides: the value is consumer content, so the
    * renderer's first-strong rule answers it. MessageFormat 2's `u:dir` overrides all of this.
    */
   readonly contentDirection: ContentDirection;
@@ -1966,7 +1966,7 @@ export interface PersonNameFormatOptions {
  * One piece of a formatted value, for a caller that needs to style or read part of it.
  *
  * The currency symbol apart from its number, the month apart from the year, one field of a name.
- * The kinds come from the platform's own formatters, plus a few Equator adds for the things it
+ * The kinds come from the platform's own formatters, plus a few Thoth adds for the things it
  * formats itself.
  */
 export interface LocalizedFormatPart {
@@ -2077,7 +2077,7 @@ export interface LocaleWeekInformation {
 /**
  * What the host knows about a locale: how it is written, and what it supports.
  *
- * Read from the platform rather than shipped by Equator, so what comes back is what this engine can
+ * Read from the platform rather than shipped by Thoth, so what comes back is what this engine can
  * actually do rather than what the data says somewhere else.
  */
 export interface LocaleMetadata {
@@ -2430,7 +2430,7 @@ export type LocalizedInputResult<Value> =
 /**
  * A failure reported by something outside the application, in its own vocabulary.
  *
- * A validation code from a form library, an error code from a service. Equator turns it into words;
+ * A validation code from a form library, an error code from a service. Thoth turns it into words;
  * it never decides what the code means.
  */
 export interface LocalizedIssue {
@@ -2473,7 +2473,7 @@ export interface IssueMessageSource {
   /**
    * The generated group the convention looks in, such as `messages.issue`.
    *
-   * Passing the group rather than each member is also what makes these messages reachable: Equator
+   * Passing the group rather than each member is also what makes these messages reachable: Thoth
    * sees the group referenced and treats every message in it as used, so none is reported unused
    * or dropped because the code that selects it is a string from a server.
    */
@@ -2555,7 +2555,7 @@ export interface LocalizedNotification {
 /**
  * How text in one writing system should be set.
  *
- * Declared by the application, because a font stack is a design decision. What Equator contributes
+ * Declared by the application, because a font stack is a design decision. What Thoth contributes
  * is choosing which of them applies to the committed locale.
  */
 export interface TypographyProfile {
@@ -2625,7 +2625,7 @@ export interface LocalizationContextOptions {
   /** The locale to start in. Defaults to the configured default. */
   readonly initialLocale?: string;
   /**
-   * Something of the caller's own to carry through, opaque to Equator.
+   * Something of the caller's own to carry through, opaque to Thoth.
    *
    * On a server this is usually the request, so a participant preparing content for one request can
    * reach it without a global: each participant of the context, and of a child context made from

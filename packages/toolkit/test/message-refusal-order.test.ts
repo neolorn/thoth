@@ -39,11 +39,11 @@ describe('a refusal that lists what it found', () => {
   it('names the options of a set that cannot be used together in one order', () => {
     const written = refusal(
       '{$n :number minimumFractionDigits=5 maximumFractionDigits=2}',
-      'EQ1204',
+      'TH1204',
     );
     const reordered = refusal(
       '{$n :number maximumFractionDigits=2 minimumFractionDigits=5}',
-      'EQ1204',
+      'TH1204',
     );
 
     expect(written).toContain('minimumFractionDigits=5');
@@ -53,11 +53,11 @@ describe('a refusal that lists what it found', () => {
 
   it('names the functions that select in one order, whatever order extensions were registered in', () => {
     const source = '.input {$when :datetime} .match $when * {{Later}}';
-    const registered = refusal(source, 'EQ1206', [
+    const registered = refusal(source, 'TH1206', [
       selector('demo:zone'),
       selector('demo:area'),
     ]);
-    const reordered = refusal(source, 'EQ1206', [
+    const reordered = refusal(source, 'TH1206', [
       selector('demo:area'),
       selector('demo:zone'),
     ]);

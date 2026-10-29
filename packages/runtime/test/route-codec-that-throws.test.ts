@@ -8,7 +8,7 @@ import {
   validateRouteProjection,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A route parameter codec that throws where it is asked to read an address.
@@ -29,7 +29,7 @@ const projectionWith = (
   codec: RouteParameterCodec,
 ): RouteRuntimeProjection => ({
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-RouteCodecThatThrowsTestIdentity0123456789a',
     routes: [
       { id: 'article', path: 'articles/:slug', parameterNames: ['slug'] },

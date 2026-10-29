@@ -56,7 +56,7 @@ export function ɵassertStorableCookie(
       Object.freeze({
         code: 'invalid-configuration',
         outcome: 'operational-failure',
-        message: `Equator ${owner}: ${rule}`,
+        message: `Thoth ${owner}: ${rule}`,
         reason: 'malformed-input',
       }),
     );

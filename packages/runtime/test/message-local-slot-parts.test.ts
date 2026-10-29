@@ -7,7 +7,7 @@ import type {
   MessageHandle,
   RuntimeRichSlotKindBinding,
   RuntimeRichSlotKindDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { defineExtensionRegistry } from '../../toolkit/src/extensions.js';
 import { parseMessageSemanticModel } from '../../toolkit/src/message-format.js';
 import type { MessageSemanticModel } from '../../toolkit/src/message-format.js';
@@ -110,9 +110,9 @@ function catalogFor(
     outputParts: 64,
   };
   return {
-    profile: 'equator-compiled-ir/1',
-    generatedAbi: 'equator-generated/1',
-    standardsProfile: 'equator-1',
+    profile: 'thoth-compiled-ir/1',
+    generatedAbi: 'thoth-generated/1',
+    standardsProfile: 'thoth-1',
     key: { providerId: 'slot', scopeId: 'slot', catalogLocale: locale },
     applicationContractFingerprint: 'test',
     semanticRegistryFingerprint: 'test',
@@ -143,7 +143,7 @@ function catalogFor(
 
 function evaluateParts(source: string, locale = 'en-US'): LocalizedParts {
   const handle: MessageHandle = {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     providerId: 'slot',
     scopeId: 'slot',
     messageId: 'subject',

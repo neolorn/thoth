@@ -57,7 +57,7 @@ describe('a target that omits a required slot', () => {
     const omitted = result.diagnostics
       .filter(
         ({ code, summary }) =>
-          code === 'EQ1304' && summary.includes('omits required rich slot'),
+          code === 'TH1304' && summary.includes('omits required rich slot'),
       )
       .map(({ summary }) => summary);
     expect(omitted).toHaveLength(2);

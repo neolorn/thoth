@@ -6,7 +6,7 @@ import {
   type FormattingContext,
   type FormattingResult,
   type LocalizedInputProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Writing a field answers with text or with a reported failure. A value read from storage or built

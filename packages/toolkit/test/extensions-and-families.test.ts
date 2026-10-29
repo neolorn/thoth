@@ -134,12 +134,12 @@ function catalogs(extensions: ExtensionRegistry): readonly Catalog[] {
   ];
 }
 
-describe('Equator application-local extension registry', () => {
+describe('Thoth application-local extension registry', () => {
   it('parses strict JSON and formats one deterministic inert registry', () => {
     const expected = registry();
     const formatted = formatExtensionRegistry(expected);
     const parsed = parseExtensionRegistry(formatted, {
-      sourcePath: 'equator.extensions.json',
+      sourcePath: 'thoth.extensions.json',
     });
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
@@ -147,10 +147,10 @@ describe('Equator application-local extension registry', () => {
     expect(formatExtensionRegistry(parsed.value)).toBe(formatted);
 
     const duplicateKey = parseExtensionRegistry(
-      '{"profile":"equator-extension-registry/1","descriptors":[],"descriptors":[]}',
+      '{"profile":"thoth-extension-registry/1","descriptors":[],"descriptors":[]}',
     );
     expect(duplicateKey.ok).toBe(false);
-    expect(duplicateKey.diagnostics[0]?.code).toBe('EQ1805');
+    expect(duplicateKey.diagnostics[0]?.code).toBe('TH1805');
   });
 
   it('requires registered descriptors while keeping bindings and code out of catalogs', () => {
@@ -226,7 +226,7 @@ describe('Equator application-local extension registry', () => {
   });
 });
 
-describe('Equator bounded open message families', () => {
+describe('Thoth bounded open message families', () => {
   it('rejects families whose current members do not share one contract', () => {
     const extensions = registry();
     const source = catalog(
@@ -257,16 +257,16 @@ describe('Equator bounded open message families', () => {
       extensions,
     });
     expect(analyzed.ok).toBe(false);
-    expect(analyzed.diagnostics.map(({ code }) => code)).toContain('EQ1305');
+    expect(analyzed.diagnostics.map(({ code }) => code)).toContain('TH1305');
   });
 });
 /**
  * What an extension descriptor may spell, and what a message may write against it.
  *
  * Two rules that had drifted from the standard in the same direction and for the same reason: both
- * were written against ASCII lower-kebab identifiers, which is Equator's own convention, and
- * applied to MessageFormat's vocabulary, which is not Equator's. An option name could not be
- * `decimalPlaces` (nor `signDisplay`, which Equator's own `:number` has) and an option value could
+ * were written against ASCII lower-kebab identifiers, which is Thoth's own convention, and
+ * applied to MessageFormat's vocabulary, which is not Thoth's. An option name could not be
+ * `decimalPlaces` (nor `signDisplay`, which Thoth's own `:number` has) and an option value could
  * not satisfy an `integer`, `number` or `boolean` type, because a MessageFormat option value is a
  * literal and a literal is text. The second made the first pointless: the name became spellable and
  * the value behind it was still refused.
@@ -287,7 +287,7 @@ describe('a message-function option, as MessageFormat spells one', () => {
 
   it.each([
     ["decimalPlaces, which the standard's own suite writes", 'decimalPlaces'],
-    ["signDisplay, which Equator's own :number has", 'signDisplay'],
+    ["signDisplay, which Thoth's own :number has", 'signDisplay'],
     ['a dot, which name-char allows', 'decimal.places'],
     ['a leading +, which name-start allows', '+places'],
     ['a leading _, which name-start allows', '_places'],
@@ -301,7 +301,7 @@ describe('a message-function option, as MessageFormat spells one', () => {
     ['a leading digit, which name-start excludes', '9places'],
     ['a space, which no production allows', 'pla ces'],
     [
-      'a bidi wrapper, which the parser strips before Equator sees it',
+      'a bidi wrapper, which the parser strips before Thoth sees it',
       '\u200eplaces\u200e',
     ],
     ['more than 64 code points', 'x'.repeat(65)],
@@ -392,7 +392,7 @@ describe('a typed option value written as a literal', () => {
 
   const problems = (graph: ReturnType<typeof typed>) =>
     graph.diagnostics
-      .filter(({ code }) => code === 'EQ1805')
+      .filter(({ code }) => code === 'TH1805')
       .map(({ summary }) => summary);
 
   it.each([

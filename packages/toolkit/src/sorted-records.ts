@@ -1,7 +1,7 @@
 /**
  * One key order and one record shape, for every table the toolkit emits.
  *
- * Everything Equator writes is compared against something: a digest, a catalog diff, a generated
+ * Everything Thoth writes is compared against something: a digest, a catalog diff, a generated
  * file checked against the source it came from. Those comparisons only mean anything if two runs
  * over the same input produce the same order, so keys are ordered by UTF-16 code unit everywhere
  * rather than by whatever order they were inserted in. That is the order RFC 8785 gives the

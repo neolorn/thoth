@@ -4,7 +4,7 @@ import {
   type FormattingResult,
   type PersonNameProfileSet,
   type PersonNameValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { formatPersonName } from '../src/formatting.js';
 
 /**
@@ -20,7 +20,7 @@ import { formatPersonName } from '../src/formatting.js';
 /** One row for `en` whose every cell is `pattern`, in the layout the generator documents. */
 const one = (pattern: string): PersonNameProfileSet =>
   ({
-    profile: 'cldr-48.2/equator-person-names-1',
+    profile: 'cldr-48.2/thoth-person-names-1',
     patterns: [pattern, '{0}.', '{0} {1}', ' '],
     rows: [
       [

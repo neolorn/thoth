@@ -13,7 +13,7 @@ import { RuntimeExtensions } from '../src/extensions.js';
 import {
   type FormattingContext,
   type MessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { COUNT, parse } from './message-harness.js';
 
@@ -43,9 +43,9 @@ function sourceCatalog(
     outputParts: 64,
   };
   return {
-    profile: 'equator-compiled-ir/1',
-    generatedAbi: 'equator-generated/1',
-    standardsProfile: 'equator-1',
+    profile: 'thoth-compiled-ir/1',
+    generatedAbi: 'thoth-generated/1',
+    standardsProfile: 'thoth-1',
     key: { providerId: 'shell', scopeId: 'shell', catalogLocale: 'en' },
     applicationContractFingerprint: 'test',
     semanticRegistryFingerprint: 'test',
@@ -71,7 +71,7 @@ function sourceCatalog(
 }
 
 const HANDLE = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   providerId: 'shell',
   scopeId: 'shell',
   messageId: 'items',

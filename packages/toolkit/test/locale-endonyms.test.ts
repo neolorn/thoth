@@ -13,9 +13,9 @@ import { localeEndonym } from '../src/locales.js';
  *
  * Read as `new Intl.DisplayNames([locale], { type: 'language' }).of(locale)` wherever the switcher
  * renders, `selfName` would be the engine's answer. Measured over sixteen locales on the four
- * engines Equator gates on, three disagree: WebKit 26.5 title-cases the language name, and Chromium
- * 149 prints the untranslated variant subtag as `VALENCIA`. Equator server-renders the switcher on
- * Node, so the label would change under a WebKit visitor on hydration, from a string Equator itself
+ * engines Thoth gates on, three disagree: WebKit 26.5 title-cases the language name, and Chromium
+ * 149 prints the untranslated variant subtag as `VALENCIA`. Thoth server-renders the switcher on
+ * Node, so the label would change under a WebKit visitor on hydration, from a string Thoth itself
  * sent.
  *
  * This is the channel from the pinned CLDR release to the generated module. Whether the rendered
@@ -58,7 +58,7 @@ async function project(locales: readonly string[]): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -145,7 +145,7 @@ describe('a locale is named by the pinned release', () => {
 
   /*
    * A tag CLDR does not list is answered by the locale above it rather than by a name assembled
-   * out of subtags Equator has no words for. Composing is what produces `VALENCIA`.
+   * out of subtags Thoth has no words for. Composing is what produces `VALENCIA`.
    *
    * `de-CH` is the example worth having, because CLDR does not compose it either: it is not
    * "Deutsch (Schweiz)" but a name of its own, which is exactly the kind of thing a table knows

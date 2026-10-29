@@ -14,7 +14,7 @@ import {
   type LocalizationObservabilityEvent,
   type LocalizationPersistenceStoreFactory,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -27,8 +27,8 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 /**
  * Remembering a locale choice between visits.
  *
- * `specs/03-locale-identity-and-resolution.spec.md` section 8 says Equator "exposes typed opt-in
- * memory, browser, SSR-cookie, and authenticated-profile ports". Equator ships the four stores
+ * `specs/03-locale-identity-and-resolution.spec.md` section 8 says Thoth "exposes typed opt-in
+ * memory, browser, SSR-cookie, and authenticated-profile ports". Thoth ships the four stores
  * rather than a description of how to write one, which a four-application workspace would write
  * four times. The shared wrapper that normally prevents that duplication is not always available
  * either: a workspace whose architecture forbids one application reaching another's code has
@@ -98,7 +98,7 @@ describe('a remembered choice', () => {
     claimCapability('store:memoryStore', {
       platform: TestBed.inject(PLATFORM_ID) as string,
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('is not written by initialization, only by a deliberate change', async () => {
@@ -180,7 +180,7 @@ describe('a reader who asks to be forgotten', () => {
     expect(await store.read()).toBeUndefined();
     expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
     claimCapability('store:memoryStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('puts the next visit back where resolution would have placed it', async () => {
@@ -288,7 +288,7 @@ describe('a stored value that cannot be believed', () => {
 
   it('reads stores in the order the consumer declared them', async () => {
     // The consumer owns the authority order, so an authenticated profile ahead of a cookie
-    // outranks it, and Equator takes the first believable answer without reordering or merging.
+    // outranks it, and Thoth takes the first believable answer without reordering or merging.
     const localization = setup([
       () => ({ id: 'first', read: () => 'ar-EG', write: () => undefined }),
       () => ({ id: 'second', read: () => 'en-US', write: () => undefined }),
@@ -379,7 +379,7 @@ describe('a store that misbehaves', () => {
 
 describe('the shipped stores', () => {
   beforeEach(() => {
-    document.cookie = 'equator-locale=; Path=/; Max-Age=0';
+    document.cookie = 'thoth-locale=; Path=/; Max-Age=0';
     localStorage.clear();
   });
 
@@ -389,14 +389,14 @@ describe('the shipped stores', () => {
     await localization.changeLocale('ar-EG');
     await settled();
 
-    expect(document.cookie).toContain('equator-locale=ar-EG');
+    expect(document.cookie).toContain('thoth-locale=ar-EG');
     expect((await setup([cookieStore()]).initialize()).primaryLocale).toBe(
       'ar-EG',
     );
     claimCapability('store:cookieStore', {
       platform: TestBed.inject(PLATFORM_ID) as string,
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('expires the cookie it wrote, rather than writing a second one beside it', async () => {
@@ -407,17 +407,17 @@ describe('the shipped stores', () => {
     await localization.initialize();
     await localization.changeLocale('ar-EG');
     await settled();
-    expect(document.cookie).toContain('equator-locale=ar-EG');
+    expect(document.cookie).toContain('thoth-locale=ar-EG');
 
     const report = await localization.forgetRememberedLocale();
 
     expect(report.complete).toBe(true);
-    expect(document.cookie).not.toContain('equator-locale=ar-EG');
+    expect(document.cookie).not.toContain('thoth-locale=ar-EG');
     expect((await setup([cookieStore()]).initialize()).primaryLocale).toBe(
       'en-US',
     );
     claimCapability('store:cookieStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('removes what it kept in local storage', async () => {
@@ -431,7 +431,7 @@ describe('the shipped stores', () => {
 
     expect(localStorage.getItem('lang')).toBeNull();
     claimCapability('store:localStorageStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('round-trips through local storage', async () => {
@@ -448,7 +448,7 @@ describe('the shipped stores', () => {
     claimCapability('store:localStorageStore', {
       platform: TestBed.inject(PLATFORM_ID) as string,
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('carries the choice to a consumer-owned profile transport', async () => {
@@ -464,7 +464,7 @@ describe('the shipped stores', () => {
     claimCapability('store:profileStore', {
       platform: TestBed.inject(PLATFORM_ID) as string,
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('writes to every configured store, and reads from the first that answers', async () => {
@@ -478,11 +478,11 @@ describe('the shipped stores', () => {
     await settled();
 
     // A device that later goes offline should still remember what the signed-in profile knew.
-    expect(document.cookie).toContain('equator-locale=ar-EG');
+    expect(document.cookie).toContain('thoth-locale=ar-EG');
     expect(localStorage.getItem('lang')).toBe('ar-EG');
     claimCapability('store:cookieStore');
     claimCapability('store:localStorageStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -516,48 +516,48 @@ describe('what a server render can see', () => {
     // preference that can reach the first response. Without it the server renders the default
     // language and the browser corrects it after hydration, which is a visible flash of the wrong
     // language on every single visit.
-    const store = underServerRender('theme=dark; equator-locale=ar-EG', () =>
+    const store = underServerRender('theme=dark; thoth-locale=ar-EG', () =>
       cookieStore()(),
     );
 
     expect(await store.read()).toBe('ar-EG');
     claimCapability('store:cookieStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('sees nothing in local storage, which is the whole distinction', async () => {
-    const store = underServerRender('equator-locale=ar-EG', () =>
+    const store = underServerRender('thoth-locale=ar-EG', () =>
       localStorageStore()(),
     );
 
     expect(await store.read()).toBeUndefined();
     claimCapability('store:localStorageStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('does not try to write a cookie it has no response to write it to', async () => {
     // Setting a cookie on the server means setting a response header, and the response belongs to
     // the consumer's server. Nothing is lost: the browser writes the same cookie on hydration.
-    document.cookie = 'equator-locale=; Path=/; Max-Age=0';
+    document.cookie = 'thoth-locale=; Path=/; Max-Age=0';
     const store = underServerRender(undefined, () => cookieStore()());
 
     store.write('ar-EG');
 
-    expect(document.cookie).not.toContain('equator-locale=ar-EG');
+    expect(document.cookie).not.toContain('thoth-locale=ar-EG');
     claimCapability('store:cookieStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('ignores a cookie whose value is not a locale', async () => {
     // The value arrived from the client. It is rejected rather than repaired: a value that needed
-    // repairing was not the value Equator wrote.
-    const store = underServerRender('equator-locale=%2e%2e%2fetc', () =>
+    // repairing was not the value Thoth wrote.
+    const store = underServerRender('thoth-locale=%2e%2e%2fetc', () =>
       cookieStore()(),
     );
 
     expect(await store.read()).toBeUndefined();
     claimCapability('store:cookieStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -579,7 +579,7 @@ describe('a cookie configuration the browser would discard', () => {
       /SameSite=None/u,
     );
     claimCapability('store:cookieStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('refuses a __Secure- name without Secure', () => {
@@ -589,7 +589,7 @@ describe('a cookie configuration the browser would discard', () => {
       cookieStore({ name: '__Secure-locale', secure: false }),
     ).toThrow(/__Secure-/u);
     claimCapability('store:cookieStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('refuses a __Host- name that is not secure, or scoped, or rooted', () => {
@@ -604,7 +604,7 @@ describe('a cookie configuration the browser would discard', () => {
       /Path/u,
     );
     claimCapability('store:cookieStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('reads the prefix case-insensitively, which is how the rule is written', () => {
@@ -617,7 +617,7 @@ describe('a cookie configuration the browser would discard', () => {
       /Path/u,
     );
     claimCapability('store:cookieStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('accepts every configuration the browser keeps', () => {
@@ -636,7 +636,7 @@ describe('a cookie configuration the browser would discard', () => {
       cookieStore({ name: '__Host-locale', path: '/', secure: true }),
     ).not.toThrow();
     claimCapability('store:cookieStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('refuses before the first render rather than on the first write', () => {
@@ -647,6 +647,6 @@ describe('a cookie configuration the browser would discard', () => {
     const factory = cookieStore({ sameSite: 'None', secure: true });
     expect(typeof factory).toBe('function');
     claimCapability('store:cookieStore');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

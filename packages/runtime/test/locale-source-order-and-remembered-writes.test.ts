@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import type { LocalizationSnapshot } from '@neolorn/equator/core';
+import type { LocalizationSnapshot } from '@neolorn/thoth/core';
 
 import {
   LocaleResolution,

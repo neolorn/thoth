@@ -5,7 +5,7 @@
  * constructed, and that resolves dot segments and rewrites a backslash, so
  * `/en/%2e%2e/%2e%2e/etc/passwd` reaches a handler written against a `Request` as `/etc/passwd`:
  * the address the traversal was aiming at, repaired, with nothing left to classify.
- * `specs/07-routing-rendering-and-seo.spec.md` section 4 says an Equator release MUST NOT repair a
+ * `specs/07-routing-rendering-and-seo.spec.md` section 4 says a Thoth release MUST NOT repair a
  * structurally unsafe target, and section 5 answers one with 400 before presentation routing. The
  * classifier therefore has to be given what arrived rather than what a URL made of it.
  *

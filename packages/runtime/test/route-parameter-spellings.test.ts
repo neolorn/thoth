@@ -10,7 +10,7 @@ import {
   type RouteParameterCodec,
   type RouteParameterContext,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What a codec is asked, what it answers, and which of its spellings an address may carry.
@@ -39,7 +39,7 @@ const projectionWith = (
   historical?: RouteRuntimeProjection['historical'],
 ): RouteRuntimeProjection => ({
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: IDENTITY,
     routes: [
       { id: 'article', path: 'articles/:slug', parameterNames: ['slug'] },

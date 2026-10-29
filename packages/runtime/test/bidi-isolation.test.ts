@@ -18,7 +18,7 @@ import {
   type FormattingContext,
   type LocalizedParts,
   type MessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Bidirectional isolation of interpolated values, and MessageFormat 2's `u:` options.
@@ -79,9 +79,9 @@ function compiledCatalogFor(
     outputParts,
   };
   return {
-    profile: 'equator-compiled-ir/1',
-    generatedAbi: 'equator-generated/1',
-    standardsProfile: 'equator-1',
+    profile: 'thoth-compiled-ir/1',
+    generatedAbi: 'thoth-generated/1',
+    standardsProfile: 'thoth-1',
     key: { providerId: 'bidi', scopeId: 'bidi', catalogLocale: locale },
     applicationContractFingerprint: 'test',
     semanticRegistryFingerprint: 'test',
@@ -127,7 +127,7 @@ function evaluateParts(
 ): LocalizedParts {
   const catalog = compiledCatalogFor(parse(source), inputs, locale);
   const handle: MessageHandle = {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     providerId: 'bidi',
     scopeId: 'bidi',
     messageId: 'subject',
@@ -230,7 +230,7 @@ describe('the sniff agrees with the script table over the whole of Unicode', () 
    * Indic Siyaq (U+1EC71..U+1ECB4) and Ottoman Siyaq (U+1ED01..U+1ED3D) are accounting numerals
    * written with Arabic script. Their `Script` and `Script_Extensions` are both `Common`, so no
    * derivation from script membership can reach them however it is built, and their `Bidi_Class`
-   * is `AL`. The whole-block class Equator started with covered them by accident, and both script
+   * is `AL`. The whole-block class Thoth started with covered them by accident, and both script
    * derivations lost them.
    */
   it('covers the Siyaq numerals, which no script derivation can reach', () => {
@@ -314,7 +314,7 @@ describe('MF2 Default Bidi Strategy', () => {
   });
 
   it('uses RLI, not FSI, for a value that runs right to left', () => {
-    // A Latin name in an Arabic message. The value's direction is the locale's (Equator formatted
+    // A Latin name in an Arabic message. The value's direction is the locale's (Thoth formatted
     // nothing here, but nothing in it could reorder either) and the strategy isolates every
     // right-to-left value regardless of the message around it.
     const text = render(
@@ -326,7 +326,7 @@ describe('MF2 Default Bidi Strategy', () => {
     expect(text).toBe(`مرحبا ${RLI}Ada${PDI}.`);
   });
 
-  it('isolates a number Equator formatted in a right-to-left message', () => {
+  it('isolates a number Thoth formatted in a right-to-left message', () => {
     const text = render('لديك {$count :number}.', COUNT, { count: 3 }, 'ar-EG');
     expect(text).toContain(RLI);
     expect(text).toContain(PDI);
@@ -389,7 +389,7 @@ describe('MF2 u:dir and u:id', () => {
   /**
    * The one line that ties the content check to `u:dir`.
    *
-   * Equator isolates a value whose content could reorder the message, which is a decision made
+   * Thoth isolates a value whose content could reorder the message, which is a decision made
    * about a consumer's string without being told anything about it. `u:dir=inherit` is how an
    * author overrides that, and without it the content check has no escape hatch, and the value
    * below would be isolated with nothing an author could do about it.
@@ -417,7 +417,7 @@ describe('MF2 u:dir and u:id', () => {
     }).value.find((part) => part.kind === 'value');
     expect(declared).toMatchObject({ contentDirection: 'rtl', isolate: true });
 
-    // Without `u:dir`, a consumer's string that could reorder is `auto`: Equator defers rather than
+    // Without `u:dir`, a consumer's string that could reorder is `auto`: Thoth defers rather than
     // claiming to know the language, which is the same answer `<bdi>` gives in the DOM.
     const sniffed = evaluateParts('Hello {$name :string}.', NAME, {
       name: 'שרה',

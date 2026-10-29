@@ -8,9 +8,9 @@ import {
   internalDestination,
   withRouting,
   withFormattingContext,
-} from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth';
+import { provideLocalizedRouter } from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -29,7 +29,7 @@ import { runtimeExtensions } from './runtime-extensions';
 import { appRouteProjection, routePolicy } from './localization.routes';
 
 /**
- * A link a catalog places is an address Equator writes, so it is the canonical one.
+ * A link a catalog places is an address Thoth writes, so it is the canonical one.
  *
  * The application names the page as it names a route, origin-relative and in no locale. Written as
  * given, `/second` on an Arabic page is an address that names no locale: a visitor who follows it

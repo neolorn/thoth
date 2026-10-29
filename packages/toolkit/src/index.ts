@@ -7,10 +7,10 @@
  * project verbs, the interchange and authoring functions, the configuration and catalog parsers,
  * the extension surface a plugin registers through, the schemas of the public file formats, and
  * every type those signatures hold. The command line does not come through here; it imports the
- * modules it needs, so a name is published because a caller outside Equator needs it rather than
- * because Equator itself uses it.
+ * modules it needs, so a name is published because a caller outside Thoth needs it rather than
+ * because Thoth itself uses it.
  *
- * Section 1 of `specs/10-compiler-and-tooling.spec.md` keeps this package the whole of Equator's
+ * Section 1 of `specs/10-compiler-and-tooling.spec.md` keeps this package the whole of Thoth's
  * build side, so nothing here reaches for a consumer's compiler, build system, or workspace
  * layout. Importing it starts no compilation, no watch and no write, which is what lets a build
  * script import one type from it without paying for anything else.

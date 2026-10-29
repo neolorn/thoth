@@ -6,7 +6,7 @@ import {
   type GeneratedRouteProjectionEntry,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What a projection's `localizedPaths` table is refused for beyond a single entry's spelling.
@@ -27,7 +27,7 @@ const projection = (
   parameters: NonNullable<RouteRuntimeProjection['parameters']> = {},
 ): RouteRuntimeProjection => ({
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: `sha256-${'LocalizedPathDeclarationsIdentity'.padEnd(43, '0')}`,
     routes,
   },

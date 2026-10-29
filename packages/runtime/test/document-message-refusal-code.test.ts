@@ -8,7 +8,7 @@ import {
   GENERATED_ABI,
   LocalizationError,
   type PlainMessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * How the refusal of an unbound document message is classified.

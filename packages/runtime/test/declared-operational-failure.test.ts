@@ -8,7 +8,7 @@ import {
 import type {
   LocaleUrlPolicy,
   RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 const CACHE = { successMaxAge: 600, permanentRedirectMaxAge: 86_400 } as const;
 
@@ -24,7 +24,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -41,7 +41,7 @@ const handlerWith = (render: LocaleRenderer) =>
     policy: POLICY,
     projection: PROJECTION,
     cache: CACHE,
-    cookie: { name: 'equator-locale' },
+    cookie: { name: 'thoth-locale' },
     render,
   });
 
@@ -79,7 +79,7 @@ afterEach(() => {
  * never the same signal.
  */
 describe('a status the renderer declares for itself', () => {
-  it('travels at an address Equator serves', async () => {
+  it('travels at an address Thoth serves', async () => {
     const response = await get(handlerWith(declaresFailure()), '/en-us/second');
 
     expect(response.status).toBe(503);
@@ -93,7 +93,7 @@ describe('a status the renderer declares for itself', () => {
     expect(response.headers.get('content-type')).toContain('text/html');
   });
 
-  it('still answers in the locale Equator resolved', async () => {
+  it('still answers in the locale Thoth resolved', async () => {
     // The failure replaces the representation, not the negotiation: the reader asked in a
     // language and the document they get is in it.
     const response = await get(handlerWith(declaresFailure()), '/ar-eg/second');
@@ -120,9 +120,7 @@ describe('a status the renderer declares for itself', () => {
 
     // The navigation was real and the locale settled, so the choice is recorded. A failure is a
     // reason to serve something else, not a reason to forget who asked.
-    expect(response.headers.get('set-cookie')).toContain(
-      'equator-locale=ar-EG',
-    );
+    expect(response.headers.get('set-cookie')).toContain('thoth-locale=ar-EG');
   });
 });
 
@@ -157,17 +155,17 @@ describe('a renderer that declares nothing', () => {
 /**
  * The narrow rule, at the one place the two sides can disagree.
  *
- * An application declaring maintenance does not know which addresses Equator answered from the
+ * An application declaring maintenance does not know which addresses Thoth answered from the
  * status table, so the rule it can reason about is the one that leaves those addresses alone.
  */
-describe('a declaration at an address Equator did not serve', () => {
-  it('does not displace the status Equator resolved', async () => {
+describe('a declaration at an address Thoth did not serve', () => {
+  it('does not displace the status Thoth resolved', async () => {
     const response = await get(handlerWith(declaresFailure()), '/en-us/absent');
 
     expect(response.status).toBe(404);
   });
 
-  it('still supplies the body, which was never Equator to decide', async () => {
+  it('still supplies the body, which was never Thoth to decide', async () => {
     const response = await get(handlerWith(declaresFailure()), '/en-us/absent');
 
     expect(await response.text()).toContain('maintenance');

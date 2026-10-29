@@ -24,16 +24,16 @@ import {
   withRouting,
   type LocaleUrlPolicy,
   type LocalizationParticipantReport,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   RouteLocalization,
   RouteLocalizationError,
   type RouteLocalizationOptions,
-} from '@neolorn/equator/router';
+} from '@neolorn/thoth/router';
 import {
   ControllableLocalizationParticipant,
   provideLocalizationTesting,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';

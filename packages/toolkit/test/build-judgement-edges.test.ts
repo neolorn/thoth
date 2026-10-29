@@ -41,7 +41,7 @@ const STUBS: Readonly<Record<string, string>> = {
     'export type Routes = readonly Route[];',
     '',
   ].join('\n'),
-  '@neolorn/equator':
+  '@neolorn/thoth':
     'export declare function createPathPrefixLocalePolicy(options: unknown): unknown;\n',
 };
 
@@ -79,7 +79,7 @@ async function project(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -127,7 +127,7 @@ async function project(options: ProjectOptions): Promise<string> {
     root,
     'src/policy.ts',
     [
-      "import { createPathPrefixLocalePolicy } from '@neolorn/equator';",
+      "import { createPathPrefixLocalePolicy } from '@neolorn/thoth';",
       '',
       ...(options.beforePolicy ?? []),
       `export const routePolicy = createPathPrefixLocalePolicy(${options.policy});`,
@@ -210,7 +210,7 @@ describe('a finding the build makes from two files says which one it is about', 
     });
 
     // A locale with no address, a locale with no catalogs, and a default the two disagree on.
-    expect(paths(await reported(root, 'EQ1408'))).toEqual([
+    expect(paths(await reported(root, 'TH1408'))).toEqual([
       ['routes', 'src/policy.ts'],
       ['routes', 'src/policy.ts'],
       ['routes', 'src/policy.ts'],
@@ -224,7 +224,7 @@ describe('a finding the build makes from two files says which one it is about', 
       beforePolicy: ["const ROOTS = ['assets'];"],
     });
 
-    expect(paths(await reported(root, 'EQ1417'))).toEqual([
+    expect(paths(await reported(root, 'TH1417'))).toEqual([
       ['routes', 'src/policy.ts'],
     ]);
   });
@@ -235,7 +235,7 @@ describe('a finding the build makes from two files says which one it is about', 
       routePaths: ['ar-eg/tools'],
     });
 
-    expect(paths(await reported(root, 'EQ1409'))).toEqual([
+    expect(paths(await reported(root, 'TH1409'))).toEqual([
       ['routes', 'src/app.routes.ts'],
     ]);
   });
@@ -246,7 +246,7 @@ describe('a finding the build makes from two files says which one it is about', 
       template: '<a routerLink="/ar-eg/articles">Articles</a>',
     });
 
-    expect(paths(await reported(root, 'EQ1411'))).toEqual([
+    expect(paths(await reported(root, 'TH1411'))).toEqual([
       ['components', 'src/app.component.html'],
     ]);
   });
@@ -258,7 +258,7 @@ describe('a finding the build makes from two files says which one it is about', 
         '<button type="button" lang="ar" (click)="select(\'ar-EG\')">Arabic</button>',
     });
 
-    const found = await reported(root, 'EQ1410');
+    const found = await reported(root, 'TH1410');
     expect(found.map(({ severity }) => severity).sort()).toEqual([
       'error',
       'warning',
@@ -277,7 +277,7 @@ describe('the locales a disagreement names', () => {
         "{ defaultLocale: 'en-US', locales: { 'en-US': 'en-us', 'ja-JP': 'ja', 'ar-EG': 'ar-eg', 'fr-FR': 'fr' } }",
     });
 
-    const [summary] = (await reported(root, 'EQ1408')).map(
+    const [summary] = (await reported(root, 'TH1408')).map(
       (diagnostic) => diagnostic.summary,
     );
     expect(summary).toContain('"fr-FR"');
@@ -293,7 +293,7 @@ describe('the locales a disagreement names', () => {
       policy: AGREEING,
     });
 
-    const found = await reported(root, 'EQ1408');
+    const found = await reported(root, 'TH1408');
     expect(found).toHaveLength(1);
     const summary = found[0]?.summary;
     expect(summary).toContain('"de-DE"');
@@ -316,7 +316,7 @@ describe('a leading segment that is not a segment', () => {
       routePaths: ['', 'ar-eg/tools'],
     });
 
-    const found = await reported(root, 'EQ1409');
+    const found = await reported(root, 'TH1409');
     expect(found).toHaveLength(1);
     expect(found[0]?.summary).toContain('"/ar-eg/tools"');
   });
@@ -328,7 +328,7 @@ describe('a leading segment that is not a segment', () => {
         '<a routerLink="/">Home</a><a routerLink="/ar-eg/articles">Articles</a>',
     });
 
-    const found = await reported(root, 'EQ1411');
+    const found = await reported(root, 'TH1411');
     expect(found).toHaveLength(1);
     expect(found[0]?.summary).toContain('"/ar-eg/articles"');
   });
@@ -342,7 +342,7 @@ describe('a leading segment that is not a segment', () => {
       routePaths: [':slug', 'ara/help'],
     });
 
-    const found = await reported(root, 'EQ1409');
+    const found = await reported(root, 'TH1409');
     expect(found).toHaveLength(1);
     expect(found[0]?.summary).toContain('"/ara/help"');
   });
@@ -360,7 +360,7 @@ describe('a language written without its region', () => {
     });
 
     expect(
-      (await reported(root, 'EQ1410')).map(({ severity }) => severity),
+      (await reported(root, 'TH1410')).map(({ severity }) => severity),
     ).toEqual(['warning']);
   });
 });

@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { parseMessageSemanticModel } from '../src/message-format.js';
 
 /**
- * A message that stops where the syntax wanted a token Equator has no sentence of its own for.
+ * A message that stops where the syntax wanted a token Thoth has no sentence of its own for.
  *
- * The parser says which token it wanted, and for most of them Equator says what the token is for.
+ * The parser says which token it wanted, and for most of them Thoth says what the token is for.
  * Two it can want have no such sentence: the brace that closes an expression after a trailing
  * space, and the `$` that starts the name a `.local` declares. The refusal then names the token
  * itself, at the place it was wanted, so the author is still told what to type.
@@ -23,7 +23,7 @@ describe('a message missing a token with no sentence of its own', () => {
     const source = '{$count :number ';
     const diagnostic = refusal(source);
 
-    expect(diagnostic?.code).toBe('EQ1201');
+    expect(diagnostic?.code).toBe('TH1201');
     expect(diagnostic?.summary).toContain('}');
     expect(diagnostic?.summary).not.toContain('$');
   });
@@ -31,7 +31,7 @@ describe('a message missing a token with no sentence of its own', () => {
   it('names the $ a .local declaration writes its name without', () => {
     const diagnostic = refusal('.local count = {1} {{One}}');
 
-    expect(diagnostic?.code).toBe('EQ1201');
+    expect(diagnostic?.code).toBe('TH1201');
     expect(diagnostic?.summary).toContain('$');
     expect(diagnostic?.summary).not.toContain('}');
   });

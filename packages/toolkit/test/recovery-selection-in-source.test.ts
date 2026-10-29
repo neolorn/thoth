@@ -56,7 +56,7 @@ async function project(
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     json({
       schemaVersion: 1,
       sourceLocale: 'en-US',
@@ -92,7 +92,7 @@ async function project(
   );
   await write(
     root,
-    'node_modules/@neolorn/equator/index.d.ts',
+    'node_modules/@neolorn/thoth/index.d.ts',
     [
       'export declare function withRecoveryMessage(',
       '  options: { readonly message: unknown; readonly retryLabel?: unknown },',
@@ -102,8 +102,8 @@ async function project(
   );
   await write(
     root,
-    'node_modules/@neolorn/equator/package.json',
-    json({ name: '@neolorn/equator', version: '0.0.0', types: './index.d.ts' }),
+    'node_modules/@neolorn/thoth/package.json',
+    json({ name: '@neolorn/thoth', version: '0.0.0', types: './index.d.ts' }),
   );
   await write(
     root,
@@ -111,7 +111,7 @@ async function project(
     [
       "import { provideLocalization } from '#i18n';",
       "import { messages } from '#i18n/shell';",
-      "import { withRecoveryMessage } from '@neolorn/equator';",
+      "import { withRecoveryMessage } from '@neolorn/thoth';",
       '',
       'export const title = messages.appTitle.messageId;',
       'export const providers = provideLocalization(',
@@ -143,7 +143,7 @@ describe('a recovery message selected in source', () => {
       generated.diagnostics.map(({ code, path }) => ({ code, path })),
     ).toEqual([
       {
-        code: 'EQ1501',
+        code: 'TH1501',
         path: ['recovery', 'recovery-selection:shell:recovery.unavailable'],
       },
     ]);
@@ -164,7 +164,7 @@ describe('a recovery message selected in source', () => {
         generated.diagnostics.map(({ code, path }) => ({ code, path })),
       ).toEqual([
         {
-          code: 'EQ1501',
+          code: 'TH1501',
           path: ['recovery', 'recovery-selection:shell:recovery.unavailable'],
         },
       ]);
@@ -181,7 +181,7 @@ describe('a recovery message selected in source', () => {
       expect(generated.ok).toBe(true);
       expect(
         generated.diagnostics.map(({ code, severity }) => ({ code, severity })),
-      ).toEqual([{ code: 'EQ1004', severity: 'warning' }]);
+      ).toEqual([{ code: 'TH1004', severity: 'warning' }]);
     });
   });
 

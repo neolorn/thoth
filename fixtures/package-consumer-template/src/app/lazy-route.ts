@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
-import { injectLocalization } from '@neolorn/equator';
+import { injectLocalization } from '@neolorn/thoth';
 import { messages as lazyMessages } from '#i18n/lazy';
 
 /**
  * The only place this application uses the `lazy` scope.
  *
  * It is reached through `loadComponent`, so the file is not in the first render's bundle and
- * neither are its messages: Equator sees the boundary, finds every use of the scope behind it, and
+ * neither are its messages: Thoth sees the boundary, finds every use of the scope behind it, and
  * marks the scope non-startup. No list anywhere says so.
  *
  * That is also what makes the progressive and coordinated scope tests mean something. A scope

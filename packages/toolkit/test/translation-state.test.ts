@@ -14,7 +14,7 @@ import {
  * The English wording changes and the old translation stays.
  *
  * Without a record of what a translation was written against, this produces success with an empty
- * diagnostics array, so Equator keeps that record itself.
+ * diagnostics array, so Thoth keeps that record itself.
  *
  * The property worth protecting is that a report survives being seen. An advisory derived from a
  * cache clears itself on the next run, and one derived from a marker a person deletes depends on

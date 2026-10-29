@@ -4,7 +4,7 @@ import {
   LocalizationError,
   type FormattingContext,
   type FormattingResult,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import type { CompiledInputContract } from '../src/catalog-runtime.js';
 import {

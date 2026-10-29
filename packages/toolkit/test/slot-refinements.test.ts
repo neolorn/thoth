@@ -146,7 +146,7 @@ describe('a declared slot the source does not use', () => {
         '      marker:',
         '        description: A marker the translator may place.',
       ]),
-    ).toEqual({ codes: expect.arrayContaining(['EQ1303']) });
+    ).toEqual({ codes: expect.arrayContaining(['TH1303']) });
   });
 });
 
@@ -170,7 +170,7 @@ describe('a within constraint', () => {
         '      strong:',
         '        within: [emphasis]',
       ]),
-    ).toEqual({ codes: expect.arrayContaining(['EQ1303']) });
+    ).toEqual({ codes: expect.arrayContaining(['TH1303']) });
   });
 });
 
@@ -191,7 +191,7 @@ describe('an expanded slot refinement', () => {
         '        shape: paired',
         `        ${field}: ${value}`,
       ]),
-    ).toEqual({ codes: expect.arrayContaining(['EQ1102']) });
+    ).toEqual({ codes: expect.arrayContaining(['TH1102']) });
   });
 
   it.each([
@@ -205,6 +205,6 @@ describe('an expanded slot refinement', () => {
         '      badge:',
         ...lines,
       ]),
-    ).toEqual({ codes: expect.arrayContaining(['EQ1102']) });
+    ).toEqual({ codes: expect.arrayContaining(['TH1102']) });
   });
 });

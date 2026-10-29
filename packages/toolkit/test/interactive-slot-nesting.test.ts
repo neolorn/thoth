@@ -105,6 +105,6 @@ describe('interactive slot nesting', () => {
       '{#toggle}Open {#link}now{/link}{/toggle}',
     ],
   ])('refuses %s', (_label, message) => {
-    expect(refusalCodes(message)).toContain('EQ1303');
+    expect(refusalCodes(message)).toContain('TH1303');
   });
 });

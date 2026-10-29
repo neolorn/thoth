@@ -5,7 +5,7 @@ import { formatLocalizedInput } from '../src/localized-input.js';
 import {
   type FormattingContext,
   type LocalizedInputProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Writing a date and time under a context the platform cannot spell digits for.

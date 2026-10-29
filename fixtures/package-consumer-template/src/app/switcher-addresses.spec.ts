@@ -8,9 +8,9 @@ import {
   withRouting,
   type LocaleUrlPolicy,
   withFormattingContext,
-} from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth';
+import { provideLocalizedRouter } from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { configuration } from '#i18n';
@@ -67,7 +67,7 @@ const routes: Routes = [
   {
     path: 'articles/:slug',
     component: RouteProbe,
-    data: { equatorRouteId: 'article', equatorIndexing: 'indexable' },
+    data: { thothRouteId: 'article', thothIndexing: 'indexable' },
   },
   { path: '**', component: RouteProbe },
 ];
@@ -166,7 +166,7 @@ describe('the address a locale switch moves to', () => {
         new URL(address, localeOrigin('en-US')).href,
       ]),
     );
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   // A host policy refuses to start without an origin.
@@ -176,7 +176,7 @@ describe('the address a locale switch moves to', () => {
       const router = await configure({});
       await router.navigateByUrl('/second');
 
-      // No origin means no absolute address, so there is nothing a crawler can be told and Equator
+      // No origin means no absolute address, so there is nothing a crawler can be told and Thoth
       // tells it nothing. The reader is not a crawler and still has both addresses.
       expect(alternates()).toEqual([]);
       const record = addresses();
@@ -201,7 +201,7 @@ describe('the address a locale switch moves to', () => {
       // The same set, from the other side. A switcher rendered after the switch has to offer the way
       // back, and the record is rebuilt for the locale that is now current.
       expect(addresses()).toEqual(before);
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
     },
   );
 });

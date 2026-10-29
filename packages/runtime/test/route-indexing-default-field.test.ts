@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_ROUTE_INDEXING_FIELD } from '@neolorn/equator/core';
+import { DEFAULT_ROUTE_INDEXING_FIELD } from '@neolorn/thoth/core';
 
 /**
  * The name of the route-data field an indexing class is read from by default.
@@ -11,7 +11,7 @@ import { DEFAULT_ROUTE_INDEXING_FIELD } from '@neolorn/equator/core';
  */
 
 describe('the route-data field an indexing class is read from', () => {
-  it('is `equatorIndexing` where a consumer names none', () => {
-    expect(DEFAULT_ROUTE_INDEXING_FIELD).toBe('equatorIndexing');
+  it('is `thothIndexing` where a consumer names none', () => {
+    expect(DEFAULT_ROUTE_INDEXING_FIELD).toBe('thothIndexing');
   });
 });

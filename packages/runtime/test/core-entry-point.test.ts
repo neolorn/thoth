@@ -6,7 +6,7 @@ import {
   localeProfile,
   validateRouteProjection,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Three core exports the primary entry point imports, exercised rather than waived.
@@ -29,7 +29,7 @@ import {
 
 const VALID: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -40,7 +40,7 @@ const VALID: RouteRuntimeProjection = {
 };
 
 describe('a locale writing direction', () => {
-  it('answers for locales whose script Equator knows in either direction', () => {
+  it('answers for locales whose script Thoth knows in either direction', () => {
     expect(directionForLocale('ar-EG')).toBe('rtl');
     expect(directionForLocale('he-IL')).toBe('rtl');
     expect(directionForLocale('en-US')).toBe('ltr');
@@ -175,7 +175,7 @@ describe('validating a generated route projection', () => {
 
 /**
  * And the property the whole split exists for, asserted where a unit test can see it: the error the
- * core throws is the error the rest of Equator tests against. Two copies of `contracts.ts` would
+ * core throws is the error the rest of Thoth tests against. Two copies of `contracts.ts` would
  * make this pass in isolation and fail in a consumer, so `verify-package-structure.ts` checks the
  * built bundles too: this is the cheap half of that pair, not a replacement for it.
  */

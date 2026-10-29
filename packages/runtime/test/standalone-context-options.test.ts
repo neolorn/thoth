@@ -10,7 +10,7 @@ import {
   type LocalizationContextOptions,
   type LocalizationSetup,
   type MessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import {
   catalogKey,

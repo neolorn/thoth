@@ -31,7 +31,7 @@ import {
   type LocalizedValuePart,
   type MessageHandle,
   type RuntimeMessageFunctionDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import type {
   CompiledCatalog,
   CompiledInputContract,
@@ -83,8 +83,8 @@ interface ResolvedValue {
   /**
    * MF2's directionality of a resolved value, which is not the direction of its locale.
    *
-   * Text Equator formatted itself runs the way its locale runs. Text that arrived from a consumer
-   * does not, and Equator will not claim to know which language it is in, so it answers `auto` and
+   * Text Thoth formatted itself runs the way its locale runs. Text that arrived from a consumer
+   * does not, and Thoth will not claim to know which language it is in, so it answers `auto` and
    * lets the first-strong rule decide.
    */
   readonly contentDirection: ContentDirection;
@@ -211,7 +211,7 @@ function invalidInput(
 /**
  * The numbering systems this runtime has data for.
  *
- * Read once. `Intl.supportedValuesOf` walks ICU's tables to answer, and every formatter Equator
+ * Read once. `Intl.supportedValuesOf` walks ICU's tables to answer, and every formatter Thoth
  * builds consults this.
  */
 let cachedNumberingSystems: ReadonlySet<string> | undefined;
@@ -241,7 +241,7 @@ function supportedNumberingSystems(): ReadonlySet<string> {
  * `Intl.Locale` merges into the extension already there: `ar-EG-u-ca-islamic` becomes
  * `ar-EG-u-ca-islamic-nu-latn`.
  *
- * This tag is for constructing formatters and is never the locale Equator reports as active.
+ * This tag is for constructing formatters and is never the locale Thoth reports as active.
  * Nothing reads `resolvedOptions().locale`, which would report `ar-EG-u-nu-latn` here.
  *
  * The numbering system is the one the operation names, else the context's, and it is held to one
@@ -628,7 +628,7 @@ function plainResolved(
     text,
     locale,
     direction,
-    // Nothing here was formatted by Equator: this is whatever the consumer passed in. Giving it the
+    // Nothing here was formatted by Thoth: this is whatever the consumer passed in. Giving it the
     // message locale's direction is a wrong assumption: a customer name typed in Arabic inside an
     // English message is not left-to-right because the message is. `auto` where the content could
     // reorder, so the renderer's first-strong rule answers it, and the locale's direction where it
@@ -742,12 +742,12 @@ interface UnicodeOptions {
  * Read the `u:` namespace out of an option mapping.
  *
  * MessageFormat 2 reserves `u:` for options that belong to the message syntax rather than to any
- * function. Equator parsed them, folded them in with everything else and then dropped them, which
+ * function. Thoth parsed them, folded them in with everything else and then dropped them, which
  * is the worst of the three available behaviours: an author who wrote `u:dir=rtl` got no diagnostic
  * and no isolation.
  *
  * Anything outside `u:dir` and `u:id` is refused rather than ignored. `u:locale` is a real option
- * in the spec that Equator does not implement, and quietly accepting it would mean a message that
+ * in the spec that Thoth does not implement, and quietly accepting it would mean a message that
  * formats in the wrong locale with nothing to show for it. The toolkit rejects all of this at parse
  * time; this is the same rule applied to a compiled artifact that did not come through it.
  */
@@ -786,7 +786,7 @@ function unicodeOptions(
       continue;
     }
     invalidMessage(
-      `MessageFormat option ${name} on ${context} is outside the Equator 1 profile.`,
+      `MessageFormat option ${name} on ${context} is outside the Thoth 1 profile.`,
     );
   }
   return Object.freeze({
@@ -822,7 +822,7 @@ function writtenOptions(
  *
  * `inherit` is not the same as writing nothing. Written explicitly it says the value is ordinary
  * text of the message's own locale, which turns off the content check `plainResolved` applies by
- * default: the one escape hatch an author has when Equator isolates something it need not.
+ * default: the one escape hatch an author has when Thoth isolates something it need not.
  */
 function applyUnicodeOptions(
   value: ResolvedValue,
@@ -903,7 +903,7 @@ function checkFunctionOptions(
  * options of the operand".
  *
  * **`select` is the exception the specification names.** *"If the `select` option is set by an
- * implementation-defined type used as an operand, a Bad Option Error is emitted."* Equator refuses
+ * implementation-defined type used as an operand, a Bad Option Error is emitted."* Thoth refuses
  * rather than reports, for the reason it refuses everywhere else: `select` decides which CLDR table
  * a target catalog's plural coverage is checked against, so a message whose selection behaviour
  * arrives by inheritance is one whose translations were checked against the wrong table.
@@ -931,7 +931,7 @@ function checkFunctionOptions(
  * What one extension call resolves its options to: the operand's, then the expression's over them,
  * narrowed to what the descriptor declares.
  *
- * The narrowing is the part that is Equator's rather than MessageFormat's. A descriptor is a closed
+ * The narrowing is the part that is Thoth's rather than MessageFormat's. A descriptor is a closed
  * statement of the options a function accepts and `validExtensionOptions` enforces it on the way
  * in, so inheritance must not be a second door an undeclared name walks through. The unnarrowed
  * mapping is still what the resolved value carries forward, because the next annotation in the
@@ -1150,7 +1150,7 @@ function numericResolved(
       ? {}
       : { formattedFallback: host.fallback }),
     direction: directionForLocale(environment.formatting.locale),
-    // Equator formatted this text, in this locale, so it runs the way the locale runs. No sniff.
+    // Thoth formatted this text, in this locale, so it runs the way the locale runs. No sniff.
     contentDirection: directionForLocale(environment.formatting.locale),
     isolate: false,
     ...(NUMERIC_SELECTOR_FUNCTIONS.has(functionName)
@@ -1317,7 +1317,7 @@ function dateResolved(
       ? {}
       : { formattedFallback: host.fallback }),
     direction: directionForLocale(environment.formatting.locale),
-    // Equator formatted this text, in this locale, so it runs the way the locale runs. No sniff.
+    // Thoth formatted this text, in this locale, so it runs the way the locale runs. No sniff.
     contentDirection: directionForLocale(environment.formatting.locale),
     isolate: false,
     // Carried so a later annotation can read the three date/time override options off it, which is
@@ -1623,12 +1623,12 @@ function applyDeclarations(
  * applying Unicode Normalization Form C [UAX#15] to `k`."*
  *
  * The citation is the point of this function existing. `NormalizeKey` is a step the standard gives
- * to whatever performs selection, and selection is performed here, so this is Equator implementing
- * a rule it is required to implement, not Equator repeating work a dependency happens to have done.
+ * to whatever performs selection, and selection is performed here, so this is Thoth implementing
+ * a rule it is required to implement, not Thoth repeating work a dependency happens to have done.
  * The two read the same from the outside and are not the same thing: one is a guarantee, the other
  * is a coincidence that holds until someone changes a version.
  *
- * It belongs on the key, which is where the spec puts it. Equator applied it to the *value*
+ * It belongs on the key, which is where the spec puts it. Thoth applied it to the *value*
  * instead, so a key authored in NFD never matched a value equal to it and fell through to the
  * catch-all.
  *
@@ -2052,10 +2052,10 @@ const STRONG_RTL = new RegExp(RTL_STRONG_CHARACTERS, 'u');
 /**
  * Whether a value's own content can reposition the text around it.
  *
- * Only consulted for values Equator did not format: a consumer's string, where Equator has no
+ * Only consulted for values Thoth did not format: a consumer's string, where Thoth has no
  * locale to take a direction from and will not claim to know the language. MessageFormat 2 says
  * directionality "SHOULD NOT be determined by introspecting the character sequence", and the
- * alternative it offers is the operand's locale, which Equator does not have: an interpolated value
+ * alternative it offers is the operand's locale, which Thoth does not have: an interpolated value
  * inherits the message's locale, so consulting it answers "the message's direction" every time and
  * isolates nothing. `u:dir` is the author's way to say what this cannot know, and writing
  * `u:dir=inherit` turns this off.
@@ -2075,7 +2075,7 @@ export function mayReorder(text: string): boolean {
  * The structured component wraps every value in `<bdi>`, which stops an order reference or a
  * customer name from reordering the sentence it sits in. The pipe returns a string and has no
  * element to carry that, so the same value was left bare on that path. An isolate is the
- * string-level equivalent of `<bdi>`, and applying it in the formatter means Equator owns
+ * string-level equivalent of `<bdi>`, and applying it in the formatter means Thoth owns
  * isolation rather than every call site remembering it.
  *
  * The strategy, verbatim in shape:

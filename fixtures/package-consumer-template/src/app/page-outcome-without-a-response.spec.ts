@@ -3,9 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApplicationRef, PLATFORM_ID, REQUEST } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { pageAbsent, pageOperationalFailure } from '@neolorn/equator/core';
-import { createLocaleRequestHandler } from '@neolorn/equator/http';
-import { LocalizedPageOutcome } from '@neolorn/equator/router';
+import { pageAbsent, pageOperationalFailure } from '@neolorn/thoth/core';
+import { createLocaleRequestHandler } from '@neolorn/thoth/http';
+import { LocalizedPageOutcome } from '@neolorn/thoth/router';
 import { configuration } from '#i18n';
 
 import { pageUrl } from './addresses';
@@ -37,7 +37,7 @@ function onServer(request: Request | null): LocalizedPageOutcome {
   return TestBed.inject(LocalizedPageOutcome);
 }
 
-const DETACHED = /is not the one the Equator request handler is answering/u;
+const DETACHED = /is not the one the Thoth request handler is answering/u;
 
 describe('a declaration against a request the handler is not holding', () => {
   afterEach(() => {

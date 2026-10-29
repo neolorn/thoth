@@ -6,14 +6,14 @@ import {
   Localization,
   withRouting,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   LocalizedTitleStrategy,
   documentMessage,
   provideLocalizedRouter,
   type LocalizedRouterOptions,
-} from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -112,8 +112,8 @@ describe('a route document declared by route id', () => {
     await localization.changeLocale(ARABIC);
 
     await router.navigateByUrl('/');
-    expect(document.title).toBe('مختبر ميزات Equator');
-    expect(description()).toBe('مختبر وقت تشغيل الترجمة في Equator.');
+    expect(document.title).toBe('مختبر ميزات Thoth');
+    expect(description()).toBe('مختبر وقت تشغيل الترجمة في Thoth.');
 
     await router.navigateByUrl('/second');
     // Distinct from the home title, and distinct from `route.second`: the label this route
@@ -142,7 +142,7 @@ describe('a route document declared by route id', () => {
       // to be told, and without this the assertion reads the title from before the switch.
       TestBed.tick();
       expect(document.title).toBe('العنوان الثاني');
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
     },
   );
 
@@ -191,20 +191,20 @@ describe('a route document declared by route id', () => {
       }),
     ).toThrow(/takes "name"/u);
     claimCapability('feature:provideLocalizedRouter');
-    claimCapability('entry:@neolorn/equator/router');
+    claimCapability('entry:@neolorn/thoth/router');
   });
 
   it('accepts the same message with its value bound', async () => {
     const router = await configure({
       'route:second': {
-        title: documentMessage(messages.welcome, { name: 'Equator' }),
+        title: documentMessage(messages.welcome, { name: 'Thoth' }),
       },
     });
     await router.navigateByUrl('/second');
 
-    expect(document.title).toBe('Welcome, Equator!');
+    expect(document.title).toBe('Welcome, Thoth!');
     claimCapability('declaration:document-metadata', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth/router', { policy: routePolicy });
   });
 
   it('refuses an unbound message in an outcome document too', () => {
@@ -215,7 +215,7 @@ describe('a route document declared by route id', () => {
     ).toThrow(/takes "name"/u);
     claimCapability('feature:provideLocalizedRouter');
     claimCapability('declaration:outcome-documents');
-    claimCapability('entry:@neolorn/equator/router');
+    claimCapability('entry:@neolorn/thoth/router');
   });
 
   it('reports a declaration naming a route that does not exist', async () => {

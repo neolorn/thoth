@@ -21,12 +21,12 @@ import {
   withRouting,
   type RouteParameterCodec,
   type RouteParameterContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   RouteLocalization,
   provideLocalizedRouter,
-} from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -112,7 +112,7 @@ const ROUTES: Routes = [
   {
     path: 'dossiers/:slug',
     component: Blank,
-    data: { equatorRouteId: 'dossier', equatorIndexing: 'indexable' },
+    data: { thothRouteId: 'dossier', thothIndexing: 'indexable' },
     canActivate: [
       () => {
         if (held === undefined) return true;

@@ -1,6 +1,6 @@
 # Compiler and tooling
 
-How Equator turns an application's catalogs and source into generated contracts and compiled
+How Thoth turns an application's catalogs and source into generated contracts and compiled
 artifacts, what the command line does with them, and what the compiler is allowed to read on the
 way.
 
@@ -11,7 +11,7 @@ and their stability are `11-diagnostics-and-observability.spec.md`. Dependency s
 
 ## 1. Ownership
 
-`@neolorn/equator-toolkit` is a Node package, and it owns the compiler, static analysis, extraction,
+`@neolorn/thoth-toolkit` is a Node package, and it owns the compiler, static analysis, extraction,
 validation, generation, migration, the programmatic API, the command line, and the default
 standalone host. A release MUST NOT import, call, extend, or model itself around a consumer
 application's compiler, repository tool, build system, workspace layout, or project service.

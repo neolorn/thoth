@@ -22,7 +22,7 @@ import type {
   LocalizationParticipantOptions,
   LocalizationDiagnostic,
   LocalizationParticipantReport,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 // Local, because the harness that has these also compiles a catalog set, and nothing here loads one.
 const carried = (error: unknown): LocalizationDiagnostic => {
@@ -709,7 +709,7 @@ describe('a participant taking over a server-rendered region', () => {
     report: READY,
   } as const);
   const RECORD: ParticipantTransferRecord = Object.freeze({
-    profile: 'equator-participant-state/1',
+    profile: 'thoth-participant-state/1',
     participantId: 'region',
     coordination: 'required',
     current: CURRENT,
@@ -743,7 +743,7 @@ describe('a participant taking over a server-rendered region', () => {
   it('starts idle and showing nothing from a record that holds neither', () => {
     const coordinator = new ParticipantCoordinator([
       {
-        profile: 'equator-participant-state/1',
+        profile: 'thoth-participant-state/1',
         participantId: 'region',
         coordination: 'required',
       },
@@ -762,7 +762,7 @@ describe('a participant taking over a server-rendered region', () => {
   it('starts from an attempt the server left unanswered, with no report in it', () => {
     const coordinator = new ParticipantCoordinator([
       {
-        profile: 'equator-participant-state/1',
+        profile: 'thoth-participant-state/1',
         participantId: 'region',
         coordination: 'progressive',
         attempt: {

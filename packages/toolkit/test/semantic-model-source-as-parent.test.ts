@@ -46,14 +46,14 @@ describe('a regional locale of the source language', () => {
       ],
     });
     expect(result.diagnostics.map(({ code, path }) => [code, path])).toEqual([
-      ['EQ1307', ['messages', 'farewell']],
+      ['TH1307', ['messages', 'farewell']],
     ]);
   });
 
   it('is reported at the document root when it has no catalog', () => {
     const result = analyzeCatalogSet({ configuration, catalogs: [source] });
     expect(result.diagnostics.map(({ code, path }) => [code, path])).toEqual([
-      ['EQ1306', []],
+      ['TH1306', []],
     ]);
     expect(result.diagnostics[0]?.span).toBeUndefined();
   });

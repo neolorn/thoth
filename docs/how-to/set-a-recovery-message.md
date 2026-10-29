@@ -21,7 +21,7 @@ messages:
 ```
 
 The second names the retry control. Write it in every locale you ship, the way you write the first.
-`generate` reports `EQ1501` for either one that takes an input or carries a slot.
+`generate` reports `TH1501` for either one that takes an input or carries a slot.
 
 ## Compose it
 
@@ -34,8 +34,8 @@ Pass handles, not text:
   }),
 ```
 
-`equator generate` reports `EQ1310` for an application runtime that composes none, and
-`equator init` names it as one of the two things it leaves for you to write.
+`thoth generate` reports `TH1310` for an application runtime that composes none, and
+`thoth init` names it as one of the two things it leaves for you to write.
 
 `retryLabel` is optional and is what makes the retry control appear. Both handles are compiled into
 the recovery payload, which is loaded independently of the catalogs, so the wording arrives in the

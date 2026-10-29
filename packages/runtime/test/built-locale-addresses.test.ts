@@ -33,7 +33,7 @@ import {
   type RouteParameterCodec,
   type RouteParameterContext,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -45,7 +45,7 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
  * configuration, and that varies: a development locale exists only in a build that asked for it,
  * and an ordinary locale exists only once someone has configured it.
  *
- * Equator turns the policy into published addresses in four places: the server route table, where
+ * Thoth turns the policy into published addresses in four places: the server route table, where
  * each address becomes a prerendered file or a server route; the SEO projection, where each becomes
  * an `hreflang` claim that the same page exists in another language; route resolution, which
  * decides whether an address arriving at the server means anything; and the client route table.
@@ -75,7 +75,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -95,7 +95,7 @@ const PROJECTION: RouteRuntimeProjection = {
  */
 function configurationFor(locales: readonly string[]): GeneratedConfiguration {
   return {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
     locales,
@@ -218,14 +218,14 @@ describe('the addresses a build publishes', () => {
         WITH_GERMAN,
         'https://site.example',
       );
-      // Fed the cluster Equator actually projects, not an alternates array written in this file,
+      // Fed the cluster Thoth actually projects, not an alternates array written in this file,
       // and that cluster does contain this page's own locale, which is the thing being excluded.
       expect(seo.alternates.map(({ hreflang }) => hreflang)).toContain(locale);
       return openGraphAlternates(locale, seo.alternates);
     };
 
     expect(social('/en-us/second', 'en-US')).toEqual(['ar_EG', 'de_DE']);
-    // Percent-encoded, because the raw form is not this address's canonical spelling: Equator
+    // Percent-encoded, because the raw form is not this address's canonical spelling: Thoth
     // answers it with a 308 to the encoded one, which is a `redirect` and carries no SEO
     // projection at all.
     expect(social(`/ar-eg/${encodeURIComponent('الثاني')}`, 'ar-EG')).toEqual([
@@ -263,7 +263,7 @@ describe('the policy a build can actually serve', () => {
     expect(outcome(POLICY, '/de/zweite')).toBe('success');
 
     // Narrowed, the segment is a locale identity this application does not serve, which is the
-    // answer Equator already had for one and is a 404 rather than a redirect home. A bookmark to a
+    // answer Thoth already had for one and is a 404 rather than a redirect home. A bookmark to a
     // page that genuinely no longer exists should say so; sending it to the home page in another
     // language claims the content moved.
     expect(outcome(SHIPPED_POLICY, '/de/zweite')).toBe('unsupported-locale');
@@ -320,7 +320,7 @@ describe('the policy a build can actually serve', () => {
 });
 
 /**
- * The one registration Equator cannot check, derived so it does not have to be maintained.
+ * The one registration Thoth cannot check, derived so it does not have to be maintained.
  *
  * `@angular/ssr` refuses an unrecognised `Host` with `400` before the application runs, so a
  * host policy has to tell the server the same domains it told the policy. A build cannot reach
@@ -473,7 +473,7 @@ describe('the addresses a page may be advertised at', () => {
   /** Three routes that differ only in how much of the locale their address carries. */
   const SHAPES = defineRouteProjection({
     generated: Object.freeze({
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: 'sha256-AddressSelectsLocaleTestIdentity01234567890',
       routes: Object.freeze([
         Object.freeze({
@@ -612,7 +612,7 @@ describe('the addresses a page may be advertised at', () => {
  * direction of the same fact: a canonical or `hreflang` URL is the origin, the mount point, and the
  * address the policy spells from the application's own root. Leave the middle one out and the head
  * advertises `https://example.com/ar-eg/second`, not this page, and possibly not this
- * application, since whatever else the site serves at that path is not something Equator placed.
+ * application, since whatever else the site serves at that path is not something Thoth placed.
  *
  * **The three policy kinds are here because the two shapes of address are.** Under `path-prefix`
  * and `locale-neutral` an address is a path, and the origin comes from the configured one. Under
@@ -627,7 +627,7 @@ describe('the addresses a page may be advertised at', () => {
 describe('the head of a page served under a sub-path', () => {
   const SIMPLE = defineRouteProjection({
     generated: Object.freeze({
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: 'sha256-MountedHeadProjectionTestIdentity0123456789',
       routes: Object.freeze([
         Object.freeze({
@@ -752,7 +752,7 @@ describe('a policy of a kind no provider serves', () => {
       kind: 'query-parameter',
     } as unknown as LocaleUrlPolicy;
     expect(() => builtLocalePolicy(unserved, SHIPPED)).toThrow(
-      'Equator does not serve a "query-parameter" locale URL policy. It serves "path-prefix", "locale-neutral" and "locale-host".',
+      'Thoth does not serve a "query-parameter" locale URL policy. It serves "path-prefix", "locale-neutral" and "locale-host".',
     );
     // The control: the same tables under a served kind narrow without a word.
     expect(builtLocalePolicy(POLICY, SHIPPED).kind).toBe('path-prefix');

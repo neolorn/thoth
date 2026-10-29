@@ -66,8 +66,8 @@ export function reachablePublishedNames(
     // workspace. Without this the primary's imports from the core resolve to nothing, the walk stops
     // at the entry-point boundary, and every core type held only by the primary reads as unreachable.
     paths: {
-      '@neolorn/equator': ['dist/runtime/types/neolorn-equator.d.ts'],
-      '@neolorn/equator/*': ['dist/runtime/types/neolorn-equator-*.d.ts'],
+      '@neolorn/thoth': ['dist/runtime/types/neolorn-thoth.d.ts'],
+      '@neolorn/thoth/*': ['dist/runtime/types/neolorn-thoth-*.d.ts'],
     },
   });
   const checker = program.getTypeChecker();
@@ -142,7 +142,7 @@ export function reachablePublishedNames(
   }
   assert.ok(
     published.length > 100,
-    `Only ${published.length} published export(s) resolved through the checker, which is fewer than Equator is known to publish. This is reading the wrong files.`,
+    `Only ${published.length} published export(s) resolved through the checker, which is fewer than Thoth is known to publish. This is reading the wrong files.`,
   );
 
   const visited = new Set<string>();

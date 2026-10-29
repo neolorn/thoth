@@ -50,7 +50,7 @@ const check = process.argv.includes('--check');
  * this value, and a runtime handed a profile set it does not recognise says so rather than reading
  * the wrong offsets out of it.
  */
-const PROFILE_SET_PROFILE = 'cldr-48.2/equator-person-names-1';
+const PROFILE_SET_PROFILE = 'cldr-48.2/thoth-person-names-1';
 
 /**
  * The cube axes, in the order the flat index below walks them.

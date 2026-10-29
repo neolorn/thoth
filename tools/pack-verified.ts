@@ -6,7 +6,7 @@
  * `fs.stat` returns inode values above `Number.MAX_SAFE_INTEGER`, so distinct files collapse onto
  * the same number and the packer links files that were never linked.
  *
- * Two colliding paths give a type declaration such as `types/neolorn-equator-router.d.ts` the
+ * Two colliding paths give a type declaration such as `types/neolorn-thoth-router.d.ts` the
  * runtime module's JavaScript, byte for byte, while the build output on disk stays correct: only
  * the tarball is wrong.
  *

@@ -5,7 +5,7 @@ import {
   languagePresentation,
   localeMetadata,
   resolveTypography,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 
@@ -14,9 +14,7 @@ describe('pinned locale-direction profile', () => {
     // The profile names both sources because the direction data now comes from both: locale
     // direction from CLDR's script metadata, and the strong right-to-left character class from the
     // Unicode character database's Bidi_Class rather than from a script membership test.
-    expect(LOCALE_DATA_PROFILE).toBe(
-      'cldr-48.2+unicode-17.0/equator-rtl-bidi-1',
-    );
+    expect(LOCALE_DATA_PROFILE).toBe('cldr-48.2+unicode-17.0/thoth-rtl-bidi-1');
 
     for (const [locale, direction] of [
       ['ar-EG', 'rtl'],
@@ -35,7 +33,7 @@ describe('pinned locale-direction profile', () => {
         value: { direction },
       });
     }
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('uses the same maximized script for typography and exposed metadata', () => {
@@ -55,6 +53,6 @@ describe('pinned locale-direction profile', () => {
       ok: true,
       value: { language: 'ff', script: 'Adlm', direction: 'rtl' },
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

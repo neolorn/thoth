@@ -11,7 +11,7 @@ import { createHash } from 'node:crypto';
 
 import { describe, expect, it } from 'vitest';
 
-import { LocalizationError } from '@neolorn/equator/core';
+import { LocalizationError } from '@neolorn/thoth/core';
 
 import {
   areTransferredAddresses,
@@ -99,7 +99,7 @@ describe('the SHA-256 digest in URL-safe base64', () => {
     ['one byte short of a second block', 'a'.repeat(55)],
     ['the first length that needs a second block', 'a'.repeat(56)],
     ['exactly one block of input', 'a'.repeat(64)],
-    ['several blocks', 'equator '.repeat(40)],
+    ['several blocks', 'thoth '.repeat(40)],
     ['text outside ASCII', 'مخزن الفهارس'],
   ])('agrees with the platform for %s', (_name, value) => {
     const digest = sha256Base64Url(value);

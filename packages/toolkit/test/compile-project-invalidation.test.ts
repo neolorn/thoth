@@ -93,7 +93,7 @@ describe('the invalidation a compilation reports against a previous state', () =
     const first = compiled([catalog('shell', 'Probe')]);
     const foreign = {
       ...first.state,
-      profile: 'equator-compiler-state/0',
+      profile: 'thoth-compiler-state/0',
     } as unknown as CompilerState;
     const second = compiled([catalog('shell', 'Probe')], foreign);
 

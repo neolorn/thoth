@@ -5,7 +5,7 @@ route. Your Angular routes are unchanged.
 
 ## Before you begin
 
-Run `equator generate` at least once, so `#i18n/routes` exists.
+Run `thoth generate` at least once, so `#i18n/routes` exists.
 
 ## Declare a policy and a projection
 
@@ -27,8 +27,8 @@ addresses, and it starts from the generated one, so a route you add later is cov
 list.
 
 Write the creator's options as literals, as above. `generate` compares the policy with
-`equator.config.json` and with your route paths only where it reads an option from the call itself,
-and reports `EQ1417` naming each option it did not read.
+`thoth.config.json` and with your route paths only where it reads an option from the call itself,
+and reports `TH1417` naming each option it did not read.
 
 ## Compose them
 
@@ -59,7 +59,7 @@ renders in whichever locale is committed rather than the one the link named.
 
 ## Choose a policy
 
-Four creators, all exported from `@neolorn/equator`:
+Four creators, all exported from `@neolorn/thoth`:
 
 | Creator                           | Puts the locale                   | Fits a deployment where                     |
 | --------------------------------- | --------------------------------- | ------------------------------------------- |

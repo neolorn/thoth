@@ -5,7 +5,7 @@ import {
   formatLocalizedInput,
   parseLocalizedInput,
 } from '../src/localized-input.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 /**
  * A duration pattern is authored, in a project file or in a call, and a place in it can hold

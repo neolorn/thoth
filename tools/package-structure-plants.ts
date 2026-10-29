@@ -41,7 +41,7 @@ export const plants = Object.freeze([
   {
     id: 'toolkit-runs-work-on-install',
     plant: editJson(toolkitManifest, (manifest: PackageManifest) => {
-      manifest.scripts = { postinstall: 'equator generate' };
+      manifest.scripts = { postinstall: 'thoth generate' };
     }),
     refusal: /toolkit manifest runs postinstall on install/u,
   },
@@ -126,7 +126,7 @@ export const plants = Object.freeze([
     id: 'runtime-primary-subdivided',
     plant: editJson(runtimeManifest, (manifest: PackageManifest) => {
       manifest.exports['./extra'] = {
-        default: './fesm2022/neolorn-equator.mjs',
+        default: './fesm2022/neolorn-thoth.mjs',
       };
     }),
     refusal: /\.\/extra/u,
@@ -171,7 +171,7 @@ export const plants = Object.freeze([
     plant: (root: string) =>
       editText(
         root,
-        'dist/runtime/fesm2022/neolorn-equator-testing.mjs',
+        'dist/runtime/fesm2022/neolorn-thoth-testing.mjs',
         (text: string) =>
           `${text}\nexport const pseudoLocalizeMessage = (text) => text;\n`,
       ),
@@ -183,7 +183,7 @@ export const plants = Object.freeze([
     plant: (root: string) =>
       editText(
         root,
-        'dist/runtime/fesm2022/neolorn-equator-core.mjs',
+        'dist/runtime/fesm2022/neolorn-thoth-core.mjs',
         (text: string) => `${text}\nconst plantedMarker = '\\u27E6';\n`,
       ),
     refusal: /pseudo-localization marker "\u27e6"/u,
@@ -201,18 +201,18 @@ export const plants = Object.freeze([
     plant: (root: string) =>
       editText(
         root,
-        'dist/runtime/fesm2022/neolorn-equator.mjs',
+        'dist/runtime/fesm2022/neolorn-thoth.mjs',
         (text: string) =>
           `${text}\nconst plantedFace = () => new FontFace('Planted', 'url(planted.woff2)');\n`,
       ),
-    refusal: /neolorn-equator\.mjs loads a font through new FontFace/u,
+    refusal: /neolorn-thoth\.mjs loads a font through new FontFace/u,
   },
   {
     id: 'runtime-compiled-in-full',
     plant: (root: string) =>
       editText(
         root,
-        'dist/runtime/fesm2022/neolorn-equator.mjs',
+        'dist/runtime/fesm2022/neolorn-thoth.mjs',
         (text: string) => text.replace('.ɵɵngDeclarePipe(', '.ɵɵdefinePipe('),
       ),
     refusal: /contains full-Ivy declarations/u,
@@ -220,15 +220,15 @@ export const plants = Object.freeze([
   {
     id: 'runtime-declaration-map-missing',
     plant: (root: string) =>
-      rm(resolve(root, 'dist/runtime/types/neolorn-equator-core.d.ts.map')),
-    refusal: /neolorn-equator-core\.d\.ts\.map/u,
+      rm(resolve(root, 'dist/runtime/types/neolorn-thoth-core.d.ts.map')),
+    refusal: /neolorn-thoth-core\.d\.ts\.map/u,
   },
   {
     id: 'core-imports-node',
     plant: (root: string) =>
       editText(
         root,
-        'dist/runtime/fesm2022/neolorn-equator-core.mjs',
+        'dist/runtime/fesm2022/neolorn-thoth-core.mjs',
         (text: string) => `import { readFileSync } from 'node:fs';\n${text}`,
       ),
     refusal: /imports Node built-in node:fs/u,
@@ -238,18 +238,18 @@ export const plants = Object.freeze([
     plant: (root: string) =>
       editText(
         root,
-        'dist/runtime/fesm2022/neolorn-equator-ssr.mjs',
+        'dist/runtime/fesm2022/neolorn-thoth-ssr.mjs',
         (text: string) =>
-          `${text}\nexport { generate } from '@neolorn/equator-toolkit';\n`,
+          `${text}\nexport { generate } from '@neolorn/thoth-toolkit';\n`,
       ),
-    refusal: /imports toolkit module @neolorn\/equator-toolkit/u,
+    refusal: /imports toolkit module @neolorn\/thoth-toolkit/u,
   },
   {
     id: 'core-declarations-import-angular',
     plant: (root: string) =>
       editText(
         root,
-        'dist/runtime/types/neolorn-equator-core.d.ts',
+        'dist/runtime/types/neolorn-thoth-core.d.ts',
         (text: string) =>
           `export type { Signal } from '@angular/core';\n${text}`,
       ),
@@ -260,9 +260,9 @@ export const plants = Object.freeze([
     plant: (root: string) =>
       editText(
         root,
-        'dist/runtime/types/neolorn-equator-http.d.ts',
+        'dist/runtime/types/neolorn-thoth-http.d.ts',
         (text: string) =>
-          `export type { Localization } from '@neolorn/equator';\n${text}`,
+          `export type { Localization } from '@neolorn/thoth';\n${text}`,
       ),
     refusal: /\.\/http imports the primary/u,
   },
@@ -273,7 +273,7 @@ export const plants = Object.freeze([
     plant: (root: string) =>
       editText(
         root,
-        'dist/runtime/fesm2022/neolorn-equator-http.mjs',
+        'dist/runtime/fesm2022/neolorn-thoth-http.mjs',
         (text: string) =>
           `${text}\n{\n  class LocalizationError extends Error {}\n}\n`,
       ),
@@ -286,7 +286,7 @@ export const plants = Object.freeze([
         root,
         'packages/runtime/http/src/handler.ts',
         replaceOnce(
-          "} from '@neolorn/equator/core';",
+          "} from '@neolorn/thoth/core';",
           "} from '../../core/src/public-api';",
         ),
       ),

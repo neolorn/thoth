@@ -81,7 +81,7 @@ async function createInitializedProject(root: string): Promise<void> {
     'i18n/shell/en-US.yaml',
     [
       'messages:',
-      '  app-title: Equator host fixture',
+      '  app-title: Thoth host fixture',
       "  welcome: 'Welcome, {$name}!'",
       '  recovery.unavailable: Localization is temporarily unavailable.',
       '',
@@ -92,7 +92,7 @@ async function createInitializedProject(root: string): Promise<void> {
     'i18n/shell/ar-EG.yaml',
     [
       'messages:',
-      '  app-title: تطبيق Equator',
+      '  app-title: تطبيق Thoth',
       "  welcome: 'مرحبًا، {$name}!'",
       '  recovery.unavailable: الترجمة غير متاحة مؤقتًا.',
       '',
@@ -136,7 +136,7 @@ afterEach(async () => {
   );
 });
 
-describe('Equator standalone project host', () => {
+describe('Thoth standalone project host', () => {
   it('initializes compatible setup idempotently and refuses mapping conflicts', async () => {
     const root = await temporaryProject('init-');
     await createPackage(root);
@@ -154,22 +154,22 @@ describe('Equator standalone project host', () => {
     if (!first.ok) return;
     expect(first.value.changed).toBe(true);
     expect(first.value.files).toEqual([
-      'equator.config.json',
       'i18n',
       'package.json',
+      'thoth.config.json',
     ]);
 
     // `init` writes containers and never content, so the catalog directory it just made has to
-    // be empty: no example message, no placeholder, nothing that would put Equator's words in a
+    // be empty: no example message, no placeholder, nothing that would put Thoth's words in a
     // consumer's product. `init` writes no catalog at all, so the assertion is at the directory.
     expect(await readdir(resolve(root, 'i18n'))).toEqual([]);
 
     // And because it writes neither, it names both. The first catalog was already named at the next
-    // `generate`, by `EQ1702`; the recovery message was named by nothing until `EQ1310` refused a
+    // `generate`, by `TH1702`; the recovery message was named by nothing until `TH1310` refused a
     // build, by which time the reader has composed `provideLocalization` believing every feature
     // optional. Asserted on the substrings a reader needs rather than on the sentence, so rewording
     // is free and dropping either half is not.
-    const guidance = first.diagnostics.find(({ code }) => code === 'EQ1706');
+    const guidance = first.diagnostics.find(({ code }) => code === 'TH1706');
     expect(guidance?.severity).toBe('info');
     expect(guidance?.summary).toContain('i18n/shell/en-US.yaml');
     expect(guidance?.summary).toContain('withRecoveryMessage');
@@ -194,7 +194,7 @@ describe('Equator standalone project host', () => {
       '#i18n': './src/generated/i18n/index.ts',
       '#i18n/*': './src/generated/i18n/*.ts',
     });
-    expect(manifest['scripts']?.['equator:generate']).toBe('equator generate');
+    expect(manifest['scripts']?.['thoth:generate']).toBe('thoth generate');
     manifest['imports'] = {
       ...manifest['imports'],
       '#i18n': './consumer-owned.ts',
@@ -206,16 +206,16 @@ describe('Equator standalone project host', () => {
     );
     const conflict = await initializeProject({ project: root });
     expect(conflict.ok).toBe(false);
-    expect(conflict.diagnostics[0]?.code).toBe('EQ1705');
+    expect(conflict.diagnostics[0]?.code).toBe('TH1705');
     claimCapability('cli:init');
   });
 
   it('never selects a configuration above the package it is standing in', async () => {
-    // The accident this closes shows up two ways. By hand: `equator init` inside a child package
+    // The accident this closes shows up two ways. By hand: `thoth init` inside a child package
     // whose parent carries a configuration initializes the **parent**, reports success, and names
     // three files the reader cannot find where they are standing. Through the gate: a stray
     // configuration at this repository's root makes every consumer materialized under `tmp/`
-    // select that root as its owner instead of itself, so four stages fail with "Equator init is
+    // select that root as its owner instead of itself, so four stages fail with "Thoth init is
     // already complete" against a consumer whose configuration does not exist.
     const parent = await temporaryProject('boundary-');
     await writeProjectFile(
@@ -245,7 +245,7 @@ describe('Equator standalone project host', () => {
     // otherwise told none exists.
     const generated = await generateProject({ cwd: child });
     expect(generated.ok).toBe(false);
-    const refusal = generated.diagnostics.find(({ code }) => code === 'EQ1702');
+    const refusal = generated.diagnostics.find(({ code }) => code === 'TH1702');
     expect(refusal?.summary).toContain(JSON.stringify(child));
     expect(refusal?.summary).toContain(JSON.stringify(parent));
 
@@ -259,7 +259,7 @@ describe('Equator standalone project host', () => {
       },
     });
     expect(initialized.ok).toBe(true);
-    expect(await stat(resolve(child, 'equator.config.json'))).toBeTruthy();
+    expect(await stat(resolve(child, 'thoth.config.json'))).toBeTruthy();
     expect(await readdir(resolve(child, 'i18n'))).toEqual([]);
     // The parent is untouched: its own `i18n` is the one its own init made, and nothing was added
     // to it.
@@ -289,7 +289,7 @@ describe('Equator standalone project host', () => {
     expect(
       checked.diagnostics.some(
         ({ summary }) =>
-          summary.includes('No equator.config.json') ||
+          summary.includes('No thoth.config.json') ||
           summary.includes('discovery is ambiguous'),
       ),
     ).toBe(false);
@@ -299,7 +299,7 @@ describe('Equator standalone project host', () => {
   it('preserves a pre-existing consumer file at the authoring-lock path', async () => {
     const root = await temporaryProject('lock-');
     await createPackage(root);
-    const lockPath = resolve(root, '.equator-authoring.lock');
+    const lockPath = resolve(root, '.thoth-authoring.lock');
     await writeFile(lockPath, 'consumer-owned\n', 'utf8');
     const initialized = await initializeProject({
       project: root,
@@ -325,15 +325,15 @@ describe('Equator standalone project host', () => {
     expect(first.value.compilation.invalidation.kind).toBe('initial');
     const manifestPath = resolve(
       root,
-      'src/generated/i18n/.equator-manifest.json',
+      'src/generated/i18n/.thoth-manifest.json',
     );
     const firstMtime = (await stat(manifestPath)).mtimeMs;
     expect(
       await readFile(
-        resolve(root, '.equator', ...COMPILER_CACHE_PATH.split('/')),
+        resolve(root, '.thoth', ...COMPILER_CACHE_PATH.split('/')),
         'utf8',
       ),
-    ).toContain('equator-compiler-cache/1');
+    ).toContain('thoth-compiler-cache/1');
 
     const second = await generateProject({ project: root });
     expect(second.ok).toBe(true);
@@ -349,17 +349,17 @@ describe('Equator standalone project host', () => {
 
     await writeProjectFile(
       root,
-      'equator.config.json',
+      'thoth.config.json',
       '{"schemaVersion":1,"sourceLocale":"en-US","defaultLocale":"en-US","locales":["en-US","ar-EG"]}\n',
     );
     const dryFormat = await formatProject({ project: root, dryRun: true });
     expect(dryFormat.ok).toBe(true);
     if (!dryFormat.ok) return;
-    expect(dryFormat.value.files).toContain('equator.config.json');
+    expect(dryFormat.value.files).toContain('thoth.config.json');
     const formatted = await formatProject({ project: root });
     expect(formatted.ok).toBe(true);
     expect(
-      await readFile(resolve(root, 'equator.config.json'), 'utf8'),
+      await readFile(resolve(root, 'thoth.config.json'), 'utf8'),
     ).toContain('\n  "sourceLocale": "en-US"');
 
     const cleaned = await cleanProject({ project: root });
@@ -369,9 +369,7 @@ describe('Equator standalone project host', () => {
     expect(await pathMetadataForTest(resolve(root, 'src/generated/i18n'))).toBe(
       undefined,
     );
-    expect(await pathMetadataForTest(resolve(root, '.equator'))).toBe(
-      undefined,
-    );
+    expect(await pathMetadataForTest(resolve(root, '.thoth'))).toBe(undefined);
     const again = await cleanProject({ project: root });
     expect(again.ok).toBe(true);
     if (!again.ok) return;
@@ -452,9 +450,9 @@ describe('Equator standalone project host', () => {
     await createInitializedProject(root);
     await writeProjectFile(
       root,
-      'equator.extensions.json',
+      'thoth.extensions.json',
       JSON.stringify({
-        profile: 'equator-extension-registry/1',
+        profile: 'thoth-extension-registry/1',
         descriptors: [
           {
             kind: 'message-function',
@@ -490,8 +488,8 @@ describe('Equator standalone project host', () => {
     const formatted = await formatProject({ project: root });
     expect(formatted.ok).toBe(true);
     expect(
-      await readFile(resolve(root, 'equator.extensions.json'), 'utf8'),
-    ).toContain('\n  "profile": "equator-extension-registry/1"');
+      await readFile(resolve(root, 'thoth.extensions.json'), 'utf8'),
+    ).toContain('\n  "profile": "thoth-extension-registry/1"');
     claimCapability('cli:generate');
     claimCapability('cli:format');
     claimCapability('extension:message-function');
@@ -503,13 +501,13 @@ describe('Equator standalone project host', () => {
     const generated = await generateProject({ project: root });
     expect(generated.ok).toBe(true);
     await writeFile(
-      resolve(root, '.equator', ...COMPILER_CACHE_PATH.split('/')),
+      resolve(root, '.thoth', ...COMPILER_CACHE_PATH.split('/')),
       '{broken',
       'utf8',
     );
     const checked = await checkProject({ project: root });
     expect(checked.ok).toBe(true);
-    expect(checked.diagnostics.some(({ code }) => code === 'EQ1703')).toBe(
+    expect(checked.diagnostics.some(({ code }) => code === 'TH1703')).toBe(
       true,
     );
 
@@ -525,10 +523,7 @@ describe('Equator standalone project host', () => {
             void readFile(catalogPath, 'utf8').then((source) =>
               writeFile(
                 catalogPath,
-                source.replace(
-                  'Equator host fixture',
-                  'Equator watched fixture',
-                ),
+                source.replace('Thoth host fixture', 'Thoth watched fixture'),
                 'utf8',
               ),
             );
@@ -559,7 +554,7 @@ describe('Equator standalone project host', () => {
     await writeFile(consumerFile, 'keep me\n', 'utf8');
     const cleaned = await cleanProject({ project: root });
     expect(cleaned.ok).toBe(false);
-    expect(cleaned.diagnostics[0]?.code).toBe('EQ1601');
+    expect(cleaned.diagnostics[0]?.code).toBe('TH1601');
     expect(await readFile(consumerFile, 'utf8')).toBe('keep me\n');
     claimCapability('cli:clean');
   });
@@ -606,11 +601,11 @@ describe('an authored file that is not UTF-8 text, or is over its ceiling', () =
 
   it('is refused with the code of the file it is, naming it from the owner', async () => {
     for (const [file, code] of [
-      ['equator.config.json', 'EQ1001'],
-      ['package.json', 'EQ1702'],
-      ['i18n/shell/en-US.yaml', 'EQ1101'],
-      ['angular.json', 'EQ1702'],
-      ['equator.extensions.json', 'EQ1805'],
+      ['thoth.config.json', 'TH1001'],
+      ['package.json', 'TH1702'],
+      ['i18n/shell/en-US.yaml', 'TH1101'],
+      ['angular.json', 'TH1702'],
+      ['thoth.extensions.json', 'TH1805'],
     ] as const) {
       const root = await temporaryProject('not-utf8-');
       await createInitializedProject(root);
@@ -642,7 +637,7 @@ describe('an authored file that is not UTF-8 text, or is over its ceiling', () =
       Buffer.alloc(RESOURCE_LIMITS.catalogBytes + 1, 0x20),
     );
     const diagnostic = await refusal(root);
-    expect(diagnostic).toMatchObject({ code: 'EQ1101' });
+    expect(diagnostic).toMatchObject({ code: 'TH1101' });
     expect(diagnostic?.summary).toContain(
       `"i18n/shell/en-US.yaml" because it exceeds the ${RESOURCE_LIMITS.catalogBytes}-byte`,
     );
@@ -653,29 +648,29 @@ describe('an authored file that is not UTF-8 text, or is over its ceiling', () =
 describe('a JSON project file saved with a byte-order mark', () => {
   const MARK = String.fromCharCode(0xfeff);
 
-  it('is read as the JSON after it, and keeps it when Equator rewrites the file', async () => {
+  it('is read as the JSON after it, and keeps it when Thoth rewrites the file', async () => {
     const root = await temporaryProject('byte-order-mark-');
     await createInitializedProject(root);
     await writeProjectFile(root, 'angular.json', '{}\n');
     await writeProjectFile(
       root,
-      'equator.extensions.json',
+      'thoth.extensions.json',
       JSON.stringify({
-        profile: 'equator-extension-registry/1',
+        profile: 'thoth-extension-registry/1',
         descriptors: [],
       }),
     );
     for (const file of [
       'package.json',
       'angular.json',
-      'equator.config.json',
-      'equator.extensions.json',
+      'thoth.config.json',
+      'thoth.extensions.json',
     ]) {
       const path = resolve(root, file);
       await writeFile(path, `${MARK}${await readFile(path, 'utf8')}`, 'utf8');
     }
     // Written on one line, so formatting has something to rewrite.
-    const configurationPath = resolve(root, 'equator.config.json');
+    const configurationPath = resolve(root, 'thoth.config.json');
     const configuration = await readFile(configurationPath, 'utf8');
     await writeFile(
       configurationPath,
@@ -689,9 +684,9 @@ describe('a JSON project file saved with a byte-order mark', () => {
     const formatted = await formatProject({ project: root });
     expect(formatted.ok, JSON.stringify(formatted.diagnostics)).toBe(true);
     if (!formatted.ok) return;
-    expect(formatted.value.files).toContain('equator.config.json');
-    expect(formatted.value.files).toContain('equator.extensions.json');
-    for (const file of ['equator.config.json', 'equator.extensions.json']) {
+    expect(formatted.value.files).toContain('thoth.config.json');
+    expect(formatted.value.files).toContain('thoth.extensions.json');
+    for (const file of ['thoth.config.json', 'thoth.extensions.json']) {
       const rewritten = await readFile(resolve(root, file), 'utf8');
       expect(rewritten.startsWith(MARK), file).toBe(true);
       expect(rewritten.slice(1).startsWith(MARK), file).toBe(false);

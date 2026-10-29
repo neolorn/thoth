@@ -169,7 +169,7 @@ function configurationFiles(directory: string): string[] {
     if (entry.isDirectory()) {
       return entry.name === 'node_modules' ? [] : configurationFiles(path);
     }
-    return entry.name === 'equator.config.json' ? [path] : [];
+    return entry.name === 'thoth.config.json' ? [path] : [];
   });
 }
 

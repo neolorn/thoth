@@ -5,7 +5,7 @@ import {
   formatInstant,
   instant,
   languagePresentation,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -53,10 +53,10 @@ describe('a localization context built without Angular', () => {
     const localization = context();
     await localization.initialize();
 
-    expect(localization.text(messages.appTitle)).toBe('Equator feature lab');
+    expect(localization.text(messages.appTitle)).toBe('Thoth feature lab');
 
     await localization.changeLocale('ar-EG');
-    expect(localization.text(messages.appTitle)).toBe('مختبر ميزات Equator');
+    expect(localization.text(messages.appTitle)).toBe('مختبر ميزات Thoth');
 
     localization.dispose();
   });
@@ -72,7 +72,7 @@ describe('a localization context built without Angular', () => {
     expect(languagePresentation('ar-EG').direction).toBe('rtl');
 
     localization.dispose();
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('formats the values an error page carries', async () => {
@@ -88,7 +88,7 @@ describe('a localization context built without Angular', () => {
     expect(formatted.value.direction).toBe('rtl');
     expect(formatted.value.text).toMatch(/[؀-ۿ]/u);
     claimCapability('format:formatInstant');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('recovers a message when the catalogs cannot be reached at all', async () => {
@@ -124,6 +124,6 @@ describe('a localization context built without Angular', () => {
     expect(localization.recovery()?.value.length ?? 0).toBeGreaterThan(0);
 
     localization.dispose();
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

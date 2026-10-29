@@ -20,7 +20,7 @@ import {
 import {
   type FormattingContext,
   type LocalizedInputProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The numbering system of a context is a declaration, and a field reads and writes nothing under

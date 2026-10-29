@@ -10,9 +10,9 @@ import type { SemanticGraph } from './semantic-model.js';
  *
  * Without this record, changing the English wording while leaving the old Arabic in place produces
  * success with an empty diagnostics array: nothing records what a translation corresponds to, so
- * "the source moved and this translation did not" is not a question Equator can answer.
+ * "the source moved and this translation did not" is not a question Thoth can answer.
  *
- * Equator maintains this record itself. Nothing is asked of a translator and nothing is stamped by
+ * Thoth maintains this record itself. Nothing is asked of a translator and nothing is stamped by
  * hand: each entry carries the source fingerprint at the time of stamping *and* a digest of the
  * translation, and the second value is what removes the human from the loop.
  *
@@ -24,9 +24,9 @@ import type { SemanticGraph } from './semantic-model.js';
  * flag, and deleting without translating silently clears a real one. Neither failure is visible.
  *
  * The record is committed rather than cached because a fresh checkout and a CI run must reach the
- * same answer as the machine the edit happened on. It cannot live under `.equator/`, which is
+ * same answer as the machine the edit happened on. It cannot live under `.thoth/`, which is
  * declared disposable, nor in the generated root, where deleting and regenerating must preserve
- * everything, and it is the one thing Equator owns that genuinely cannot be recomputed.
+ * everything, and it is the one thing Thoth owns that genuinely cannot be recomputed.
  *
  * Losing the file is not a correctness problem: every entry re-stamps as current and tracking
  * restarts, which reports nothing rather than reporting something false.
@@ -35,17 +35,16 @@ import type { SemanticGraph } from './semantic-model.js';
  * the consumer's own durable project data rather than derived output, and it does not belong
  * under a root a project ignores by default.
  */
-export const TRANSLATION_STATE_PROFILE = 'equator-translation-state/1' as const;
+export const TRANSLATION_STATE_PROFILE = 'thoth-translation-state/1' as const;
 
 /**
- * Owner-relative location, beside `equator.config.json` rather than inside `i18n/`.
+ * Owner-relative location, beside `thoth.config.json` rather than inside `i18n/`.
  *
  * The catalog root holds authored content and refuses entries it does not recognize, which is a
- * property worth keeping rather than widening for a file Equator writes. Ownership reads correctly
- * this way too: `i18n/` is the translator's, and this is Equator's.
+ * property worth keeping rather than widening for a file Thoth writes. Ownership reads correctly
+ * this way too: `i18n/` is the translator's, and this is Thoth's.
  */
-export const TRANSLATION_STATE_PATH =
-  '.equator-translation-state.json' as const;
+export const TRANSLATION_STATE_PATH = '.thoth-translation-state.json' as const;
 
 export interface TranslationStateEntry {
   /** Source fingerprint this translation was written against. */
@@ -87,7 +86,7 @@ function translationDigest(canonicalSource: string | undefined): string {
   // An explicitly empty translation is a deliberate authored value and must be distinguishable
   // from an absent one, so it digests its own sentinel rather than the empty string.
   return digestCanonicalJson(
-    'equator-translation',
+    'thoth-translation',
     canonicalSource ?? { empty: true },
   );
 }

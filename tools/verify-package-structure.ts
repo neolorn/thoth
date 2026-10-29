@@ -195,7 +195,7 @@ const standardsLock = await readJson(
   resolve(workspaceRoot, 'standards/sources.lock.json'),
 );
 assert.equal(standardsLock.schemaVersion, 1);
-assert.equal(standardsLock.profileId, 'equator-1');
+assert.equal(standardsLock.profileId, 'thoth-1');
 assert.equal(standardsLock.updatePolicy, 'intentional-review-only');
 assert.equal(standardsLock.standardsProfile.unicode, '17.0.0');
 assert.equal(standardsLock.standardsProfile.cldrLdml, '48.2');
@@ -332,7 +332,7 @@ assert.equal(
 );
 
 const runtimePackage = await readJson(resolve(runtimeRoot, 'package.json'));
-assert.equal(runtimePackage.name, '@neolorn/equator');
+assert.equal(runtimePackage.name, '@neolorn/thoth');
 assert.equal(runtimePackage.version, workspacePackage.version);
 assert.equal(
   runtimePackage.description,
@@ -349,7 +349,7 @@ assert.deepEqual(runtimePackage.publishConfig, {
 });
 assert.deepEqual(runtimePackage.repository, {
   type: 'git',
-  url: 'git+https://github.com/neolorn/equator.git',
+  url: 'git+https://github.com/neolorn/thoth.git',
   directory: 'packages/runtime',
 });
 assert.equal(runtimePackage.type, 'module');
@@ -381,8 +381,8 @@ assert.deepEqual(runtimePackage.peerDependenciesMeta, {
   '@angular/router': { optional: true },
   '@angular/ssr': { optional: true },
 });
-assert.equal(runtimePackage.module, 'fesm2022/neolorn-equator.mjs');
-assert.equal(runtimePackage.typings, 'types/neolorn-equator.d.ts');
+assert.equal(runtimePackage.module, 'fesm2022/neolorn-thoth.mjs');
+assert.equal(runtimePackage.typings, 'types/neolorn-thoth.d.ts');
 assert.deepEqual(Object.keys(runtimePackage.exports).sort(), [
   '.',
   './core',
@@ -397,44 +397,44 @@ assert.deepEqual(Object.keys(runtimePackage.exports).sort(), [
 const runtimeEntrypoints = Object.freeze([
   Object.freeze({
     subpath: '.',
-    javascript: './fesm2022/neolorn-equator.mjs',
-    declarations: './types/neolorn-equator.d.ts',
+    javascript: './fesm2022/neolorn-thoth.mjs',
+    declarations: './types/neolorn-thoth.d.ts',
     angularDeclarations: true,
   }),
   Object.freeze({
     subpath: './ssr',
-    javascript: './fesm2022/neolorn-equator-ssr.mjs',
-    declarations: './types/neolorn-equator-ssr.d.ts',
+    javascript: './fesm2022/neolorn-thoth-ssr.mjs',
+    declarations: './types/neolorn-thoth-ssr.d.ts',
     angularDeclarations: false,
   }),
   Object.freeze({
     subpath: './forms',
-    javascript: './fesm2022/neolorn-equator-forms.mjs',
-    declarations: './types/neolorn-equator-forms.d.ts',
+    javascript: './fesm2022/neolorn-thoth-forms.mjs',
+    declarations: './types/neolorn-thoth-forms.d.ts',
     angularDeclarations: true,
   }),
   Object.freeze({
     subpath: './router',
-    javascript: './fesm2022/neolorn-equator-router.mjs',
-    declarations: './types/neolorn-equator-router.d.ts',
+    javascript: './fesm2022/neolorn-thoth-router.mjs',
+    declarations: './types/neolorn-thoth-router.d.ts',
     angularDeclarations: false,
   }),
   Object.freeze({
     subpath: './testing',
-    javascript: './fesm2022/neolorn-equator-testing.mjs',
-    declarations: './types/neolorn-equator-testing.d.ts',
+    javascript: './fesm2022/neolorn-thoth-testing.mjs',
+    declarations: './types/neolorn-thoth-testing.d.ts',
     angularDeclarations: false,
   }),
   Object.freeze({
     subpath: './core',
-    javascript: './fesm2022/neolorn-equator-core.mjs',
-    declarations: './types/neolorn-equator-core.d.ts',
+    javascript: './fesm2022/neolorn-thoth-core.mjs',
+    declarations: './types/neolorn-thoth-core.d.ts',
     angularDeclarations: false,
   }),
   Object.freeze({
     subpath: './http',
-    javascript: './fesm2022/neolorn-equator-http.mjs',
-    declarations: './types/neolorn-equator-http.d.ts',
+    javascript: './fesm2022/neolorn-thoth-http.mjs',
+    declarations: './types/neolorn-thoth-http.d.ts',
     angularDeclarations: false,
   }),
 ]);
@@ -445,7 +445,7 @@ assert.deepEqual(runtimePackage.exports['./package.json'], {
 
 // The pseudo-localization transform is absent from every shipped runtime bundle.
 //
-// The transform runs at build time in `@neolorn/equator-toolkit`, which a consumer installs as a
+// The transform runs at build time in `@neolorn/thoth-toolkit`, which a consumer installs as a
 // development dependency, so what reaches an application is a compiled catalog that nothing can
 // tell from a translation. That makes "never in production" an absence rather than a flag: there is
 // no code in the bundle to enable, no environment to read, and nothing to defeat.
@@ -459,7 +459,7 @@ const pseudoTransformMarkers = Object.freeze([
   // The boundary markers it emits. If these are in a runtime bundle, the transform is too.
   '\u27e6',
   '\u27e7',
-  // A slice of the accent table, which nothing else in Equator has a reason to contain.
+  // A slice of the accent table, which nothing else in Thoth has a reason to contain.
   '\u00c5\u00cb\u00cf',
 ]);
 for (const entrypoint of runtimeEntrypoints) {
@@ -480,7 +480,7 @@ for (const entrypoint of runtimeEntrypoints) {
   // The control for the five absences above. Without it they prove only that a file was read:
   // a renamed bundle, an empty read, or a wrong path would satisfy every one of them.
   assert.ok(
-    bundle.length > 0 && bundle.includes('equator'),
+    bundle.length > 0 && bundle.includes('thoth'),
     `${entrypoint.subpath} bundle was not read, so the absence checks above mean nothing.`,
   );
 }
@@ -607,11 +607,11 @@ await import(pathToFileURL(resolve(runtimeRoot, runtimeRouterEntry)).href);
 await import(pathToFileURL(resolve(runtimeRoot, runtimeTestingEntry)).href);
 
 const toolkitPackage = await readJson(resolve(toolkitRoot, 'package.json'));
-assert.equal(toolkitPackage.name, '@neolorn/equator-toolkit');
+assert.equal(toolkitPackage.name, '@neolorn/thoth-toolkit');
 assert.equal(toolkitPackage.version, runtimePackage.version);
 assert.equal(
   toolkitPackage.description,
-  'Compiler and developer tooling for Equator localization projects.',
+  'Compiler and developer tooling for Thoth localization projects.',
 );
 assert.equal(toolkitPackage.private, undefined);
 assert.deepEqual(toolkitPackage.publishConfig, {
@@ -620,14 +620,14 @@ assert.deepEqual(toolkitPackage.publishConfig, {
 });
 assert.deepEqual(toolkitPackage.repository, {
   type: 'git',
-  url: 'git+https://github.com/neolorn/equator.git',
+  url: 'git+https://github.com/neolorn/thoth.git',
   directory: 'packages/toolkit',
 });
 assert.equal(toolkitPackage.type, 'module');
 assert.equal(toolkitPackage.license, 'MIT');
 assert.equal(toolkitPackage.sideEffects, false);
 assert.deepEqual(toolkitPackage.engines, { node: nodeRange });
-assert.deepEqual(toolkitPackage.bin, { equator: './cli.js' });
+assert.deepEqual(toolkitPackage.bin, { thoth: './cli.js' });
 assert.deepEqual(toolkitPackage.dependencies, {
   ajv: '8.20.0',
   'jsonc-parser': '3.3.1',
@@ -712,7 +712,7 @@ for (const [where, range] of declaredAngularRanges) {
   );
 }
 
-// `@angular/compiler-cli` was a required peer that Equator never imported: two occurrences in the
+// `@angular/compiler-cli` was a required peer that Thoth never imported: two occurrences in the
 // whole repository, both of them declarations. It forced every consumer to install a package the
 // toolkit does not load. Asserted absent rather than deleted quietly, so it cannot come back as a
 // copy-paste from the compiler peer beside it.
@@ -809,7 +809,7 @@ assert.match(
 assert.match(help.stdout, /Reconcile changes in one foreground process/);
 assert.match(
   help.stdout,
-  /Preview or apply one explicit Equator-authored migration plan/,
+  /Preview or apply one explicit Thoth-authored migration plan/,
 );
 assert.match(help.stdout, /--plan <path>/);
 
@@ -844,11 +844,11 @@ for (const [key, property] of settableConfigurationKeys) {
   assert.equal(
     typeof property.description,
     'string',
-    `The shipped configuration schema describes no ${key}, so this check cannot tell whether equator init --help mentions it.`,
+    `The shipped configuration schema describes no ${key}, so this check cannot tell whether thoth init --help mentions it.`,
   );
   assert.ok(
     help.stdout.includes(property.description),
-    `equator init --help does not state ${key}: the shipped schema accepts it and the install line says nothing about it. Run pnpm run build && pnpm run generate:cli-options.`,
+    `thoth init --help does not state ${key}: the shipped schema accepts it and the install line says nothing about it. Run pnpm run build && pnpm run generate:cli-options.`,
   );
 }
 // A description that matched by accident (an empty string, a substring of the banner)
@@ -856,14 +856,14 @@ for (const [key, property] of settableConfigurationKeys) {
 // there is checked too.
 assert.ok(
   !help.stdout.includes('A field no schema describes.'),
-  'The equator init --help check matches text the schema never contained, so it is not reading what it thinks it is.',
+  'The thoth init --help check matches text the schema never contained, so it is not reading what it thinks it is.',
 );
 
 const toolkitHarnessRoot = await mkdtemp(resolve(tmpdir(), 'built-toolkit-'));
 const toolkitHarnessNodeModules = resolve(toolkitHarnessRoot, 'node_modules');
 const toolkitHarnessPackageRoot = resolve(
   toolkitHarnessNodeModules,
-  '@neolorn/equator-toolkit',
+  '@neolorn/thoth-toolkit',
 );
 await mkdir(dirname(toolkitHarnessPackageRoot), { recursive: true });
 await cp(toolkitRoot, toolkitHarnessPackageRoot, { recursive: true });
@@ -887,8 +887,8 @@ for (const [specifier, sourceRoot] of [
 const builtToolkit = await import(
   pathToFileURL(resolve(toolkitHarnessPackageRoot, 'index.js')).href
 );
-// Host admission is internal: a consumer does not ask Equator whether its own compiler is admitted,
-// Equator answers that when it compiles. The leaf module, for the reason the schema assertions
+// Host admission is internal: a consumer does not ask Thoth whether its own compiler is admitted,
+// Thoth answers that when it compiles. The leaf module, for the reason the schema assertions
 // above already give.
 const builtHostCompatibility = await import(
   pathToFileURL(resolve(toolkitHarnessPackageRoot, 'host-compatibility.js'))
@@ -906,7 +906,7 @@ const validateWatchEvent = schemaValidator.compile(
 );
 assert.equal(
   validateWatchEvent({
-    profile: 'equator-cli-watch-event/1',
+    profile: 'thoth-cli-watch-event/1',
     command: 'watch',
     sequence: 1,
     status: 'success',
@@ -923,7 +923,7 @@ assert.equal(
 );
 assert.equal(
   validateWatchEvent({
-    profile: 'equator-cli-watch-event/1',
+    profile: 'thoth-cli-watch-event/1',
     command: 'watch',
     sequence: 2,
     status: 'diagnostic-failure',
@@ -943,7 +943,7 @@ assert.equal(
 // the toolkit and cannot read a manifest at the moment it decides, so it carries its own copy of
 // the three ranges, and this is the check that the copy is still the same claim.
 assert.deepEqual(builtHostCompatibility.HOST_COMPATIBILITY_PROFILE, {
-  profile: 'equator-host-compatibility/1',
+  profile: 'thoth-host-compatibility/1',
   node: nodeRange,
   typescript: peerRange('typescript'),
   angularCompiler: peerRange('@angular/compiler'),
@@ -962,9 +962,9 @@ assert.deepEqual(
     }),
   ),
   [
-    { code: 'EQ1806', path: ['host', 'node'] },
-    { code: 'EQ1806', path: ['host', 'typescript'] },
-    { code: 'EQ1806', path: ['host', 'angularCompiler'] },
+    { code: 'TH1806', path: ['host', 'node'] },
+    { code: 'TH1806', path: ['host', 'typescript'] },
+    { code: 'TH1806', path: ['host', 'angularCompiler'] },
   ],
 );
 
@@ -1034,11 +1034,11 @@ try {
 
   const missingProject = run(['migrate', '--plan', planPath, '--json']);
   assert.equal(missingProject.status, 2);
-  assert.equal(machineResult(missingProject).diagnostics[0].code, 'EQ1701');
+  assert.equal(machineResult(missingProject).diagnostics[0].code, 'TH1701');
 
   const missingPlan = run(['migrate', '--project', migrationRoot, '--json']);
   assert.equal(missingPlan.status, 2);
-  assert.equal(machineResult(missingPlan).diagnostics[0].code, 'EQ1701');
+  assert.equal(machineResult(missingPlan).diagnostics[0].code, 'TH1701');
 
   const absentPlan = run([
     'migrate',
@@ -1049,7 +1049,7 @@ try {
     '--json',
   ]);
   assert.equal(absentPlan.status, 2);
-  assert.equal(machineResult(absentPlan).diagnostics[0].code, 'EQ1701');
+  assert.equal(machineResult(absentPlan).diagnostics[0].code, 'TH1701');
 
   const invalidPlan = run([
     'migrate',
@@ -1060,7 +1060,7 @@ try {
     '--json',
   ]);
   assert.equal(invalidPlan.status, 2);
-  assert.equal(machineResult(invalidPlan).diagnostics[0].code, 'EQ1805');
+  assert.equal(machineResult(invalidPlan).diagnostics[0].code, 'TH1805');
 
   const tamperedPlan = run([
     'migrate',
@@ -1071,7 +1071,7 @@ try {
     '--json',
   ]);
   assert.equal(tamperedPlan.status, 2);
-  assert.equal(machineResult(tamperedPlan).diagnostics[0].code, 'EQ1805');
+  assert.equal(machineResult(tamperedPlan).diagnostics[0].code, 'TH1805');
   assert.equal(await readFile(ownerFile, 'utf8'), 'before\n');
 
   const humanPreview = run([
@@ -1142,7 +1142,7 @@ try {
   // The install line, run cold on the shipped CLI: `init`, then `generate`, with
   // nothing authored in between.
   //
-  // A `generate` that refuses this (`EQ1702` for the missing `i18n` directory, then `EQ1702`
+  // A `generate` that refuses this (`TH1702` for the missing `i18n` directory, then `TH1702`
   // again for the catalogs nobody has written yet) makes the documented first run fail twice
   // before it can succeed once. A project with zero messages is a valid project; it is the state
   // every project is in the moment after `init`. The two assertions that matter are that both
@@ -1183,19 +1183,19 @@ try {
       (metadata) => metadata.isDirectory(),
       () => false,
     ),
-    'equator init did not create the catalog directory, so the name of the one thing a consumer cannot guess is still unwritten.',
+    'thoth init did not create the catalog directory, so the name of the one thing a consumer cannot guess is still unwritten.',
   );
   assert.deepEqual(
     await readdir(coldCatalogRoot),
     [],
-    'equator init wrote something into the catalog directory. It creates containers and never content.',
+    'thoth init wrote something into the catalog directory. It creates containers and never content.',
   );
 
   const coldGenerate = run(['generate', '--project', coldRoot, '--json']);
   assert.equal(
     coldGenerate.status,
     0,
-    `equator generate refused a project with no messages yet:\n${coldGenerate.stdout}${coldGenerate.stderr}`,
+    `thoth generate refused a project with no messages yet:\n${coldGenerate.stdout}${coldGenerate.stderr}`,
   );
   const coldReport = machineResult(coldGenerate);
   assert.deepEqual(
@@ -1211,7 +1211,7 @@ try {
         severity,
       }),
     ),
-    [{ code: 'EQ1702', severity: 'info' }],
+    [{ code: 'TH1702', severity: 'info' }],
     'A project with no messages yet reports one note and nothing else.',
   );
   assert.match(
@@ -1268,14 +1268,14 @@ try {
     assert.equal(
       result.error,
       undefined,
-      `equator ${command} --json did not finish: ${String(result.error)}`,
+      `thoth ${command} --json did not finish: ${String(result.error)}`,
     );
-    assert.equal(result.stderr, '', `equator ${command} --json wrote stderr`);
+    assert.equal(result.stderr, '', `thoth ${command} --json wrote stderr`);
     const printed = JSON.parse(result.stdout);
     assert.equal(
       validateCliResult(printed),
       true,
-      `equator ${command} --json printed a result the published schema refuses: ${JSON.stringify(validateCliResult.errors)}`,
+      `thoth ${command} --json printed a result the published schema refuses: ${JSON.stringify(validateCliResult.errors)}`,
     );
     assert.equal(printed.command, command);
   }
@@ -1503,8 +1503,8 @@ for (const surface of packageSurfaces) {
           `${path} imports Node built-in ${specifier}`,
         );
         assert.equal(
-          specifier === '@neolorn/equator-toolkit' ||
-            specifier.startsWith('@neolorn/equator-toolkit/'),
+          specifier === '@neolorn/thoth-toolkit' ||
+            specifier.startsWith('@neolorn/thoth-toolkit/'),
           false,
           `${path} imports toolkit module ${specifier}`,
         );
@@ -1517,7 +1517,7 @@ for (const surface of packageSurfaces) {
 //
 // Two checks, and the second is the one with teeth.
 //
-// `@neolorn/equator/core` and `@neolorn/equator/http` exist for an environment boundary: they load
+// `@neolorn/thoth/core` and `@neolorn/thoth/http` exist for an environment boundary: they load
 // in a worker, a Lambda, or plain Node, where every other entry point of this package throws
 // `The injectable 'PlatformLocation' needs to be compiled using the JIT compiler`. That property is
 // not visible in the source, a source file that imports `@angular/core` for a type looks exactly
@@ -1537,17 +1537,17 @@ for (const surface of packageSurfaces) {
 const angularFreeEntrypoints = Object.freeze([
   Object.freeze({
     subpath: './core',
-    javascript: 'fesm2022/neolorn-equator-core.mjs',
-    declarations: 'types/neolorn-equator-core.d.ts',
+    javascript: 'fesm2022/neolorn-thoth-core.mjs',
+    declarations: 'types/neolorn-thoth-core.d.ts',
     // The base of the package. It may import nothing at all.
     permitted: Object.freeze<readonly string[]>([]),
   }),
   Object.freeze({
     subpath: './http',
-    javascript: 'fesm2022/neolorn-equator-http.mjs',
-    declarations: 'types/neolorn-equator-http.d.ts',
+    javascript: 'fesm2022/neolorn-thoth-http.mjs',
+    declarations: 'types/neolorn-thoth-http.d.ts',
     // The handler calls the classification; it does not reimplement it.
-    permitted: Object.freeze(['@neolorn/equator/core']),
+    permitted: Object.freeze(['@neolorn/thoth/core']),
   }),
 ]);
 
@@ -1562,7 +1562,7 @@ for (const entrypoint of angularFreeEntrypoints) {
         `${entrypoint.subpath} is not Angular-free: ${artifact} imports ${specifier}`,
       );
       assert.equal(
-        specifier === '@neolorn/equator',
+        specifier === '@neolorn/thoth',
         false,
         `${entrypoint.subpath} imports the primary (${artifact}), which cannot load outside Angular`,
       );
@@ -1595,7 +1595,7 @@ for (const name of runtimeBundles) {
 }
 assert.deepEqual(
   bundlesDefiningCore,
-  ['neolorn-equator-core.mjs'],
+  ['neolorn-thoth-core.mjs'],
   `LocalizationError must be defined in exactly one bundle, found: ${bundlesDefiningCore.join(', ')}`,
 );
 
@@ -1642,4 +1642,4 @@ for (const root of entrypointSourceRoots) {
   }
 }
 
-process.stdout.write('Equator package structure verified.\n');
+process.stdout.write('Thoth package structure verified.\n');

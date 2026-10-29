@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { LocalizationParticipant } from '@neolorn/equator/core';
+import type { LocalizationParticipant } from '@neolorn/thoth/core';
 
 import { catalogKey } from './catalog-store-harness.js';
 import { observed, runtime } from './transaction-runtime-harness.js';

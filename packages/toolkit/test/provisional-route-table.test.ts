@@ -12,7 +12,7 @@ import { testProjectConfiguration } from './fixtures.js';
  * is the pass that discovers the routes, so the overlay it starts from cannot contain them. Emitted
  * as an empty table written `as const`, that overlay types `routes` as `readonly []`, every field
  * read on a member of it resolves against `never`, and the resulting TypeScript errors are
- * forwarded as EQ1401 against the consumer's own lines. An application whose route table really is
+ * forwarded as TH1401 against the consumer's own lines. An application whose route table really is
  * empty is a different case and still gets a table.
  */
 
@@ -52,7 +52,7 @@ describe('the route table the analysis overlay starts from', () => {
     const contents = routesModule({});
 
     expect(contents).toContain(
-      "import type { GeneratedRouteProjection } from '@neolorn/equator';",
+      "import type { GeneratedRouteProjection } from '@neolorn/thoth';",
     );
     expect(contents).toContain(
       'export declare const routeProjection: GeneratedRouteProjection;',

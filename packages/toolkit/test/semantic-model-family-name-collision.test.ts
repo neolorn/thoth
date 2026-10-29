@@ -66,7 +66,7 @@ describe('two families generated under one name', () => {
       })),
     ).toEqual([
       {
-        code: 'EQ1305',
+        code: 'TH1305',
         summary:
           'Open families "order-x" and "orderX" collide at generated name "orderX".',
         path: ['families', 'orderX'],

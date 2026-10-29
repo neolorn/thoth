@@ -5,7 +5,7 @@ import {
   type LocaleDirection,
   type LocaleTypographyRegistry,
   type TypographyProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /** A language tag with the direction it is written in, for marking up a run of text. */
 export interface LanguagePresentation {
@@ -29,7 +29,7 @@ export interface IconPresentation {
  * How to mark up a piece of content whose language the application may not know.
  *
  * The direction is `auto` rather than a guess wherever the language is unknown or the content has
- * no language, which is what lets the browser decide from the text instead of Equator deciding from
+ * no language, which is what lets the browser decide from the text instead of Thoth deciding from
  * nothing.
  */
 export interface ContentPresentation {

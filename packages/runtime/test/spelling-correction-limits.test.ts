@@ -11,13 +11,13 @@ import {
   type RouteParameterCodec,
   type RouteParameterContext,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Where an address in another locale's spelling is corrected, and where it is left not found.
  *
  * Section 6 of `specs/07-routing-rendering-and-seo.spec.md` answers a variant of one canonical URL
- * with a 308 to it. The correction is only made to an address Equator can itself read back: one the
+ * with a 308 to it. The correction is only made to an address Thoth can itself read back: one the
  * requested locale can spell, and whose first segment the policy has not already claimed as a
  * prefix, an alias or a locale-neutral root where no prefix stands in front of it.
  */
@@ -35,7 +35,7 @@ const SLUG: RouteParameterCodec<string> = Object.freeze({
 /** Arabic spells the home page `bayt`, the second page `api`, and articles `maqalat`. */
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-SpellingCorrectionLimitsTestIdentity0123456',
     routes: [
       { id: 'home', path: '', parameterNames: [] },
@@ -178,7 +178,7 @@ describe("a correction to this locale's spelling", () => {
   });
 });
 
-describe('an address Equator would write and could not read back', () => {
+describe('an address Thoth would write and could not read back', () => {
   const refusal = (call: () => unknown): string | undefined => {
     try {
       call();
@@ -234,7 +234,7 @@ describe('an address Equator would write and could not read back', () => {
   it('is refused where its first segment spells a prefix, an alias or a root', () => {
     const leading: RouteRuntimeProjection = {
       generated: {
-        profile: 'equator-route-projection/1',
+        profile: 'thoth-route-projection/1',
         identity: 'sha256-ClaimedLeadingSegmentTestIdentity0123456789',
         routes: [{ id: 'page', path: ':slug', parameterNames: ['slug'] }],
       },

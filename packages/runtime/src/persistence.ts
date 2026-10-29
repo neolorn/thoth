@@ -1,6 +1,6 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID, REQUEST, inject } from '@angular/core';
-import { ɵassertStorableCookie } from '@neolorn/equator/core';
+import { ɵassertStorableCookie } from '@neolorn/thoth/core';
 
 /**
  * Where a locale choice is remembered between visits.
@@ -91,7 +91,7 @@ const MAXIMUM_STORED_LENGTH = 64;
  *
  * Rejected rather than repaired. `specs/03-locale-identity-and-resolution.spec.md` section 3 bounds
  * untrusted locale text and forbids using it directly as an identity or a protocol field, and a
- * value that needed repairing was not the value Equator wrote.
+ * value that needed repairing was not the value Thoth wrote.
  */
 function storedLocaleText(value: string | undefined): string | undefined {
   if (value === undefined) return undefined;
@@ -132,7 +132,7 @@ export function memoryStore(): LocalizationPersistenceStoreFactory {
  * that never sticks.
  */
 export interface CookieStoreOptions {
-  /** What the cookie is called. Defaults to `equator-locale`. */
+  /** What the cookie is called. Defaults to `thoth-locale`. */
   readonly name?: string;
   /** Which paths it is sent for. Defaults to `/`, and a `__Host-` name allows nothing else. */
   readonly path?: string;
@@ -159,7 +159,7 @@ export interface CookieStoreOptions {
   readonly secure?: boolean;
 }
 
-const DEFAULT_COOKIE_NAME = 'equator-locale';
+const DEFAULT_COOKIE_NAME = 'thoth-locale';
 const ONE_YEAR_SECONDS = 31_536_000;
 
 function cookieValue(header: string, name: string): string | undefined {
@@ -189,7 +189,7 @@ function cookieValue(header: string, name: string): string | undefined {
  * visible flash of the wrong language on every visit.
  *
  * Writing happens only in the browser. Setting a cookie on the server means setting a response
- * header, and Equator does not own the response; the consumer's server does. Nothing is lost: the
+ * header, and Thoth does not own the response; the consumer's server does. Nothing is lost: the
  * browser writes the same cookie as soon as it takes over.
  */
 export function cookieStore(

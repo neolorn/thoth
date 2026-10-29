@@ -24,7 +24,7 @@ import type {
   LocalizationSetup,
   RuntimeFormattingAdapterBinding,
   RuntimeFormattingAdapterDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import {
   PROVIDER,
@@ -119,7 +119,7 @@ describe('a configuration stamped with another generated ABI', () => {
       diagnosticOf(() =>
         construct(
           edited((configuration) =>
-            assign(configuration, 'generatedAbi', 'equator-generated/0'),
+            assign(configuration, 'generatedAbi', 'thoth-generated/0'),
           ),
           unknown,
         ).dispose(),
@@ -641,7 +641,7 @@ describe('a participant record the server transferred', () => {
     }),
   });
   const record: ParticipantTransferRecord = Object.freeze({
-    profile: 'equator-participant-state/1',
+    profile: 'thoth-participant-state/1',
     participantId: 'feed',
     coordination: 'required',
     current,

@@ -16,8 +16,8 @@ interface ExecFailure {
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
- * A consumer with no Angular anywhere, importing `@neolorn/equator/http` and
- * `@neolorn/equator/core`.
+ * A consumer with no Angular anywhere, importing `@neolorn/thoth/http` and
+ * `@neolorn/thoth/core`.
  *
  * *Why this exists.* Two entry points exist for the sole reason that they load where the rest of the
  * package cannot: a worker, a serverless function, a server that is not the Angular one. That claim
@@ -41,7 +41,7 @@ const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const scratch = await mkdtemp(resolve(tmpdir(), 'angular-free-'));
 try {
-  const packageRoot = resolve(scratch, 'node_modules/@neolorn/equator');
+  const packageRoot = resolve(scratch, 'node_modules/@neolorn/thoth');
   await mkdir(packageRoot, { recursive: true });
   await cp(resolve(workspaceRoot, 'dist/runtime'), packageRoot, {
     recursive: true,
@@ -52,7 +52,7 @@ try {
   assert.deepEqual(
     installed,
     ['@neolorn'],
-    `the consumer must have nothing installed but Equator, found: ${installed.join(', ')}`,
+    `the consumer must have nothing installed but Thoth, found: ${installed.join(', ')}`,
   );
 
   await writeFile(
@@ -64,8 +64,8 @@ try {
   await writeFile(
     resolve(scratch, 'use.mjs'),
     `import assert from 'node:assert/strict';
-import { createLocaleRequestHandler, toWebRequest } from '@neolorn/equator/http';
-import { directionForLocale, resolveLocalizedRoute } from '@neolorn/equator/core';
+import { createLocaleRequestHandler, toWebRequest } from '@neolorn/thoth/http';
+import { directionForLocale, resolveLocalizedRoute } from '@neolorn/thoth/core';
 
 assert.equal(directionForLocale('ar-EG'), 'rtl');
 
@@ -80,7 +80,7 @@ const policy = {
 };
 const projection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -100,7 +100,7 @@ const handler = createLocaleRequestHandler({
   policy,
   projection,
   cache: { successMaxAge: 600, permanentRedirectMaxAge: 86400 },
-  cookie: { name: 'equator-locale' },
+  cookie: { name: 'thoth-locale' },
   render: ({ locale }) => new Response('<!doctype html><html lang="' + locale + '"></html>'),
 });
 
@@ -111,7 +111,7 @@ assert.equal(redirect.headers.get('location'), '/en-us/second');
 const page = await handler(new Request('https://site.example/ar-eg/second'));
 assert.equal(page.status, 200);
 assert.equal(page.headers.get('content-language'), 'ar-EG');
-assert.match(page.headers.get('set-cookie') ?? '', /equator-locale=ar-EG/u);
+assert.match(page.headers.get('set-cookie') ?? '', /thoth-locale=ar-EG/u);
 assert.equal(
   page.headers.get('cache-control'),
   'public, max-age=600, must-revalidate',
@@ -134,13 +134,13 @@ process.stdout.write('angular-free runtime use verified\\n');
   // --- the type half ----------------------------------------------------------------------------
   await writeFile(
     resolve(scratch, 'use.ts'),
-    `import { createLocaleRequestHandler } from '@neolorn/equator/http';
-import type { LocaleRequestHandler, NodeRequestLike } from '@neolorn/equator/http';
+    `import { createLocaleRequestHandler } from '@neolorn/thoth/http';
+import type { LocaleRequestHandler, NodeRequestLike } from '@neolorn/thoth/http';
 import type {
   LocaleUrlPolicy,
   RouteResolution,
   RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 export declare const policy: LocaleUrlPolicy;
 export declare const projection: RouteRuntimeProjection;
@@ -192,7 +192,7 @@ export const handler: LocaleRequestHandler = createLocaleRequestHandler({
   }
 
   process.stdout.write(
-    'Equator Angular-free consumer verified: runtime and declarations.\n',
+    'Thoth Angular-free consumer verified: runtime and declarations.\n',
   );
 } finally {
   await rm(scratch, { recursive: true, force: true });

@@ -21,7 +21,7 @@ import {
   type LocalizationParticipantRegistration,
   type LocalizationParticipantRepresentation,
   type LocalizationParticipantState,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 export const FEATURE_ARTICLE_ID = 'handbook';
 
@@ -74,7 +74,7 @@ const COMMENTS: readonly FeatureComment[] = Object.freeze([
   }),
   Object.freeze({
     id: 'community-multilingual',
-    text: 'Equator works: Equator يعمل',
+    text: 'Thoth works: Thoth يعمل',
     representation: Object.freeze({
       kind: 'multilingual',
       languages: Object.freeze([
@@ -107,14 +107,14 @@ const COMMENTS: readonly FeatureComment[] = Object.freeze([
 const ARTICLES = Object.freeze({
   'en-US': Object.freeze({
     slug: 'handbook',
-    title: 'The Equator localization handbook',
+    title: 'The Thoth localization handbook',
     summary: 'Consumer-owned content coordinated through metadata only.',
     direction: 'ltr' as const,
   }),
   'ar-EG': Object.freeze({
     slug: 'دليل',
-    title: 'دليل Equator للترجمة',
-    summary: 'محتوى يملكه التطبيق وينسقه Equator عبر البيانات الوصفية فقط.',
+    title: 'دليل Thoth للترجمة',
+    summary: 'محتوى يملكه التطبيق وينسقه Thoth عبر البيانات الوصفية فقط.',
     direction: 'rtl' as const,
   }),
 });
@@ -148,8 +148,8 @@ export class MemoryFeatureArticleSource implements FeatureArticleSource {
     }
     // Content this application owns, for a locale it has no content in.
     //
-    // Equator transforms catalogs. It never sees an article title, so a pseudo-locale has no
-    // pseudo-localized article and nothing could produce one: the text is in a store Equator has
+    // Thoth transforms catalogs. It never sees an article title, so a pseudo-locale has no
+    // pseudo-localized article and nothing could produce one: the text is in a store Thoth has
     // no access to. An application still has to answer, and answering `unavailable` for every
     // locale outside this table makes the page unopenable: the participant is required, so a
     // pseudo-locale build fails to render at all rather than rendering something a developer can
@@ -160,9 +160,9 @@ export class MemoryFeatureArticleSource implements FeatureArticleSource {
     // English spelling for every locale but `ar-EG`, so `/en-arab-xb/articles/handbook` is
     // already addressing the English article.
     //
-    // The consequence is the point rather than a compromise. On a pseudo-locale page every Equator
+    // The consequence is the point rather than a compromise. On a pseudo-locale page every Thoth
     // message carries its markers and this title does not, which is exactly what an untransformed
-    // string is supposed to look like, and content that never went through Equator is the largest
+    // string is supposed to look like, and content that never went through Thoth is the largest
     // class of them.
     const representation =
       ARTICLES[targetLocale as keyof typeof ARTICLES] ?? ARTICLES['en-US'];

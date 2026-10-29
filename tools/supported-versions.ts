@@ -1,5 +1,5 @@
 /**
- * What Equator supports, read from the package manifests.
+ * What Thoth supports, read from the package manifests.
  *
  * The manifests are the source of truth for this, and the reason is what a consumer does: they run
  * an install, and the install reads the peer ranges and the engines field. Nothing else in this
@@ -42,12 +42,12 @@ export const toolkitManifest = readManifest('packages/toolkit/package.json');
 // an empty set of ranges to agree about.
 assert.equal(
   runtimeManifest.name,
-  '@neolorn/equator',
+  '@neolorn/thoth',
   'packages/runtime/package.json is not the runtime manifest.',
 );
 assert.equal(
   toolkitManifest.name,
-  '@neolorn/equator-toolkit',
+  '@neolorn/thoth-toolkit',
   'packages/toolkit/package.json is not the toolkit manifest.',
 );
 

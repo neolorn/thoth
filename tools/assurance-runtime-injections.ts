@@ -120,7 +120,7 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
   {
     id: 'locale-announcement-not-published',
     invariant:
-      'A locale change is announced into a live region Equator owns, with the application rendering nothing.',
+      'A locale change is announced into a live region Thoth owns, with the application rendering nothing.',
     source: 'packages/runtime/src/angular.ts',
     find: `            new LocaleAnnouncementCommitHook(
               document,
@@ -284,7 +284,7 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
   {
     id: 'document-locale-withdrawal-ignored',
     invariant:
-      '`withoutDocumentLocale()` actually stops Equator writing to a document it was told it does not own.',
+      '`withoutDocumentLocale()` actually stops Thoth writing to a document it was told it does not own.',
     // The other half of `document-locale-not-maintained`, and a separate injection because the two
     // fail in opposite directions: that one breaks the default, this one breaks the withdrawal, and
     // a suite that only asserts the default passes with the withdrawal welded shut. Withdrawal is
@@ -770,7 +770,7 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
   {
     id: 'relative-time-rounds-instead-of-truncating',
     invariant:
-      'Equator selects the relative-time unit by truncating toward zero, so a phrase never claims a span is larger than it is.',
+      'Thoth selects the relative-time unit by truncating toward zero, so a phrase never claims a span is larger than it is.',
     source: 'packages/runtime/src/relative-time-policy.ts',
     find: '  const truncated = Math.trunc(elapsed / MILLISECONDS[unit]);',
     replace: '  const truncated = Math.round(elapsed / MILLISECONDS[unit]);',
@@ -1085,7 +1085,7 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
   {
     id: 'participant-payload-admitted',
     invariant:
-      'A participant report carrying anything beyond its status, representation and identity is refused, and none of it reaches Equator state.',
+      'A participant report carrying anything beyond its status, representation and identity is refused, and none of it reaches Thoth state.',
     source: 'packages/runtime/src/participant-runtime.ts',
     find: "      if (!keysWithin(value, ['status', 'representation', 'identity'])) {\n        return undefined;\n      }\n      const representation = sanitizeRepresentation(value['representation']);\n      if (representation === undefined) return undefined;\n      return Object.freeze({\n        status: 'ready',",
     replace:
@@ -1439,9 +1439,9 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
     invariant:
       "The transfer a server render writes is data only: its participant records carry no function of the participant's.",
     source: 'packages/runtime/src/participant-runtime.ts',
-    find: "          profile: 'equator-participant-state/1' as const,",
+    find: "          profile: 'thoth-participant-state/1' as const,",
     replace:
-      "          profile: 'equator-participant-state/1' as const,\n          prepare: adapter.prepare,",
+      "          profile: 'thoth-participant-state/1' as const,\n          prepare: adapter.prepare,",
   },
   {
     id: 'persisted-locale-is-its-display-name',
@@ -1709,12 +1709,12 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
     invariant:
       'The minimal consumer selects only what it uses, so an entry point it does not select stays out of its graph.',
     source: 'fixtures/minimal-package-consumer-template/src/app.config.ts',
-    find: "import { withRecoveryMessage } from '@neolorn/equator';",
+    find: "import { withRecoveryMessage } from '@neolorn/thoth';",
     replace:
-      "import { withRecoveryMessage } from '@neolorn/equator';\nimport { resetLocalizationTestEnvironment } from '@neolorn/equator/testing';\n\nresetLocalizationTestEnvironment();",
+      "import { withRecoveryMessage } from '@neolorn/thoth';\nimport { resetLocalizationTestEnvironment } from '@neolorn/thoth/testing';\n\nresetLocalizationTestEnvironment();",
     suite: 'verify:focused-consumers',
     caughtWhen:
-      /Minimal consumer retained the unused Equator \.\/testing entrypoint/u,
+      /Minimal consumer retained the unused Thoth \.\/testing entrypoint/u,
   },
   {
     id: 'runtime-exports-every-file',
@@ -1808,9 +1808,9 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
     invariant:
       'A production graph that selects only the primary entry point reaches no Node built-in.',
     source: 'packages/runtime/src/public-api.ts',
-    find: "export * from '@neolorn/equator/core';",
+    find: "export * from '@neolorn/thoth/core';",
     replace:
-      "// @ts-ignore\nimport 'node:fs';\nexport * from '@neolorn/equator/core';",
+      "// @ts-ignore\nimport 'node:fs';\nexport * from '@neolorn/thoth/core';",
     suite: 'verify:focused-consumers',
     caughtWhen:
       /Minimal browser (?:graph|output) imports Node built-in|"node:fs"/u,
@@ -1913,7 +1913,7 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
   {
     id: 'announcement-written-through-runtime-code-generation',
     invariant:
-      'Nothing Equator runs in the browser generates code at run time, so a policy without unsafe-eval reports no violation.',
+      'Nothing Thoth runs in the browser generates code at run time, so a policy without unsafe-eval reports no violation.',
     source: 'packages/runtime/src/angular.ts',
     find: '    if (this.region !== undefined) this.region.textContent = message;',
     replace:
@@ -1925,11 +1925,11 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
   {
     id: 'announcer-styled-through-an-inline-attribute',
     invariant:
-      'The live region Equator adds is styled through the CSSOM, so a policy that denies inline style attributes reports no violation.',
+      'The live region Thoth adds is styled through the CSSOM, so a policy that denies inline style attributes reports no violation.',
     source: 'packages/runtime/src/angular.ts',
-    find: "    region.setAttribute('data-equator-announcer', 'true');",
+    find: "    region.setAttribute('data-thoth-announcer', 'true');",
     replace:
-      "    region.setAttribute('data-equator-announcer', 'true');\n    region.setAttribute('style', 'position: fixed');",
+      "    region.setAttribute('data-thoth-announcer', 'true');\n    region.setAttribute('style', 'position: fixed');",
     suite: 'browser',
     caughtWhen:
       /Applying inline style violates the following Content Security Policy directive 'style-src-attr 'none''/u,
@@ -1937,18 +1937,18 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
   {
     id: 'structured-path-creates-a-trusted-types-policy',
     invariant:
-      'Rendering a structured message creates no Trusted Types policy, so an application that serves a strict policy naming only its own inherits no dependency from Equator.',
+      'Rendering a structured message creates no Trusted Types policy, so an application that serves a strict policy naming only its own inherits no dependency from Thoth.',
     source: 'packages/runtime/src/message-template.ts',
     find: '    requireBindings(\n      result.value,',
     replace:
-      "    try {\n      (\n        globalThis as {\n          readonly trustedTypes?: {\n            createPolicy(name: string, rules: object): unknown;\n          };\n        }\n      ).trustedTypes?.createPolicy('equator', {});\n    } catch {\n      // Swallowed so that only the policy directive can report this.\n    }\n    requireBindings(\n      result.value,",
+      "    try {\n      (\n        globalThis as {\n          readonly trustedTypes?: {\n            createPolicy(name: string, rules: object): unknown;\n          };\n        }\n      ).trustedTypes?.createPolicy('thoth', {});\n    } catch {\n      // Swallowed so that only the policy directive can report this.\n    }\n    requireBindings(\n      result.value,",
     suite: 'browser',
-    caughtWhen: /Creating a TrustedTypePolicy named 'equator' violates/u,
+    caughtWhen: /Creating a TrustedTypePolicy named 'thoth' violates/u,
   },
   {
     id: 'recovery-retry-state-out-of-its-values',
     invariant:
-      'What Equator renders conforms to WCAG 2.2 AA, so an ARIA state outside its allowed values on the recovery retry is refused.',
+      'What Thoth renders conforms to WCAG 2.2 AA, so an ARIA state outside its allowed values on the recovery retry is refused.',
     // An attribute no spec and no earlier browser check reads, so only the audit can refuse it.
     source: 'packages/runtime/src/recovery.ts',
     find: '          <button\n            type="button"\n',
@@ -1956,26 +1956,26 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
       '          <button\n            type="button"\n            aria-pressed="maybe"\n',
     suite: 'browser',
     caughtWhen:
-      /recovery in ar-EG: what Equator renders or writes violates WCAG 2\.2 AA: aria-valid-attr-value/u,
+      /recovery in ar-EG: what Thoth renders or writes violates WCAG 2\.2 AA: aria-valid-attr-value/u,
   },
   {
     id: 'document-language-contradicted-by-xml-lang',
     invariant:
-      'The language Equator writes on the document root is the only one the root declares, so an xml:lang that contradicts it is refused.',
-    // Beside the lang Equator writes, where only the audit over the whole document can see it.
+      'The language Thoth writes on the document root is the only one the root declares, so an xml:lang that contradicts it is refused.',
+    // Beside the lang Thoth writes, where only the audit over the whole document can see it.
     source: 'packages/runtime/src/angular.ts',
     find: "      root.setAttribute('dir', snapshot.direction);\n    } catch (error: unknown) {",
     replace:
       "      root.setAttribute('dir', snapshot.direction);\n      root.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:lang', 'fr');\n    } catch (error: unknown) {",
     suite: 'browser',
     caughtWhen:
-      /what Equator renders or writes violates WCAG 2\.2 AA: html-xml-lang-mismatch/u,
+      /what Thoth renders or writes violates WCAG 2\.2 AA: html-xml-lang-mismatch/u,
   },
   {
     id: 'label-writes-an-attribute-aria-does-not-define',
     invariant:
       'Every ARIA attribute a directive writes onto its host is one ARIA defines, whatever element the application chose as the host.',
-    // On the application's element, outside everything Equator renders, so only the rules over the
+    // On the application's element, outside everything Thoth renders, so only the rules over the
     // whole document can see it.
     source: 'packages/runtime/src/label.ts',
     find: '      this.renderer.setAttribute(this.element.nativeElement, attribute, value);\n',
@@ -1983,7 +1983,7 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
       "      this.renderer.setAttribute(this.element.nativeElement, attribute, value);\n      this.renderer.setAttribute(this.element.nativeElement, 'aria-labelled', value);\n",
     suite: 'browser',
     caughtWhen:
-      /what Equator renders or writes violates WCAG 2\.2 AA: aria-valid-attr \(/u,
+      /what Thoth renders or writes violates WCAG 2\.2 AA: aria-valid-attr \(/u,
   },
   {
     id: 'text-accepts-wording-of-its-own',

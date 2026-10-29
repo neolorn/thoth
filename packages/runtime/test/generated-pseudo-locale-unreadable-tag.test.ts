@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ɵisGeneratedPseudoLocales } from '@neolorn/equator/core';
+import { ɵisGeneratedPseudoLocales } from '@neolorn/thoth/core';
 
 /**
  * A pseudo-locale list naming a tag the platform cannot read.

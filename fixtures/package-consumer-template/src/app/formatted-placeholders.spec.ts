@@ -5,7 +5,7 @@ import {
   Localization,
   provideLocalizationSetup,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -156,7 +156,7 @@ describe('formatted placeholders', () => {
 
   it('rejects a temporal input that is not a Date or epoch value', () => {
     // Worth knowing when authoring: `:date` and friends validate against the compiled contract's
-    // `date-time` type, which accepts a Date or a finite number. Equator's own canonical temporal
+    // `date-time` type, which accepts a Date or a finite number. Thoth's own canonical temporal
     // values, plainDate() and instant(), are not accepted as message inputs and are for the direct
     // formatting API instead.
     expect(() =>

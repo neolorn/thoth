@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Localization, segmentText } from '@neolorn/equator';
+import { Localization, segmentText } from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages } from '#i18n/shell';
@@ -7,7 +7,7 @@ import { messages } from '#i18n/shell';
 import { App } from './app';
 import { appConfig } from './app.config';
 
-describe('Equator minimal built-package consumer', () => {
+describe('Thoth minimal built-package consumer', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
@@ -28,13 +28,13 @@ describe('Equator minimal built-package consumer', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(messages.title.identity).toContain(':shell:title');
     expect(element.querySelector('[data-title]')?.textContent).toContain(
-      'Equator minimal consumer',
+      'Thoth minimal consumer',
     );
     expect(element.querySelector('[data-welcome]')?.textContent).toContain(
-      'Welcome, Equator!',
+      'Welcome, Thoth!',
     );
     expect(element.querySelector('[data-pipe]')?.textContent).toContain(
-      'Equator minimal consumer',
+      'Thoth minimal consumer',
     );
     expect(element.querySelector('[data-rich]')?.textContent).toContain(
       'Read the guide.',
@@ -88,7 +88,7 @@ describe('Equator minimal built-package consumer', () => {
     fixture.detectChanges();
 
     expect(element.querySelector('[data-title]')?.textContent).toContain(
-      'مستهلك Equator المصغر',
+      'مستهلك Thoth المصغر',
     );
     // The Latin name is wrapped in an isolate inside Arabic prose, so it cannot reorder the
     // sentence around it. A right-to-left isolate rather than a first-strong one: the value
@@ -97,10 +97,10 @@ describe('Equator minimal built-package consumer', () => {
     // Written as escapes. The characters are invisible on screen, so a literal one here is
     // invisible to a reader sweeping the file for this expectation.
     expect(element.querySelector('[data-welcome]')?.textContent).toContain(
-      'مرحبًا، \u2067Equator\u2069!',
+      'مرحبًا، \u2067Thoth\u2069!',
     );
     expect(element.querySelector('[data-pipe]')?.textContent).toContain(
-      'مستهلك Equator المصغر',
+      'مستهلك Thoth المصغر',
     );
     expect(element.querySelector('[data-rich]')?.textContent).toContain(
       'اقرأ الدليل.',
@@ -130,7 +130,7 @@ describe('Equator minimal built-package consumer', () => {
     fixture.detectChanges();
 
     expect(element.querySelector('[data-title]')?.textContent).toContain(
-      'مستهلك Equator المصغر بالعربية',
+      'مستهلك Thoth المصغر بالعربية',
     );
     expect(element.querySelector('[data-inherited]')?.textContent).toContain(
       'هذه الجملة مكتوبة بالعربية العامة.',
@@ -150,7 +150,7 @@ describe('Equator minimal built-package consumer', () => {
 
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('[data-title]')?.textContent).toContain(
-      'ตัวอย่าง Equator ขนาดเล็ก',
+      'ตัวอย่าง Thoth ขนาดเล็ก',
     );
     expect(element.querySelector('[data-inherited]')?.textContent).toContain(
       'This sentence is written in the source locale.',

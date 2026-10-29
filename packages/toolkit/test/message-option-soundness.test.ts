@@ -14,7 +14,7 @@ import { parseMessageSemanticModel } from '../src/message-format.js';
 
 function summaries(source: string): readonly string[] {
   const result = parseMessageSemanticModel(source);
-  for (const { code } of result.diagnostics) expect(code).toBe('EQ1204');
+  for (const { code } of result.diagnostics) expect(code).toBe('TH1204');
   return result.diagnostics.map(({ summary }) => summary);
 }
 

@@ -18,7 +18,7 @@ import {
   withFormattingContext,
   withLocaleSources,
   withPersistence,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -26,7 +26,7 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 
 import { runtimeExtensions } from './runtime-extensions';
 
-const KEY = '@neolorn/equator:localization-state/1';
+const KEY = '@neolorn/thoth:localization-state/1';
 const APP = 'hydration-restore-lab';
 
 @Component({
@@ -56,7 +56,7 @@ describe('a server-rendered page once hydration is over', () => {
     script.type = 'application/json';
     script.textContent = JSON.stringify({
       [KEY]: {
-        profile: 'equator-transfer-state/1',
+        profile: 'thoth-transfer-state/1',
         primaryLocale: 'en-US',
         formatting: { locale: 'en-US' },
         catalogs: [],

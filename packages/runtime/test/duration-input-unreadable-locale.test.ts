@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseLocalizedInput } from '../src/localized-input.js';
-import { type LocalizedInputProfile } from '@neolorn/equator/core';
+import { type LocalizedInputProfile } from '@neolorn/thoth/core';
 
 /**
  * A duration field read under a locale the host refuses.

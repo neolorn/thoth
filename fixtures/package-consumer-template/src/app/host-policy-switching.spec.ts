@@ -12,9 +12,9 @@ import {
   type LocaleSelectorChoice,
   type LocaleUrlPolicy,
   withFormattingContext,
-} from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth';
+import { provideLocalizedRouter } from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { configuration } from '#i18n';
@@ -87,7 +87,7 @@ const HOST: LocaleUrlPolicy = createHostLocalePolicy({
 });
 
 /**
- * `location.assign`, made observable without giving Equator a seam it does not need.
+ * `location.assign`, made observable without giving Thoth a seam it does not need.
  *
  * jsdom's `Location` is unforgeable: its properties are own and non-configurable, so a spy cannot
  * be installed on the real one and the call is otherwise invisible. Jsdom logs "Not implemented"
@@ -226,7 +226,7 @@ describe('switching locale under a policy whose locales are origins', () => {
     // Arabic at the English origin.
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     claimCapability('policy:locale-host', { policy: HOST });
-    claimCapability('entry:@neolorn/equator', { policy: HOST });
+    claimCapability('entry:@neolorn/thoth', { policy: HOST });
   });
 
   it('leaves the locale this origin already serves to the ordinary transition', async () => {
@@ -241,7 +241,7 @@ describe('switching locale under a policy whose locales are origins', () => {
     expect(result.status).not.toBe('redirected');
     expect(assigned).toEqual([]);
     claimCapability('policy:locale-host', { policy: HOST });
-    claimCapability('entry:@neolorn/equator', { policy: HOST });
+    claimCapability('entry:@neolorn/thoth', { policy: HOST });
   });
 
   // The control needs a policy that keeps its locales in one origin, which the running one does
@@ -261,7 +261,7 @@ describe('switching locale under a policy whose locales are origins', () => {
       expect(assigned).toEqual([]);
       expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
       claimRunningPolicy(TestBed.inject(PLATFORM_ID) as string);
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
     },
   );
 });

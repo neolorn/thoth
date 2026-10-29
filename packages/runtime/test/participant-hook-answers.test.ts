@@ -13,7 +13,7 @@ import { ParticipantCoordinator } from '../src/participant-runtime.js';
 import type {
   LocalizationDiagnostic,
   LocalizationParticipant,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { diagnosticOf } from './catalog-store-harness.js';
 import {

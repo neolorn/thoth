@@ -20,11 +20,11 @@ import { testProjectConfiguration } from './fixtures.js';
  * ancestor that exists, and say in the summary that you had to. Where there is no honest position at
  * all, carry none. **`file:1:1` never renders.**
  *
- * *Two codes was the ask and one is what exists.* EQ1307 is the only semantic diagnostic whose
+ * *Two codes was the ask and one is what exists.* TH1307 is the only semantic diagnostic whose
  * pointer cannot resolve by construction: it reports a message that is absent from the file it is
  * reported against. Every other one points at something it has just read out of that same file, so
  * its pointer resolves whenever it fires and no fixture reachable through the analyser breaks it.
- * That is the argument for fixing this at the constructor rather than at EQ1307: the next code to
+ * That is the argument for fixing this at the constructor rather than at TH1307: the next code to
  * report an absence inherits the rule instead of the bug. The broken pointers below are therefore
  * put to the resolver directly, at three depths, which is the part a second code would have
  * exercised.
@@ -56,8 +56,8 @@ describe('a diagnostic about something that is not in the file', () => {
       ],
       requireCompleteTargets: true,
     });
-    const omitted = analysis.diagnostics.find(({ code }) => code === 'EQ1307');
-    expect(omitted, 'the fixture did not produce EQ1307').toBeDefined();
+    const omitted = analysis.diagnostics.find(({ code }) => code === 'TH1307');
+    expect(omitted, 'the fixture did not produce TH1307').toBeDefined();
 
     // Line 2 rather than line 1: `messages:` is on line 1 and its value, the map that should have
     // contained `farewell`, begins at the first key inside it. That is the collection a reader has
@@ -94,8 +94,8 @@ describe('a diagnostic about something that is not in the file', () => {
       ],
       requireCompleteTargets: true,
     });
-    const invented = analysis.diagnostics.find(({ code }) => code === 'EQ1304');
-    expect(invented, 'the fixture did not produce EQ1304').toBeDefined();
+    const invented = analysis.diagnostics.find(({ code }) => code === 'TH1304');
+    expect(invented, 'the fixture did not produce TH1304').toBeDefined();
     expect(invented?.summary).not.toContain('Reported at');
     // Line 4, the message it is actually about.
     expect(invented?.span?.start.line).toBe(3);
@@ -126,7 +126,7 @@ describe('a diagnostic about a member a message does not write', () => {
       })),
     ).toEqual([
       {
-        code: 'EQ1303',
+        code: 'TH1303',
         summary:
           'Rich slot "b" is used as both paired and standalone. Reported at messages/greeting, because messages/greeting/slots/b is not in this file.',
         path: ['messages', 'greeting', 'slots', 'b'],

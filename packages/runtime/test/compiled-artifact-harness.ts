@@ -4,7 +4,7 @@ import {
   type LocalizedParts,
   type LocalizedText,
   type MessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import type {
   CompiledCatalog,
@@ -91,9 +91,9 @@ export function evaluateArtifact(
     outputParts: 64,
   };
   const catalog = {
-    profile: 'equator-compiled-ir/1',
-    generatedAbi: 'equator-generated/1',
-    standardsProfile: 'equator-1',
+    profile: 'thoth-compiled-ir/1',
+    generatedAbi: 'thoth-generated/1',
+    standardsProfile: 'thoth-1',
     key: { providerId: 'artifact', scopeId: 'artifact', catalogLocale: locale },
     applicationContractFingerprint: 'test',
     semanticRegistryFingerprint: 'test',
@@ -112,7 +112,7 @@ export function evaluateArtifact(
     resources: { ...resources, maximumMessage: resources },
   } as unknown as CompiledCatalog;
   const handle = {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     providerId: 'artifact',
     scopeId: 'artifact',
     messageId: 'subject',

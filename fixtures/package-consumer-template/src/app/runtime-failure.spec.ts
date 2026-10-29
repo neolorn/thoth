@@ -4,8 +4,8 @@ import {
   Localization,
   LocalizationRecovery,
   createLocalizationContext,
-} from '@neolorn/equator';
-import { LocalizationTestingController } from '@neolorn/equator/testing';
+} from '@neolorn/thoth';
+import { LocalizationTestingController } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -18,7 +18,7 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 
 const scope = { providerId, scopeId } as const;
 
-describe('Equator runtime failure and recovery contracts', () => {
+describe('Thoth runtime failure and recovery contracts', () => {
   it('publishes independent recovery text and retries initialization explicitly', async () => {
     const sourceIdentity = `${providerId}:${scopeId}:en-US` as const;
     const sourceLoader = catalogLoaders[sourceIdentity];
@@ -85,7 +85,7 @@ describe('Equator runtime failure and recovery contracts', () => {
     TestBed.resetTestingModule();
     localization.dispose();
     claimCapability('directive:LocalizationRecovery', { platform });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('keeps strict fallback failure distinct from a valid committed locale', async () => {
@@ -111,7 +111,7 @@ describe('Equator runtime failure and recovery contracts', () => {
     );
     expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
     localization.dispose();
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('cancels a pending transition without changing the committed snapshot', async () => {
@@ -138,6 +138,6 @@ describe('Equator runtime failure and recovery contracts', () => {
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(localization.lifecycle()).toBe('ready');
     localization.dispose();
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

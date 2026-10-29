@@ -1,8 +1,8 @@
 {
-  "name": "@neolorn/equator-toolkit",
+  "name": "@neolorn/thoth-toolkit",
   "version": "1.0.0-rc.1",
-  "description": "Compiler and developer tooling for Equator localization projects.",
-  "homepage": "https://github.com/neolorn/equator/tree/main/packages/toolkit#readme",
+  "description": "Compiler and developer tooling for Thoth localization projects.",
+  "homepage": "https://github.com/neolorn/thoth/tree/main/packages/toolkit#readme",
   "keywords": [
     "angular",
     "i18n",
@@ -23,11 +23,11 @@
   "author": "Hossam Ismail <hossam@neolorn.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neolorn/equator.git",
+    "url": "git+https://github.com/neolorn/thoth.git",
     "directory": "packages/toolkit"
   },
   "bugs": {
-    "url": "https://github.com/neolorn/equator/issues"
+    "url": "https://github.com/neolorn/thoth/issues"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",

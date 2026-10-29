@@ -1,5 +1,5 @@
 messages:
-  title: مستهلك Equator المصغر بالعربية
+  title: مستهلك Thoth المصغر بالعربية
   welcome: 'أهلًا، {$name}!'
   guide: 'اقرأ {#strong}الدليل{/strong} بالعربية.'
   recovery.unavailable: الترجمة غير متاحة مؤقتًا.

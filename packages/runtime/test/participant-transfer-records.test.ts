@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 
 import { sanitizeParticipantTransferRecords } from '../src/participant-runtime.js';
 
-const PROFILE = 'equator-participant-state/1';
+const PROFILE = 'thoth-participant-state/1';
 
 const READY = {
   status: 'ready',
@@ -102,10 +102,7 @@ describe('a list of participant records', () => {
     ['is a list', [record()]],
     ['holds a field a record does not have', record({ payload: 'a headline' })],
     ['has no profile', record({ profile: undefined })],
-    [
-      'is of another profile',
-      record({ profile: 'equator-participant-state/2' }),
-    ],
+    ['is of another profile', record({ profile: 'thoth-participant-state/2' })],
     ['names no region', record({ participantId: undefined })],
     ['names a region with a number', record({ participantId: 5 })],
     ['names a region outside the set', record({ participantId: 'region one' })],

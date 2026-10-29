@@ -152,7 +152,7 @@ async function locateRows() {
   }
   if (failures.length > 0) {
     throw new Error(
-      `Portable Node compatibility rows are incomplete. No downloads are performed by this verifier. Set EQUATOR_NODE_COMPATIBILITY_ROOT to use a different portable-runtime root.\n\n${failures.join('\n\n')}`,
+      `Portable Node compatibility rows are incomplete. No downloads are performed by this verifier. Set THOTH_NODE_COMPATIBILITY_ROOT to use a different portable-runtime root.\n\n${failures.join('\n\n')}`,
     );
   }
   return Object.freeze(located);
@@ -196,14 +196,14 @@ async function createHarness(
     await mkdir(scopeRoot, { recursive: true });
     await cp(
       resolve(workspaceRoot, 'dist/runtime'),
-      resolve(scopeRoot, 'equator'),
+      resolve(scopeRoot, 'thoth'),
       {
         recursive: true,
       },
     );
     await cp(
       resolve(workspaceRoot, 'dist/toolkit'),
-      resolve(scopeRoot, 'equator-toolkit'),
+      resolve(scopeRoot, 'thoth-toolkit'),
       { recursive: true },
     );
 
@@ -243,13 +243,13 @@ async function verifyBuiltInputs() {
     !(await isFile(toolkitManifestPath))
   ) {
     throw new Error(
-      'Built Equator packages are missing. Run `pnpm run build` before Node compatibility verification.',
+      'Built Thoth packages are missing. Run `pnpm run build` before Node compatibility verification.',
     );
   }
   const runtimeManifest = await readJson(runtimeManifestPath);
   const toolkitManifest = await readJson(toolkitManifestPath);
-  assert.equal(runtimeManifest.name, '@neolorn/equator');
-  assert.equal(toolkitManifest.name, '@neolorn/equator-toolkit');
+  assert.equal(runtimeManifest.name, '@neolorn/thoth');
+  assert.equal(toolkitManifest.name, '@neolorn/thoth-toolkit');
   // What shipped against what the packages declare. The range itself is not restated here: it is
   // read from the source manifests, so this compares the build to its own declaration.
   assert.equal(runtimeManifest.engines?.node, nodeRange);
@@ -293,27 +293,27 @@ async function main() {
       }
       const recordLine = result.stdout
         .split(/\r?\n/u)
-        .find((line) => line.startsWith('EQUATOR_NODE_ROW '));
+        .find((line) => line.startsWith('THOTH_NODE_ROW '));
       assert.notEqual(
         recordLine,
         undefined,
         `${row.id} did not emit compatibility evidence`,
       );
       const record = JSON.parse(
-        (recordLine as string).slice('EQUATOR_NODE_ROW '.length),
+        (recordLine as string).slice('THOTH_NODE_ROW '.length),
       ) as PrintedRowRecord;
-      assert.equal(record.profile, 'equator-node-compatibility/1');
+      assert.equal(record.profile, 'thoth-node-compatibility/1');
       assert.equal(record.row, row.id);
       assert.equal(record.node, row.version);
       assert.equal(
         record.formatting?.profile,
-        'equator-node-localized-output/1',
+        'thoth-node-localized-output/1',
         `${row.id} produced no localized output evidence`,
       );
       formattingByRow.set(row.id, record.formatting);
       assert.equal(
         record.toolkitWorkflow?.profile,
-        'equator-node-toolkit-workflow/1',
+        'thoth-node-toolkit-workflow/1',
       );
       assert.equal(record.toolkitWorkflow.initialGenerate, 'changed');
       assert.equal(
@@ -366,7 +366,7 @@ async function main() {
       );
     }
 
-    process.stdout.write('Equator built-package Node compatibility:\n');
+    process.stdout.write('Thoth built-package Node compatibility:\n');
     for (const row of evidence) {
       process.stdout.write(
         `  ${row.row} ${row.node} (${row.platform}/${row.architecture}) - runtime ${row.runtimeEntrypoints.length} entry point(s), toolkit API, host admission, CLI help, identical ar-EG and en-US output, generate changed->stable, check fresh (${row.toolkitWorkflow.generatedFiles} files/${row.toolkitWorkflow.generatedBytes} bytes)\n`,
@@ -390,7 +390,7 @@ async function main() {
 
 main().catch((error) => {
   process.stderr.write(
-    `Equator Node compatibility verification failed: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
+    `Thoth Node compatibility verification failed: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
   );
   process.exitCode = 1;
 });

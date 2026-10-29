@@ -16,7 +16,7 @@ import {
   type RuntimeMessageFunctionBinding,
   type RuntimeParsingAdapterBinding,
   type RuntimeRichSlotKindBinding,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { isMessageName } from './message-format-syntax';
 import {
   RUNTIME_LIMITS,
@@ -84,7 +84,7 @@ function validOptions(value: unknown, rich: boolean): boolean {
   const entries = Object.entries(value);
   if (entries.length > RUNTIME_LIMITS.extensionOptions) return false;
   for (const [name, option] of entries) {
-    // A rich-slot option name is Equator's own vocabulary; a message-function option name is
+    // A rich-slot option name is Thoth's own vocabulary; a message-function option name is
     // MessageFormat's, and the two productions are different on purpose.
     if (rich ? !/^[a-z][a-z0-9-]{0,63}$/u.test(name) : !isMessageName(name)) {
       return false;

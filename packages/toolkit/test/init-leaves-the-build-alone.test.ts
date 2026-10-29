@@ -141,8 +141,8 @@ describe('init', () => {
     }
     // Every added command is one the application calls by name, and none runs another script.
     for (const name of added) {
-      expect(name.startsWith('equator:'), name).toBe(true);
-      expect(manifest.scripts[name], name).toMatch(/^equator [a-z]+$/u);
+      expect(name.startsWith('thoth:'), name).toBe(true);
+      expect(manifest.scripts[name], name).toMatch(/^thoth [a-z]+$/u);
     }
   });
 });

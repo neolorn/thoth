@@ -2,7 +2,7 @@
 /**
  * Every vendored normative source is what `standards/sources.lock.json` says it is.
  *
- * `specs/01-standards-profile.spec.md` section 4 is the requirement: every source Equator derives
+ * `specs/01-standards-profile.spec.md` section 4 is the requirement: every source Thoth derives
  * from, or verifies itself against, is recorded with its release, its provenance, its role and a
  * digest, and a vendored one matches that digest byte for byte.
  *
@@ -112,9 +112,9 @@ const nestedSnapshots = new Set(
  * the checks below would pass over it without saying so.
  */
 for (const [id, source] of Object.entries(lock.dataSources ?? {})) {
-  // A file Equator wrote itself was never acquired, so it has no release or address to record;
+  // A file Thoth wrote itself was never acquired, so it has no release or address to record;
   // its role, license and digest are still what make it accountable.
-  const acquired = source.publisher !== 'Equator';
+  const acquired = source.publisher !== 'Thoth';
   const missing = [
     ['release', acquired ? (source.version ?? source.fileDate) : true],
     ['acquisition url', acquired ? source.url : true],

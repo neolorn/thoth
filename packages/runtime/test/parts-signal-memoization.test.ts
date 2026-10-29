@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { GENERATED_ABI, type MessageHandle } from '@neolorn/equator/core';
+import { GENERATED_ABI, type MessageHandle } from '@neolorn/thoth/core';
 
 import { PROVIDER, compileSet, scope } from './catalog-store-harness.js';
 import { runtime, type Runtime } from './transaction-runtime-harness.js';

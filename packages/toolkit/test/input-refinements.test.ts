@@ -77,7 +77,7 @@ describe('an inputs key', () => {
       ],
     ],
   ])('is refused when %s', (_label, entry) => {
-    expect(refusal(entry)).toContain('EQ1302');
+    expect(refusal(entry)).toContain('TH1302');
   });
 });
 
@@ -103,11 +103,11 @@ describe('a refinement type', () => {
     ['a source path', './types.ts'],
   ])('is refused when it is %s', (_label, type) => {
     expect(refusal([hello, '    inputs:', `      name: ${type}`])).toContain(
-      'EQ1302',
+      'TH1302',
     );
     expect(
       refusal([hello, '    inputs:', '      name:', `        type: ${type}`]),
-    ).toContain('EQ1302');
+    ).toContain('TH1302');
   });
 });
 
@@ -131,7 +131,7 @@ describe('a refinement enum', () => {
         '      count:',
         '        enum: [one, 2]',
       ]),
-    ).toContain('EQ1302');
+    ).toContain('TH1302');
   });
 
   it.each([
@@ -146,7 +146,7 @@ describe('a refinement enum', () => {
         '      name:',
         `        enum: ${literals}`,
       ]),
-    ).toContain('EQ1102');
+    ).toContain('TH1102');
   });
 });
 
@@ -165,6 +165,6 @@ describe('a refinement record', () => {
         '        optional: true',
         `        ${field}: ${value}`,
       ]),
-    ).toContain('EQ1102');
+    ).toContain('TH1102');
   });
 });

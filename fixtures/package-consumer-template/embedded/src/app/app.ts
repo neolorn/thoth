@@ -13,7 +13,7 @@ import {
   RouterLink,
   RouterOutlet,
 } from '@angular/router';
-import { LocalizationRecovery, injectLocalization } from '@neolorn/equator';
+import { LocalizationRecovery, injectLocalization } from '@neolorn/thoth';
 import { messages } from '#i18n/shell';
 
 /**

@@ -66,7 +66,7 @@ import { createLocaleRequestHandler } from '../http/src/handler.js';
 import type {
   LocaleUrlPolicy,
   RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 const POLICY: LocaleUrlPolicy = {
   kind: 'path-prefix',
@@ -80,7 +80,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -96,7 +96,7 @@ describe('the handler under a mutated classification', () => {
       policy: POLICY,
       projection: PROJECTION,
       cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
-      cookie: { name: 'equator-locale' },
+      cookie: { name: 'thoth-locale' },
       render: () => new Response('<!doctype html>'),
     });
 
@@ -168,5 +168,5 @@ assert.equal(
 );
 
 process.stdout.write(
-  'Equator handler derivation verified: the handler follows the descriptor.\n',
+  'Thoth handler derivation verified: the handler follows the descriptor.\n',
 );

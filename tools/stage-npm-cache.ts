@@ -8,7 +8,7 @@
  * The packages are the ones the committed `package-lock.json` pins, each fetched by name and
  * version, which stores its registry document beside its tarball. The tarball alone installs what
  * the lock names, but npm reads the document whenever it places a package the lock does not hold,
- * as it does for the two Equator tarballs under test, and offline it has nothing else to read. The
+ * as it does for the two Thoth tarballs under test, and offline it has nothing else to read. The
  * cache is under `.runtimes`, beside the staged Node builds, because it is ignored and `clean`
  * leaves it alone; the gate hands the same folder to every tree it runs in.
  *
@@ -30,7 +30,7 @@ interface NpmLock {
 }
 
 const cache =
-  process.env['EQUATOR_NPM_CACHE'] ??
+  process.env['THOTH_NPM_CACHE'] ??
   resolve(workspaceRoot, '.runtimes/npm-cache');
 
 function npm(args: readonly string[]) {
@@ -79,5 +79,5 @@ assert.deepEqual(
   `The npm cache at ${cache} does not hold what the lock pins, so the npm consumer cannot install offline.`,
 );
 console.log(
-  `Equator npm cache staged: ${fetched.length} package(s) from fixtures/npm-package-consumer/package-lock.json in ${cache}.`,
+  `Thoth npm cache staged: ${fetched.length} package(s) from fixtures/npm-package-consumer/package-lock.json in ${cache}.`,
 );

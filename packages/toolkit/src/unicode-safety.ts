@@ -50,11 +50,11 @@ export type BidiViolation =
 export const BIDI_VIOLATION_SUMMARY: Readonly<Record<BidiViolation, string>> =
   Object.freeze({
     'directional-override':
-      'Equator catalog text contains a directional override or embedding (U+202A-U+202E), which reorders the text around it and cannot be seen while reading the file.',
+      'Thoth catalog text contains a directional override or embedding (U+202A-U+202E), which reorders the text around it and cannot be seen while reading the file.',
     'unbalanced-isolate':
-      'Equator catalog text contains an unbalanced directional isolate (U+2066-U+2069); an isolate that is opened and never closed reorders the text that follows it.',
+      'Thoth catalog text contains an unbalanced directional isolate (U+2066-U+2069); an isolate that is opened and never closed reorders the text that follows it.',
     'byte-order-mark':
-      'Equator catalog text contains U+FEFF, a byte-order mark that has ended up inside the value rather than content anyone typed.',
+      'Thoth catalog text contains U+FEFF, a byte-order mark that has ended up inside the value rather than content anyone typed.',
   });
 
 const DIRECTIONAL_OVERRIDE = /[\u202a-\u202e]/u;

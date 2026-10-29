@@ -1,6 +1,6 @@
-# How to extend Equator
+# How to extend Thoth
 
-Two extension points, for the cases where the coordination Equator owns has to include work Equator
+Two extension points, for the cases where the coordination Thoth owns has to include work Thoth
 cannot see.
 
 ## Before you begin
@@ -15,7 +15,7 @@ catalog with a placeholder, which is [How to write a message](write-messages.md)
 
 ## Bring your own work into a locale change
 
-A locale change moves the whole application at once, and that includes things Equator does not know
+A locale change moves the whole application at once, and that includes things Thoth does not know
 about: a content store, a search index, a client for a system that returns localized text.
 
 A participant is that store, with hooks the transition calls. `prepare` is asked for the arriving
@@ -33,22 +33,22 @@ import {
   type EnvironmentProviders,
   type Signal,
 } from '@angular/core';
-import { Localization, directionForLocale } from '@neolorn/equator';
+import { Localization, directionForLocale } from '@neolorn/thoth';
 import type {
   LocalizationParticipant,
   LocalizationParticipantCommitReport,
   LocalizationParticipantContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 export interface Article {
   readonly title: string;
   readonly supplyingLocale: string;
 }
 
-// Content this application owns. Equator never sees it, so none of it comes out of a catalog.
+// Content this application owns. Thoth never sees it, so none of it comes out of a catalog.
 const TITLES: Readonly<Record<string, string>> = {
-  'en-US': 'The Equator handbook',
-  'ar-EG': 'دليل Equator',
+  'en-US': 'The Thoth handbook',
+  'ar-EG': 'دليل Thoth',
 };
 
 const SOURCE_LOCALE = 'en-US';
@@ -142,11 +142,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Localization, withRecoveryMessage } from '@neolorn/equator';
+import { Localization, withRecoveryMessage } from '@neolorn/thoth';
 import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
 import { messages } from '#i18n/shell';
 
@@ -186,7 +186,7 @@ describe('the article store', () => {
     await localization.changeLocale('ar-EG');
 
     expect(store.article()?.supplyingLocale).toBe('ar-EG');
-    expect(store.article()?.title).toBe('دليل Equator');
+    expect(store.article()?.title).toBe('دليل Thoth');
   });
 
   it('reports what it is holding, by locale and by direction', async () => {
@@ -213,10 +213,10 @@ with the components that own them. It returns a registration carrying `retry()` 
 `participants()` on the facade reports what each one is doing, which is what to render when a switch
 is slow enough to show progress for.
 
-## Teach Equator about a value type
+## Teach Thoth about a value type
 
 `withExtensions` is for a value type your domain has and `Intl` does not: a formatting or parsing
-adapter Equator calls the way it calls its own.
+adapter Thoth calls the way it calls its own.
 
 ```text
 export const runtimeExtensions = defineRuntimeExtensions([

@@ -11,7 +11,7 @@ import {
   type GeneratedConfiguration,
   type RouteParameterCodec,
   type RouteParameterContext,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -169,7 +169,7 @@ describe('an x-default address on a locale-neutral policy', () => {
     );
     expect(codeOf(() => withDefault(''))).toBe('invalid-configuration');
     // A backslash is a slash to some parsers and not to others, which is exactly why it cannot be
-    // carried into a value Equator writes into a document head.
+    // carried into a value Thoth writes into a document head.
     expect(codeOf(() => withDefault('/\\elsewhere.example'))).toBe(
       'invalid-configuration',
     );
@@ -207,7 +207,7 @@ describe('the parameter values a localized server route is prerendered with', ()
 
   const PROJECTION = defineRouteProjection({
     generated: Object.freeze({
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: 'sha256-PrerenderParametersTestIdentity012345678901',
       routes: Object.freeze([
         Object.freeze({
@@ -221,7 +221,7 @@ describe('the parameter values a localized server route is prerendered with', ()
   });
 
   const CONFIGURATION: GeneratedConfiguration = {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
     locales: ['en-US', 'ar-EG'],

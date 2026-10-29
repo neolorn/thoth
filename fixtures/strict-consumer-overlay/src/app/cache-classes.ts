@@ -1,13 +1,10 @@
-import type {
-  RouteHttpDescriptor,
-  RouteResolution,
-} from '@neolorn/equator/core';
+import type { RouteHttpDescriptor, RouteResolution } from '@neolorn/thoth/core';
 
 /**
- * The cache class, read by a host that answers more than Equator's own headers.
+ * The cache class, read by a host that answers more than Thoth's own headers.
  *
  * A host behind a CDN often writes a second header of its own, a surrogate rule or a log field,
- * from the same class Equator derives `Cache-Control` from. Under `noImplicitReturns` that host is
+ * from the same class Thoth derives `Cache-Control` from. Under `noImplicitReturns` that host is
  * a `switch` with a case per class and no `default`, and it is the shape that stops compiling when
  * the union gains a member. A class nobody decided for then reaches the host as a build error
  * rather than as a response.

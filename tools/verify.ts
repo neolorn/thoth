@@ -128,7 +128,7 @@ interface PreviousSummary {
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Forward slashes, always. `NODE_OPTIONS` is parsed as a command line, so a quoted Windows path
-// loses every backslash to escape processing and node preloads `C:workequatortools...`,
+// loses every backslash to escape processing and node preloads `C:workthothtools...`,
 // which fails every stage at once with a module-not-found from `internal/preload`. Windows accepts
 // forward slashes everywhere; the quotes stay for a workspace path containing a space.
 const tracerPath = resolve(workspaceRoot, 'tools/trace-artefacts.cts')
@@ -610,23 +610,20 @@ const runStep = (
               // script entry of `pnpm`, its workspace scan is the runner's work, not the stage's, and
               // attributing it to the stage gave three stages an undeclared read of `source:packages` on
               // the runs where pnpm happened not to skip that scan.
-              EQUATOR_TRACE_LAUNCHER: '1',
+              THOTH_TRACE_LAUNCHER: '1',
               // The stage's share of the processor budget, in the settings its runners size themselves by,
               // as the scheduler handed and recorded them.
               ...settings,
               // What a stage starts runs under this run's lock and is not refused by it.
               ...heavyJob.environment,
               // The trace goes to the repository, because the tree it describes is about to be removed.
-              EQUATOR_TRACE_FILE: resolve(
-                runDirectory,
-                `${safeName(id)}.jsonl`,
-              ),
+              THOTH_TRACE_FILE: resolve(runDirectory, `${safeName(id)}.jsonl`),
               // Traced against the tree the stage actually ran in, so a path resolves to the same
               // artefact name wherever it was touched. That is what makes the drift check mean the same
               // thing in a private tree as in the shared one.
-              EQUATOR_TRACE_ROOT: root,
-              EQUATOR_NODE_COMPATIBILITY_ROOT: nodeRuntimesRoot,
-              EQUATOR_NPM_CACHE: npmCacheRoot,
+              THOTH_TRACE_ROOT: root,
+              THOTH_NODE_COMPATIBILITY_ROOT: nodeRuntimesRoot,
+              THOTH_NPM_CACHE: npmCacheRoot,
               // Set to undefined rather than left out, so one set in the caller's shell reaches no stage.
               [CLAIMS_FILE_VARIABLE]: claims ? claimsFile(root, id) : undefined,
               // In the repository beside the trace, for the same reason.
@@ -639,7 +636,7 @@ const runStep = (
               // a rate. It is trying to catch one occurrence with the wrappers on, and for that a higher
               // rate is welcome. So they run on unattended gate runs, where the occurrences happen, and
               // this line comes out the moment one is caught with them installed.
-              EQUATOR_ASSURANCE_TRACE_CALLS: '1',
+              THOTH_ASSURANCE_TRACE_CALLS: '1',
             },
           }),
         ),
@@ -1189,7 +1186,7 @@ const failures = failed.map(({ id }) => ({
 }));
 if (originalFailures.length === 0) originalFailures = failures;
 
-// A stage that passed by working around something outside Equator says so here. A resume keeps the
+// A stage that passed by working around something outside Thoth says so here. A resume keeps the
 // files of the stages it carries forward, so their occurrences are counted with their passes.
 const occurrences = collectOccurrences(
   steps.map(({ id }) => id),
@@ -1288,7 +1285,7 @@ if (processorWindows.length > 0) {
 if (occurrences.length > 0) {
   process.stdout.write(
     `\n=== OCCURRENCES (${occurrences.length})\n` +
-      'These stages worked around a failure outside Equator, which each one names. An occurrence does\n' +
+      'These stages worked around a failure outside Thoth, which each one names. An occurrence does\n' +
       'not make the run red; the attempt ledger counts them, so a rising rate shows there.\n',
   );
   for (const { stage, signature } of occurrences) {

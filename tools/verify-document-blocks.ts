@@ -7,7 +7,7 @@
  *   compile there.
  * - `” ```yaml excerpt i18n/shell/en-US.yaml ”`: the block is part of that file, checked after the
  *   run rather than written. This is how a section quotes part of a file another section owns, and
- *   how a document shows a file `equator init` writes. "Part of" is a contiguous run of lines,
+ *   how a document shows a file `thoth init` writes. "Part of" is a contiguous run of lines,
  *   except for JSON, where it is a structural subset: Prettier owns the document's formatting and
  *   reflows a JSON block, so comparing text there compares Prettier's line breaks against the
  *   writing command's rather than what the block actually claims.
@@ -39,7 +39,7 @@
  * **The tutorial authors the base.** The scaffold is what `ng new` produced with `src/app/` and
  * `i18n/` removed, and every package it installs held to the development row's version, which is
  * the row the rest of the gate proves; what `ng new` resolves on a given day is not a row. The tutorial
- * runs on it from `equator init` onward, so everything the application is comes from the one
+ * runs on it from `thoth init` onward, so everything the application is comes from the one
  * document that claims to build it: the catalogs in both locales, the providers, the route table,
  * the switcher, the rich content, and the spec. It ends at that spec, so what this proves is a
  * working application rather than only a build.
@@ -84,9 +84,9 @@ const docsRoot = resolve(workspaceRoot, 'docs');
  * like a README that was never in the list.
  */
 const README_GROUP: [string, string][] = [
-  ['equator', 'README.md'],
-  ['@neolorn/equator', 'packages/runtime/README.md'],
-  ['@neolorn/equator-toolkit', 'packages/toolkit/README.md'],
+  ['thoth', 'README.md'],
+  ['@neolorn/thoth', 'packages/runtime/README.md'],
+  ['@neolorn/thoth-toolkit', 'packages/toolkit/README.md'],
 ];
 
 /**
@@ -373,8 +373,8 @@ async function pointAtTheDistributables(root: string): Promise<Manifest> {
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Manifest;
   const locate = (output: string) =>
     builtPackageLocator(root, workspaceRoot, output);
-  manifest.dependencies['@neolorn/equator'] = locate('dist/runtime');
-  manifest.devDependencies['@neolorn/equator-toolkit'] = locate('dist/toolkit');
+  manifest.dependencies['@neolorn/thoth'] = locate('dist/runtime');
+  manifest.devDependencies['@neolorn/thoth-toolkit'] = locate('dist/toolkit');
   await writeFile(
     manifestPath,
     `${JSON.stringify(manifest, null, 2)}\n`,
@@ -387,7 +387,7 @@ async function pointAtTheDistributables(root: string): Promise<Manifest> {
  * Every package the base installed, against the development row's version of it.
  *
  * Read from what installed rather than from the manifest, because a lockfile refreshed against
- * another manifest installs what it recorded whatever the manifest says. Equator's own two packages
+ * another manifest installs what it recorded whatever the manifest says. Thoth's own two packages
  * are the ones under test and come from the build; a package the row does not install is refused,
  * because nothing else in the gate runs it.
  */

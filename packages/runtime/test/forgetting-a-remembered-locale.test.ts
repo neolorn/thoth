@@ -18,7 +18,7 @@ import { describe, expect, it } from 'vitest';
 import { LocaleResolution } from '../src/locale-resolution.js';
 import { memoryStore, profileStore } from '../src/persistence.js';
 import type { LocalizationPersistenceStore } from '../src/persistence.js';
-import type { LocalizationSnapshot } from '@neolorn/equator/core';
+import type { LocalizationSnapshot } from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 

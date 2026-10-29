@@ -32,7 +32,7 @@ export type LocaleAlias = string & {
  * The alias grammar, which is narrower than a locale identity on purpose.
  *
  * `specs/03-locale-identity-and-resolution.spec.md` section 5 says what an alias is for: a
- * consumer's own spelling of a locale, such as one its storage held before Equator. It is not a
+ * consumer's own spelling of a locale, such as one its storage held before Thoth. It is not a
  * place to restate a relation the pinned data already gives, so nothing here consults that data,
  * and section 3 of `specs/03-locale-identity-and-resolution.spec.md` is what the canonical side is
  * held to instead.
@@ -42,7 +42,7 @@ const aliasPattern = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/u;
 export function canonicalizeLocale(
   value: unknown,
 ): ToolkitResult<CanonicalLocale> {
-  const text = untrustedText(value, 'EQ1003', 'Locale identity');
+  const text = untrustedText(value, 'TH1003', 'Locale identity');
   if (!text.ok) return text;
   const locale = text.value;
   if (
@@ -52,14 +52,14 @@ export function canonicalizeLocale(
     locale.trim() !== locale
   ) {
     return toolkitFailure([
-      toolkitDiagnostic('EQ1003', 'Locale identity is malformed.'),
+      toolkitDiagnostic('TH1003', 'Locale identity is malformed.'),
     ]);
   }
 
   const canonical = canonicalizeLanguageTag(locale);
   if (canonical === undefined) {
     return toolkitFailure([
-      toolkitDiagnostic('EQ1003', 'Locale identity is malformed.'),
+      toolkitDiagnostic('TH1003', 'Locale identity is malformed.'),
     ]);
   }
 
@@ -67,7 +67,7 @@ export function canonicalizeLocale(
   if (parts.slice(1).some((part) => part.length === 1)) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1003',
+        'TH1003',
         'Catalog locale identities cannot contain extensions or private-use subtags.',
       ),
     ]);
@@ -77,12 +77,12 @@ export function canonicalizeLocale(
 }
 
 export function parseLocaleAlias(value: unknown): ToolkitResult<LocaleAlias> {
-  const text = untrustedText(value, 'EQ1005', 'Locale alias');
+  const text = untrustedText(value, 'TH1005', 'Locale alias');
   if (!text.ok) return text;
   if (!aliasPattern.test(text.value)) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1005',
+        'TH1005',
         'Locale alias must be a lowercase ASCII identifier containing only letters, digits, and hyphens.',
       ),
     ]);
@@ -92,16 +92,16 @@ export function parseLocaleAlias(value: unknown): ToolkitResult<LocaleAlias> {
 }
 
 /**
- * The name a locale has for itself, from Equator's pinned CLDR release.
+ * The name a locale has for itself, from Thoth's pinned CLDR release.
  *
- * `undefined` means Equator has no name for this locale and the caller should say so rather than
+ * `undefined` means Thoth has no name for this locale and the caller should say so rather than
  * invent one: either CLDR names none of it, there are locales in the standard with no display
  * names at all, or the tag is outside CLDR's coverage entirely, as a private-use tag is.
  *
  * A tag CLDR does not list is answered by its parent, by truncation: `de-CH-1901` is `de-CH`, which
  * is "Deutsch (Schweiz)". That is a real name for a broader locale rather than a guess at a
  * narrower one, and it is the same fallback CLDR itself performs to find data. What is not done is
- * composing a new name out of subtags Equator has no words for: that is how `catala (Espanya,
+ * composing a new name out of subtags Thoth has no words for: that is how `catala (Espanya,
  * VALENCIA)` happens, and it is the defect this table exists to remove.
  */
 export function localeEndonym(locale: string): string | undefined {
@@ -121,7 +121,7 @@ export function localeEndonym(locale: string): string | undefined {
  * The identity CLDR gives the locale every chain ends at.
  *
  * It is written in the pinned parent table as the parent of a locale that inherits from root, so
- * it is a value Equator reads rather than one it chose, and a project writing it in its own
+ * it is a value Thoth reads rather than one it chose, and a project writing it in its own
  * `parentLocales` is saying the same thing CLDR says: this locale has no parent.
  */
 export const ROOT_LOCALE = 'und';
@@ -129,7 +129,7 @@ export const ROOT_LOCALE = 'und';
 const NO_PARENT_OVERRIDES: Readonly<Record<string, string>> = Object.freeze({});
 
 /**
- * The parent of one locale, from Equator's pinned CLDR release and the project's own declarations.
+ * The parent of one locale, from Thoth's pinned CLDR release and the project's own declarations.
  *
  * `undefined` means the locale inherits from root, which is where a chain ends.
  *
@@ -230,7 +230,7 @@ function hasNonlikelyScript(locale: string): boolean {
  *
  * A cycle can only come from a project's own declarations, since the pinned table has none and
  * truncation always shortens. The walk stops at the first locale it has already seen so that a
- * mistake costs a short chain rather than a hang, and `EQ1007` reports the mistake itself when
+ * mistake costs a short chain rather than a hang, and `TH1007` reports the mistake itself when
  * the configuration is read.
  */
 export function localeFallbackChain(

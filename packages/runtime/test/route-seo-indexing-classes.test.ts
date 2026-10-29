@@ -8,7 +8,7 @@ import {
   type GeneratedConfiguration,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What a route says to a crawler by its indexing class, and what an address may be advertised as.
@@ -20,7 +20,7 @@ import {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-RouteSeoIndexingClassesTestIdentity01234567',
     routes: [
       { id: 'second', path: 'second', parameterNames: [] },
@@ -48,7 +48,7 @@ const POLICY = createPathPrefixLocalePolicy({
 });
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],

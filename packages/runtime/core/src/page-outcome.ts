@@ -7,8 +7,8 @@
 // page and the renderer differ only in where the declaration is made.
 //
 // The carrier lives here rather than beside either of them. The declaration is written from the
-// Angular render, in `@neolorn/equator/router`, and read by the request handler, in
-// `@neolorn/equator/http`. Neither of those entry points may import the other, so the channel sits
+// Angular render, in `@neolorn/thoth/router`, and read by the request handler, in
+// `@neolorn/thoth/http`. Neither of those entry points may import the other, so the channel sits
 // in the base both already depend on.
 
 import { LocalizationError } from './contracts';
@@ -31,7 +31,7 @@ export interface PageOutcomeOperationalFailure {
   /** Distinguishes this member of the declaration union. */
   readonly outcome: 'operational-failure';
   /**
-   * The status to send, which is the application's rather than Equator's.
+   * The status to send, which is the application's rather than Thoth's.
    *
    * Section 5 fixes a status table for routing outcomes and states that an operational failure is
    * not one of them, so there is no table to derive this from.
@@ -44,7 +44,7 @@ export interface PageOutcomeOperationalFailure {
  *
  * The two routing arms carry the fact and not the status, because the status for an absent entity
  * and for a permanent removal is already fixed by section 5's table and an application writing one
- * here would be restating a rule Equator applies anyway. The operational arm carries its own
+ * here would be restating a rule Thoth applies anyway. The operational arm carries its own
  * status, because nothing fixes that one.
  */
 export type PageOutcomeDeclaration =
@@ -79,7 +79,7 @@ export function pageGone(): PageOutcomeGone {
  * The render could not produce this page, and the application states what that is worth.
  *
  * Serving maintenance and reporting a failed load are both this. The status is the caller's because
- * Equator has no table for one, and it is checked here rather than where the response is built, so
+ * Thoth has no table for one, and it is checked here rather than where the response is built, so
  * a value that could not be sent is refused at the call that names it, with the typed
  * configuration failure. The message names the kind of a value that is not a number and never
  * the value.
@@ -109,7 +109,7 @@ interface PageOutcomeChannel {
 /**
  * The declaration channel, keyed on the request object the render and the handler share.
  *
- * The same carrier `rawTargetOf` uses in `@neolorn/equator/http`, and for the same reasons. A
+ * The same carrier `rawTargetOf` uses in `@neolorn/thoth/http`, and for the same reasons. A
  * header is observable and a client can send one, so a declaration carried in one would reach the
  * handler as though the page had made it. An injection token provided by the host is the shape
  * Angular withdrew as `REQUEST_CONTEXT`: wiring documented nowhere and silent when omitted. A key
@@ -122,7 +122,7 @@ interface PageOutcomeChannel {
  * copy. A map in module scope would be two maps, and every declaration would land in the one the
  * handler never reads.
  */
-const CHANNELS = Symbol.for('@neolorn/equator/page-outcome-channels');
+const CHANNELS = Symbol.for('@neolorn/thoth/page-outcome-channels');
 const registry = globalThis as unknown as Record<
   symbol,
   WeakMap<Request, PageOutcomeChannel> | undefined

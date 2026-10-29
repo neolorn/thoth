@@ -125,7 +125,7 @@ describe('a catalog handed to compileProject as an object', () => {
     (_w, change) => {
       const result = compile([{ ...parsedCatalog(), ...change }]);
       expect(result.ok).toBe(false);
-      expect(codes(result).every((code) => /^EQ11\d\d$/u.test(code))).toBe(
+      expect(codes(result).every((code) => /^TH11\d\d$/u.test(code))).toBe(
         true,
       );
     },

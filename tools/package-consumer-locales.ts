@@ -4,7 +4,7 @@
  */
 
 // One statement of what init is asked for, used both to invoke it and to say what it must produce.
-// Comparing Equator's file against a literal copied from the fixture's own equator.config.json
+// Comparing Thoth's file against a literal copied from the fixture's own thoth.config.json
 // detects drift and locks no contract; the template ships no such file, so what is asserted is what
 // init authored from these flags.
 export const INIT_REQUEST = Object.freeze({
@@ -14,8 +14,8 @@ export const INIT_REQUEST = Object.freeze({
 });
 
 // The two pseudo-locales the toolkit generates. Declaring them changes no build, because
-// `pnpm run build` still runs a plain `equator generate` and produces neither, and the fixture's
-// `test` script runs `equator generate --pseudo`, so the page spec has a real generated catalog to
+// `pnpm run build` still runs a plain `thoth generate` and produces neither, and the fixture's
+// `test` script runs `thoth generate --pseudo`, so the page spec has a real generated catalog to
 // render.
 export const PSEUDO_LOCALES = Object.freeze({
   'en-Latn-XA': { lengthFactor: 0.4, markers: true },

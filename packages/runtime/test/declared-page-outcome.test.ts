@@ -33,7 +33,7 @@ import {
   type LocaleUrlPolicy,
   type PageOutcomeDeclaration,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -51,7 +51,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-DeclaredPageOutcomeTestIdentity012345678901',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -66,7 +66,7 @@ const handlerWith = (render: LocaleRenderer) =>
     policy: POLICY,
     projection: PROJECTION,
     cache: CACHE,
-    cookie: { name: 'equator-locale' },
+    cookie: { name: 'thoth-locale' },
     render,
   });
 
@@ -287,13 +287,13 @@ describe('the response a declared outcome produces', () => {
   });
 });
 
-describe('a declaration at an address Equator did not serve', () => {
+describe('a declaration at an address Thoth did not serve', () => {
   it('leaves the refusal standing and says so once', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const handler = handlerWith(pageDeclares(pageOperationalFailure(503)));
 
-    // `/en-us/missing` resolves to `not-found`, which is Equator's own answer about the address.
-    // An application declaring maintenance does not know which addresses Equator refused, so the
+    // `/en-us/missing` resolves to `not-found`, which is Thoth's own answer about the address.
+    // An application declaring maintenance does not know which addresses Thoth refused, so the
     // narrower rule holds and the refusal is what the reader gets.
     const first = await handler(
       new Request('https://site.example/en-us/missing'),

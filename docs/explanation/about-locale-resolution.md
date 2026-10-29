@@ -1,12 +1,12 @@
 # About how a locale is resolved
 
-Every request that reaches your application is answered in one language. Resolution is how Equator
+Every request that reaches your application is answered in one language. Resolution is how Thoth
 chooses it, and it runs once before the first render and again whenever something that fed it
 changes.
 
 ## Four sources, in a fixed order
 
-Equator asks four sources and takes the first answer:
+Thoth asks four sources and takes the first answer:
 
 1. The address, when the locale policy puts one there.
 2. A persisted choice.
@@ -30,7 +30,7 @@ part of the decision one person can send to another. A stored preference that co
 make one link open differently for two people.
 
 The cost is that a visitor who has chosen a language can still land on a page in another one by
-following a link. Equator takes that cost. The alternative changes what a URL means without saying
+following a link. Thoth takes that cost. The alternative changes what a URL means without saying
 so.
 
 An address naming a locale you do not serve is not negotiated into one you do. It is a page that is
@@ -40,7 +40,7 @@ the page the link named.
 ## Identity before comparison
 
 A locale identity is a [BCP 47](https://www.rfc-editor.org/info/bcp47) tag, canonicalized before
-anything compares it. The aliases come from the CLDR release Equator pins rather than from the
+anything compares it. The aliases come from the CLDR release Thoth pins rather than from the
 browser's or the server's own copy, so `iw` is `he` and `tl` is `fil` on every host. `EN-us`,
 `en-US` and `en-Latn-US` are one locale, so a browser spelling a tag differently from your
 configuration is not a miss and there is no alias table to maintain.
@@ -52,13 +52,13 @@ and date conventions, and what it inherits from. That is why adding a locale is 
 ## Matching what a client asked for
 
 `Accept-Language` is a list of ranges with weights, and it rarely names a locale you serve exactly.
-Equator uses the lookup from [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647), which truncates a
+Thoth uses the lookup from [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647), which truncates a
 range from the right until it matches: `en-GB` finds `en`, and `pt` finds `pt-BR` when that is the
 Portuguese you ship. Script matching and
 [CLDR language matching](https://www.unicode.org/reports/tr35/tr35-78/tr35.html#LanguageMatching) data extend
 it.
 
-Where the standard stops, Equator adds one step. A range that matched nothing by truncation is
+Where the standard stops, Thoth adds one step. A range that matched nothing by truncation is
 answered by the first locale declared for the same language, so a browser sending `no` to a site
 shipping `nb-NO` gets Norwegian rather than the default.
 
@@ -99,7 +99,7 @@ choice belongs in your account record, and the value follows the visitor across 
 across tabs. The server waits for it, so a transport that can reach the account from the server
 fixes the first response as a cookie does.
 
-The cookie store and the request handler in `@neolorn/equator/http` validate the cookie where you
+The cookie store and the request handler in `@neolorn/thoth/http` validate the cookie where you
 configure it rather than leaving a browser to drop it later. `SameSite=None` without `Secure`, a
 `__Secure-` name without `Secure`, a `__Host-` name carrying a `Domain`, a name that is not an HTTP
 token, and a `maxAgeSeconds` that is not a positive whole number are each invalid at that point.

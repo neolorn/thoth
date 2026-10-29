@@ -22,7 +22,7 @@ import {
   withRouting,
   type LocalizationSnapshot,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -35,7 +35,7 @@ import { routePolicy, appRouteProjection } from './localization.routes';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 
-const ANNOUNCER = '[data-equator-announcer]';
+const ANNOUNCER = '[data-thoth-announcer]';
 
 const announced = () =>
   document.querySelector(ANNOUNCER)?.textContent ?? undefined;

@@ -12,7 +12,7 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 /**
  * An application states its locales twice, and the two statements have to agree.
  *
- * `equator.config.json` decides which locales get catalogs. The locale URL policy decides which
+ * `thoth.config.json` decides which locales get catalogs. The locale URL policy decides which
  * locales get addresses. They are separate files written at separate times, and only a toolkit that
  * reads the policy can compare them.
  *
@@ -84,7 +84,7 @@ async function project(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -136,7 +136,7 @@ async function project(options: ProjectOptions): Promise<string> {
 
   await write(
     root,
-    'node_modules/@neolorn/equator/index.d.ts',
+    'node_modules/@neolorn/thoth/index.d.ts',
     [
       'export declare function createPathPrefixLocalePolicy(',
       '  options: unknown,',
@@ -147,9 +147,9 @@ async function project(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'node_modules/@neolorn/equator/package.json',
+    'node_modules/@neolorn/thoth/package.json',
     `${JSON.stringify(
-      { name: '@neolorn/equator', version: '0.0.0', types: './index.d.ts' },
+      { name: '@neolorn/thoth', version: '0.0.0', types: './index.d.ts' },
       null,
       2,
     )}\n`,
@@ -181,7 +181,7 @@ async function project(options: ProjectOptions): Promise<string> {
       "import { messages } from '#i18n/shell';",
       ...(options.policyLocales === undefined || options.shadowed
         ? []
-        : [`import { ${factoryName} } from '@neolorn/equator';`]),
+        : [`import { ${factoryName} } from '@neolorn/thoth';`]),
       '',
       ...(options.shadowed
         ? [
@@ -217,7 +217,7 @@ async function codes(root: string, pseudo = false): Promise<readonly string[]> {
 async function summaries(root: string): Promise<readonly string[]> {
   const generated = await generateProject({ project: root });
   return generated.diagnostics
-    .filter(({ code }) => code === 'EQ1408')
+    .filter(({ code }) => code === 'TH1408')
     .map(({ summary }) => summary);
 }
 
@@ -248,8 +248,8 @@ describe('a pseudo-locale is exempt from locale-set agreement', () => {
       policyLocales: ['en-US', 'ar-EG'],
       pseudoLocales: ['en-Arab-XB'],
     });
-    expect(await codes(root, true)).not.toContain('EQ1408');
-    expect(await codes(root, false)).not.toContain('EQ1408');
+    expect(await codes(root, true)).not.toContain('TH1408');
+    expect(await codes(root, false)).not.toContain('TH1408');
   });
 
   it('may be given an address without failing the build that omits it', async () => {
@@ -260,20 +260,20 @@ describe('a pseudo-locale is exempt from locale-set agreement', () => {
       policyLocales: ['en-US', 'ar-EG', 'en-Arab-XB'],
       pseudoLocales: ['en-Arab-XB'],
     });
-    expect(await codes(root, true)).not.toContain('EQ1408');
-    expect(await codes(root, false)).not.toContain('EQ1408');
+    expect(await codes(root, true)).not.toContain('TH1408');
+    expect(await codes(root, false)).not.toContain('TH1408');
   });
 
   it('still reports an ordinary locale that the exemption does not cover', async () => {
-    // The control. Without it the two cases above pass for an exemption that silenced EQ1408
+    // The control. Without it the two cases above pass for an exemption that silenced TH1408
     // entirely, which is the cheapest wrong way to make them green.
     const root = await project({
       configuredLocales: ['en-US', 'ar-EG'],
       policyLocales: ['en-US', 'ar-EG', 'fr-FR'],
       pseudoLocales: ['en-Arab-XB'],
     });
-    expect(await codes(root, true)).toContain('EQ1408');
-    expect(await codes(root, false)).toContain('EQ1408');
+    expect(await codes(root, true)).toContain('TH1408');
+    expect(await codes(root, false)).toContain('TH1408');
   });
 });
 
@@ -284,7 +284,7 @@ describe('the locale set an application states twice', () => {
       policyLocales: ['en-US', 'ar-EG'],
     });
 
-    expect(await codes(root)).not.toContain('EQ1408');
+    expect(await codes(root)).not.toContain('TH1408');
   });
 
   it('reports a configured locale the policy gives no address', async () => {
@@ -353,7 +353,7 @@ describe('the locale set an application states twice', () => {
 
     const generated = await generateProject({ project: root });
     const reported = generated.diagnostics.filter(
-      ({ code }) => code === 'EQ1408',
+      ({ code }) => code === 'TH1408',
     );
 
     expect(reported.map(({ severity }) => severity)).toEqual(['error']);
@@ -369,7 +369,7 @@ describe('the locale set an application states twice', () => {
 
     const checked = await checkProject({ project: root });
 
-    expect(checked.diagnostics.map(({ code }) => code)).toContain('EQ1408');
+    expect(checked.diagnostics.map(({ code }) => code)).toContain('TH1408');
     claimCapability('cli:check');
   });
 
@@ -402,7 +402,7 @@ describe('the locale set an application states twice', () => {
 
   it('declares nothing from a consumer function of the same name', async () => {
     // The negative control. Recognition resolves the symbol and requires its declaration to come
-    // from inside the Equator package, so a local function called `createPathPrefixLocalePolicy`
+    // from inside the Thoth package, so a local function called `createPathPrefixLocalePolicy`
     // configures nothing, and this test going green while the others pass is what separates
     // "resolves the symbol" from "matches the name".
     const root = await project({
@@ -411,12 +411,12 @@ describe('the locale set an application states twice', () => {
       shadowed: true,
     });
 
-    expect(await codes(root)).not.toContain('EQ1408');
+    expect(await codes(root)).not.toContain('TH1408');
   });
 
   it('says nothing about an owner that builds no policy', async () => {
     const root = await project({ configuredLocales: ['en-US', 'ar-EG'] });
 
-    expect(await codes(root)).not.toContain('EQ1408');
+    expect(await codes(root)).not.toContain('TH1408');
   });
 });

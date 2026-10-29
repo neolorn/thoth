@@ -1,4 +1,4 @@
-import { GENERATED_ABI, type PlainMessageHandle } from '@neolorn/equator/core';
+import { GENERATED_ABI, type PlainMessageHandle } from '@neolorn/thoth/core';
 
 /**
  * How a backend failure code names its message.
@@ -8,7 +8,7 @@ import { GENERATED_ABI, type PlainMessageHandle } from '@neolorn/equator/core';
  * eventually does not get, and what the reader sees then is a generic apology instead of what
  * went wrong.
  *
- * The transformation is Equator's and is product-neutral: it knows nothing about any particular
+ * The transformation is Thoth's and is product-neutral: it knows nothing about any particular
  * error taxonomy, and encodes no consumer's vocabulary. It reads a code as a sequence of words
  * and writes them back as one lower-kebab identifier.
  *

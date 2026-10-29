@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   LocalizationError,
   createLocaleNeutralPolicy,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A list of locales with an empty slot in it, given to the one policy constructor that takes its

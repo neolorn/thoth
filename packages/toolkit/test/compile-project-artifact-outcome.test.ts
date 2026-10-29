@@ -50,7 +50,7 @@ describe('an output plan that cannot be made', () => {
     const compiled = compileProject(request({ catalogs: [catalog('routes')] }));
 
     expect(compiled.ok).toBe(false);
-    expect(compiled.diagnostics.map(({ code }) => code)).toEqual(['EQ1503']);
+    expect(compiled.diagnostics.map(({ code }) => code)).toEqual(['TH1503']);
   });
 
   it('is not what a scope with a name of its own gets, as the control', () => {
@@ -80,7 +80,7 @@ describe('a warning from compiling the artifacts', () => {
         path,
       })),
     ).toEqual([
-      { code: 'EQ1004', severity: 'warning', path: ['personNameLocales'] },
+      { code: 'TH1004', severity: 'warning', path: ['personNameLocales'] },
     ]);
   });
 
@@ -129,8 +129,8 @@ describe('recovery messages the payload refuses', () => {
     expect(
       compiled.diagnostics.map(({ code, path }) => ({ code, path })),
     ).toEqual([
-      { code: 'EQ1501', path: ['recovery', '@example/app:shell:earlier'] },
-      { code: 'EQ1501', path: ['recovery', '@example/app:shell:later'] },
+      { code: 'TH1501', path: ['recovery', '@example/app:shell:earlier'] },
+      { code: 'TH1501', path: ['recovery', '@example/app:shell:later'] },
     ]);
   });
 });

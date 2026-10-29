@@ -1,4 +1,4 @@
-import type { RouteLocalizationOptions } from '@neolorn/equator/router';
+import type { RouteLocalizationOptions } from '@neolorn/thoth/router';
 
 /**
  * How a navigation changes the page: it lands with what is ready, and a scope a route names as

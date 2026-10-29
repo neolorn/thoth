@@ -1,9 +1,9 @@
 /**
- * The options `equator init` accepts, written from the schema that decides what the file accepts.
+ * The options `thoth init` accepts, written from the schema that decides what the file accepts.
  *
- * An option missing from `equator init` is unreachable from the install line in a way nothing can
+ * An option missing from `thoth init` is unreachable from the install line in a way nothing can
  * notice: the initialized project is valid, so the only symptom is a consumer discovering the field
- * by reading Equator's source or by failing at runtime.
+ * by reading Thoth's source or by failing at runtime.
  *
  * A hand-written option list goes stale on the next key the schema gains. So the option set is not
  * a list that agrees with `CONFIGURATION_SCHEMA`; it *is* that schema, read at build time and
@@ -93,7 +93,7 @@ try {
 const schema = schemas.CONFIGURATION_SCHEMA;
 assert.equal(
   (schema as ConfigurationSchema | undefined)?.title,
-  'Equator project configuration',
+  'Thoth project configuration',
   'dist/toolkit/schemas.js does not export the configuration schema this generator is written against.',
 );
 
@@ -182,7 +182,7 @@ function shapeOf(
         assert.equal(
           typeof member.description,
           'string',
-          `Configuration key ${key} has an entry option ${name} with no description in CONFIGURATION_SCHEMA. equator init --help prints it, so a field with none is a field the install line cannot state.`,
+          `Configuration key ${key} has an entry option ${name} with no description in CONFIGURATION_SCHEMA. thoth init --help prints it, so a field with none is a field the install line cannot state.`,
         );
         options[name] = { type, description: member.description };
       }
@@ -192,7 +192,7 @@ function shapeOf(
     }
   }
   throw new Error(
-    `Configuration key ${key} has a shape no init flag convention covers: ${JSON.stringify(property?.type ?? property)}. The conventions are a scalar, an array of scalars, an object of scalars, and an object of objects of scalars. Add the convention here rather than leaving the key unreachable from equator init.`,
+    `Configuration key ${key} has a shape no init flag convention covers: ${JSON.stringify(property?.type ?? property)}. The conventions are a scalar, an array of scalars, an object of scalars, and an object of objects of scalars. Add the convention here rather than leaving the key unreachable from thoth init.`,
   );
 }
 
@@ -211,7 +211,7 @@ const spelledKeys = Object.keys(SPELLINGS).sort();
 assert.deepEqual(
   settableKeys,
   spelledKeys,
-  `The init flag spellings and the configuration schema disagree. Only in SPELLINGS: ${spelledKeys.filter((key) => !settableKeys.includes(key)).join(', ') || 'none'}. Only in the schema: ${settableKeys.filter((key) => !spelledKeys.includes(key)).join(', ') || 'none'}. A configuration key with no flag is a key equator init cannot set, which is exactly what 10.5 exists to prevent.`,
+  `The init flag spellings and the configuration schema disagree. Only in SPELLINGS: ${spelledKeys.filter((key) => !settableKeys.includes(key)).join(', ') || 'none'}. Only in the schema: ${settableKeys.filter((key) => !spelledKeys.includes(key)).join(', ') || 'none'}. A configuration key with no flag is a key thoth init cannot set, which is exactly what 10.5 exists to prevent.`,
 );
 
 const required = new Set(schema.required ?? []);
@@ -220,7 +220,7 @@ const descriptors = settable.map(([key, property]) => {
   assert.equal(
     typeof property.description,
     'string',
-    `Configuration key ${key} has no description in CONFIGURATION_SCHEMA. equator init --help prints it, so a settable field with none is a field the install line cannot state.`,
+    `Configuration key ${key} has no description in CONFIGURATION_SCHEMA. thoth init --help prints it, so a settable field with none is a field the install line cannot state.`,
   );
   const { shape, depth, leaf, options } = shapeOf(key, property);
   return {
@@ -260,23 +260,23 @@ helpLines.push(
   '',
   '  A repeatable flag may appear more than once. Where a value contains "=", the left side is a',
   '  path beneath the field: "eg=ar-EG" sets one entry, "en-Latn-XA.markers=true" sets one',
-  '  option of one entry. Every field equator.config.json accepts is above; there is no other way',
+  '  option of one entry. Every field thoth.config.json accepts is above; there is no other way',
   '  to set one.',
 );
 
 for (const line of helpLines) {
   assert.ok(
     line.length <= HELP_WIDTH,
-    `This equator init --help line is ${line.length} characters and the budget is ${HELP_WIDTH}: ${line}\nShorten the description in CONFIGURATION_SCHEMA rather than raising the budget; help nobody can read in a terminal states nothing.`,
+    `This thoth init --help line is ${line.length} characters and the budget is ${HELP_WIDTH}: ${line}\nShorten the description in CONFIGURATION_SCHEMA rather than raising the budget; help nobody can read in a terminal states nothing.`,
   );
 }
 const help = helpLines.join('\n');
 
-// The line printed beside EQ1701, which the tooling specification requires to be the exact
+// The line printed beside TH1701, which the tooling specification requires to be the exact
 // complete invocation. A hand-written copy could disagree with the parser and with the help block.
 // Generated from the same descriptors, it cannot say less than --help does.
 const invocation = [
-  'equator init',
+  'thoth init',
   ...ordered.map((descriptor) => {
     const one = `${descriptor.flag} ${descriptor.value}`;
     if (!descriptor.repeatable) return one;
@@ -324,7 +324,7 @@ const body = ordered
 const output = `${[
   '// Generated by tools/generate-cli-options.ts from CONFIGURATION_SCHEMA. Do not edit.',
   '//',
-  '// The option set equator init accepts is the configuration schema rather than a list that agrees',
+  '// The option set thoth init accepts is the configuration schema rather than a list that agrees',
   '// with it, so a key added to the parser is settable on the day it lands. pnpm run',
   '// verify:cli-options fails when this file and the schema have drifted apart.',
   '',
@@ -339,7 +339,7 @@ const output = `${[
   '',
   '/** One flag, and everything the parser and the help text need to know about it. */',
   'export interface InitOptionDescriptor {',
-  '  /** The configuration key this flag sets, spelled as equator.config.json spells it. */',
+  '  /** The configuration key this flag sets, spelled as thoth.config.json spells it. */',
   '  readonly key: InitOptionKey;',
   '  readonly flag: string;',
   '  /** The value placeholder --help prints beside the flag. */',
@@ -365,11 +365,11 @@ const output = `${[
   body,
   ']);',
   '',
-  '/** The "Init options:" block of equator --help, wrapped to a width a terminal has. */',
+  '/** The "Init options:" block of thoth --help, wrapped to a width a terminal has. */',
   '// prettier-ignore',
   `export const INIT_HELP = ${JSON.stringify(help)};`,
   '',
-  '/** The complete invocation printed beside EQ1701. Every settable field, required ones first. */',
+  '/** The complete invocation printed beside TH1701. Every settable field, required ones first. */',
   '// prettier-ignore',
   `export const INIT_INVOCATION = ${JSON.stringify(invocation)};`,
   '',
@@ -392,10 +392,10 @@ if (process.argv.includes('--check')) {
   assert.equal(
     current,
     output,
-    'The checked-in equator init option table is stale; run pnpm run build && pnpm run generate:cli-options.',
+    'The checked-in thoth init option table is stale; run pnpm run build && pnpm run generate:cli-options.',
   );
   console.log(
-    `Verified ${ordered.length} equator init options against CONFIGURATION_SCHEMA: ${ordered.map(({ flag }) => flag).join(' ')}. Every settable configuration key is reachable from the install line, and none of them is spelled by hand twice.`,
+    `Verified ${ordered.length} thoth init options against CONFIGURATION_SCHEMA: ${ordered.map(({ flag }) => flag).join(' ')}. Every settable configuration key is reachable from the install line, and none of them is spelled by hand twice.`,
   );
 } else {
   let current;

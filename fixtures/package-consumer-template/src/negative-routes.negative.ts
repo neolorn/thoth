@@ -3,8 +3,8 @@ import {
   buildLocalizedRoute,
   defineRouteProjection,
   type Localization,
-} from '@neolorn/equator';
-import { provideLocalizedServerRendering } from '@neolorn/equator/ssr';
+} from '@neolorn/thoth';
+import { provideLocalizedServerRendering } from '@neolorn/thoth/ssr';
 import { configuration } from '#i18n';
 import { routeProjection } from '#i18n/routes';
 

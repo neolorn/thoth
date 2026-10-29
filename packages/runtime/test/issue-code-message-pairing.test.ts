@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { issueMessage, issueMessageId } from '../src/issue-convention.js';
-import { GENERATED_ABI, type PlainMessageHandle } from '@neolorn/equator/core';
+import { GENERATED_ABI, type PlainMessageHandle } from '@neolorn/thoth/core';
 
 /**
  * How a code names its message, and which member of a group answers for it.

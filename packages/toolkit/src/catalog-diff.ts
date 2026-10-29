@@ -104,7 +104,7 @@ export interface CatalogDiffEntry {
 /** Everything that changed between two snapshots, in a stable order. */
 export interface CatalogDiff {
   /** The shape's version stamp. */
-  readonly profile: 'equator-semantic-catalog-diff/1';
+  readonly profile: 'thoth-semantic-catalog-diff/1';
   /** The changes, sorted, so two runs over the same pair produce the same list. */
   readonly entries: readonly CatalogDiffEntry[];
   /** A digest of the whole comparison, for recognizing one that has already been acted on. */
@@ -122,7 +122,7 @@ function messageMap(
 }
 
 function contractFingerprint(message: SemanticMessage): string {
-  return digestCanonicalJson('equator-message-contract/1', {
+  return digestCanonicalJson('thoth-message-contract/1', {
     resultKind: message.resultKind,
     inputs: message.inputs as unknown as CanonicalJsonValue,
     slots: message.slots as unknown as CanonicalJsonValue,
@@ -150,7 +150,7 @@ function catalogMessageFingerprint(
       catalog.locale === locale,
   )?.messages[messageId];
   if (message === undefined) return undefined;
-  return digestCanonicalJson('equator-translation-view/1', {
+  return digestCanonicalJson('thoth-translation-view/1', {
     kind: message.kind,
     source:
       message.kind === 'message' ? message.semantics.canonicalSource : null,
@@ -242,7 +242,7 @@ export function diffCatalogSets(
       return toolkitFailure([
         ...diagnostics,
         {
-          code: 'EQ1805',
+          code: 'TH1805',
           severity: 'error',
           summary:
             'Semantic catalog diff received an ambiguous or unavailable identity move.',
@@ -383,12 +383,12 @@ export function diffCatalogSets(
     compareCodeUnit(entryKey(left), entryKey(right)),
   );
   const digest = digestCanonicalJson(
-    'equator-semantic-catalog-diff/1',
+    'thoth-semantic-catalog-diff/1',
     ordered as unknown as CanonicalJsonValue,
   );
   return toolkitSuccess(
     Object.freeze({
-      profile: 'equator-semantic-catalog-diff/1',
+      profile: 'thoth-semantic-catalog-diff/1',
       entries: Object.freeze(ordered),
       digest,
     }),

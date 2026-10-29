@@ -2,7 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { Injectable, inject } from '@angular/core';
 import { TitleStrategy, type RouterStateSnapshot } from '@angular/router';
 
-import { DocumentLocalization } from '@neolorn/equator';
+import { DocumentLocalization } from '@neolorn/thoth';
 
 /**
  * The one writer of `document.title` once a navigation has ended.
@@ -13,12 +13,12 @@ import { DocumentLocalization } from '@neolorn/equator';
  * transitions' and the Router's, so every subscriber has returned before that second statement
  * runs. `RouteLocalization` is one of them: it calls `applyDocument`, which projects the incoming
  * page and hands it to `DocumentLocalization.apply` before its first `await`. So when Angular asks
- * for the title, Equator has written the incoming page's and `current()` answers with that page's
+ * for the title, Thoth has written the incoming page's and `current()` answers with that page's
  * projection, and the last write of every navigation belongs to whatever holds this token.
  * `DefaultTitleStrategy` writes whenever the route tree declares a `title` (`updateTitle`), which
  * means a consumer following Angular's own documented route-title API silently replaces every
  * localized title with an English one. Nothing throws, nothing warns, and the page looks like
- * Equator simply failed to translate.
+ * Thoth simply failed to translate.
  *
  * **This is installed by the consumer, not by `provideLocalizedRouter`.** `TitleStrategy` is
  * provided in root with `factory: () => inject(DefaultTitleStrategy)` (its `ɵprov`), and a raw
@@ -28,7 +28,7 @@ import { DocumentLocalization } from '@neolorn/equator';
  * development when the line is missing and the routes declare a title: the configuration where
  * omitting it changes what the page says.
  *
- * The fallback is Angular's behaviour exactly, not a narrowed version of it. For a route Equator
+ * The fallback is Angular's behaviour exactly, not a narrowed version of it. For a route Thoth
  * has no title for, this writes what `DefaultTitleStrategy` would have written, an empty title
  * included: `Title.setTitle` assigns `newTitle || ''` (`@angular/platform-browser` 22.2.1), which
  * for the text `buildTitle` answers is the text itself. `Title` is not injected to do it: that
@@ -41,15 +41,15 @@ export class LocalizedTitleStrategy extends TitleStrategy {
 
   /**
    * Optional for the same reason `RouteLocalization` takes it that way: an application can install
-   * the router integration without the document effect. Without it Equator has no title to defend
+   * the router integration without the document effect. Without it Thoth has no title to defend
    * and this strategy is `DefaultTitleStrategy` with an extra frame.
    */
   private readonly localized = inject(DocumentLocalization, { optional: true });
 
   override updateTitle(snapshot: RouterStateSnapshot): void {
     const projected = this.localized?.current()?.title;
-    // Re-asserted rather than skipped. Equator wrote this value while `NavigationEnd` was being
-    // delivered, and a subscriber called after Equator's can have moved the title since, so writing
+    // Re-asserted rather than skipped. Thoth wrote this value while `NavigationEnd` was being
+    // delivered, and a subscriber called after Thoth's can have moved the title since, so writing
     // it again is what makes "the localized title survives the navigation" true rather than likely.
     // Assigning the value the document already holds is not a mutation the browser acts on.
     //

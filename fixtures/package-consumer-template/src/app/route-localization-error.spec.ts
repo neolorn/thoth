@@ -16,12 +16,12 @@ import {
   Localization,
   withRouting,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   RouteLocalizationError,
   provideLocalizedRouter,
-} from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -34,7 +34,7 @@ import { routePolicy, appRouteProjection } from './localization.routes';
 import { localeOrigin, pagePath } from './addresses';
 
 /**
- * What an application's navigation error handling is handed for an address Equator cannot read.
+ * What an application's navigation error handling is handed for an address Thoth cannot read.
  *
  * `specs/07-routing-rendering-and-seo.spec.md` section 15 answers a malformed address with 400. In
  * the browser that answer reaches the application as the Router's NavigationError, and the error

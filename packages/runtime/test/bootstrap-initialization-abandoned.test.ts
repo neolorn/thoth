@@ -4,10 +4,7 @@ import {
   createLocalizationRuntime,
   initializedForBootstrap,
 } from '../src/localization.js';
-import {
-  LocalizationError,
-  type LocalizationSetup,
-} from '@neolorn/equator/core';
+import { LocalizationError, type LocalizationSetup } from '@neolorn/thoth/core';
 
 import {
   catalogKey,

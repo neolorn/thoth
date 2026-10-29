@@ -5,7 +5,7 @@ import { parseLocalizedInput } from '../src/localized-input.js';
 import {
   type FormattingContext,
   type LocalizedInputProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What a numeric field declares about its range, its precision and its length, and what a reading

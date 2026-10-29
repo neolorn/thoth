@@ -9,7 +9,7 @@ import {
   type LocalizationParticipant,
   type LocalizationParticipantContext,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -18,7 +18,7 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { runtimeExtensions } from './runtime-extensions';
 
 /**
- * The localization snapshot carries what Equator derived and nothing a consumer handed it.
+ * The localization snapshot carries what Thoth derived and nothing a consumer handed it.
  *
  * Section 15 of `specs/07-routing-rendering-and-seo.spec.md`: a human-language field uses its
  * message or participant result, and no consumer payload is admitted into the snapshot. A required

@@ -5,7 +5,7 @@ import type {
   LocalizationParticipantContext,
   LocalizationParticipantOptions,
   LocalizationParticipantReport,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Regions registered with a coordinator that write down what they are told.

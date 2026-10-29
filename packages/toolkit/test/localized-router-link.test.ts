@@ -126,7 +126,7 @@ async function project(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -167,7 +167,7 @@ async function project(options: ProjectOptions): Promise<string> {
   for (const [name, contents] of [
     ['@angular/core', ANGULAR_CORE_STUB],
     ['@angular/router', ANGULAR_ROUTER_STUB],
-    ['@neolorn/equator', STUB],
+    ['@neolorn/thoth', STUB],
   ] as const) {
     await write(root, `node_modules/${name}/index.d.ts`, contents);
     await write(root, `node_modules/${name}/package.json`, manifest(name));
@@ -194,7 +194,7 @@ async function project(options: ProjectOptions): Promise<string> {
     'src/app.ts',
     [
       "import { messages } from '#i18n/shell';",
-      `import { ${factory} } from '@neolorn/equator';`,
+      `import { ${factory} } from '@neolorn/thoth';`,
       '',
       'export const title = messages.appTitle.messageId;',
       '',
@@ -266,7 +266,7 @@ async function refusals(root: string): Promise<{
     }[],
   ): readonly { severity: string; summary: string }[] =>
     diagnostics
-      .filter(({ code }) => code === 'EQ1411')
+      .filter(({ code }) => code === 'TH1411')
       .map(({ severity, summary }) => ({ severity, summary }));
   const generated = only(
     (await generateProject({ project: root })).diagnostics,
@@ -359,7 +359,7 @@ describe('a routerLink may not name a segment the policy claims', () => {
   });
 
   it('says nothing under a policy that claims no prefix', async () => {
-    // A locale-neutral policy puts every locale at one address, so `ar-eg` leads no route Equator
+    // A locale-neutral policy puts every locale at one address, so `ar-eg` leads no route Thoth
     // owns and a link through it is an ordinary broken link for the application to answer. Paired
     // with the neutral root the same policy still claims, which is what says this silence is about
     // the claim and not about the policy going unread.

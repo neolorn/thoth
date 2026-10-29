@@ -43,7 +43,7 @@ function analyze(lines: readonly string[]): Analysis {
 }
 
 const refusedAtTheTemplate = {
-  refused: ['EQ1305 families/status/template'],
+  refused: ['TH1305 families/status/template'],
 };
 
 describe('a fixed part of a family template', () => {

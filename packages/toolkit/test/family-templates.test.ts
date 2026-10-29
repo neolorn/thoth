@@ -107,13 +107,13 @@ describe('a family template', () => {
     ['no placeholder', 'status.ready'],
   ])('is refused with %s', (_label, value) => {
     expect(refusalCodes(template(value))).toContain(
-      'EQ1305 families.status.template',
+      'TH1305 families.status.template',
     );
   });
 
   it('is refused when no current source message matches it', () => {
     expect(refusalCodes(template('shipment.{state}'))).toContain(
-      'EQ1305 families.status',
+      'TH1305 families.status',
     );
   });
 });
@@ -136,7 +136,7 @@ describe('a family segments key', () => {
         '    segments:',
         '      stat: demo:state',
       ]),
-    ).toContain('EQ1305 families.status.segments');
+    ).toContain('TH1305 families.status.segments');
   });
 
   it('is refused when its type is not registered', () => {
@@ -146,6 +146,6 @@ describe('a family segments key', () => {
         '    segments:',
         '      state: demo:unknown',
       ]),
-    ).toContain('EQ1805 families.status.segments.state');
+    ).toContain('TH1805 families.status.segments.state');
   });
 });

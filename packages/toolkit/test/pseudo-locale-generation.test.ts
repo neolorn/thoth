@@ -98,7 +98,7 @@ interface CompiledCatalog {
 }
 
 /**
- * The compiled catalog module Equator wrote for one locale, read back as data.
+ * The compiled catalog module Thoth wrote for one locale, read back as data.
  *
  * Read from the published artifact rather than from the compiler's return value, because the
  * question these tests ask is what a build produces, and a value returned in memory is not that.
@@ -206,7 +206,7 @@ async function createProject(prefix: string): Promise<string> {
 
 /** Declare the two shipped pseudo-locales. Configuration only; no source file is touched. */
 async function declarePseudoLocales(root: string): Promise<void> {
-  const path = resolve(root, 'equator.config.json');
+  const path = resolve(root, 'thoth.config.json');
   const existing = JSON.parse(await readFile(path, 'utf8')) as Record<
     string,
     unknown
@@ -333,7 +333,7 @@ describe('pseudo-locales are generated rather than authored', () => {
       }),
     );
     expect(parsed.ok).toBe(false);
-    expect(parsed.diagnostics.map(({ code }) => code)).toContain('EQ1004');
+    expect(parsed.diagnostics.map(({ code }) => code)).toContain('TH1004');
     claimCapability('capability:pseudo-locale');
   });
 
@@ -394,7 +394,7 @@ describe('pseudo-locales are generated rather than authored', () => {
   ) => {
     const parsed = pseudoLocaleDeclaration(tag, transform, sourceLocale);
     return parsed.diagnostics
-      .filter(({ code }) => code === 'EQ1008')
+      .filter(({ code }) => code === 'TH1008')
       .map(({ path, summary }) => ({ path, summary }));
   };
 

@@ -1,6 +1,6 @@
 # Verification
 
-What an Equator release proves about itself before it ships, and what it declines to claim.
+What a Thoth release proves about itself before it ships, and what it declines to claim.
 
 The host rows a release executes and the proof taken through its built packages are
 `02-packages-and-platform.spec.md` sections 9 and 11. What a check is allowed to report is

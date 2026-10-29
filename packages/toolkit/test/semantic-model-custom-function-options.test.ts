@@ -95,7 +95,7 @@ function refusals(
     : graph.diagnostics.map(({ code, path }) => ({ code, path: [...path] }));
 }
 
-const onTheMessage = [{ code: 'EQ1805', path: ['messages', 'subject'] }];
+const onTheMessage = [{ code: 'TH1805', path: ['messages', 'subject'] }];
 
 describe('a call to a registered function', () => {
   it('is accepted with an operand and none of its optional options', () => {

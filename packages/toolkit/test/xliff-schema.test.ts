@@ -19,13 +19,13 @@ import { writtenCatalog } from './fixtures.js';
  * Every document this package writes, against the schema OASIS publishes for the version it claims.
  *
  * `specs/01-standards-profile.spec.md` section 10 pins that version, and section 11 of
- * `specs/01-standards-profile.spec.md` requires what Equator writes to validate against its
+ * `specs/01-standards-profile.spec.md` requires what Thoth writes to validate against its
  * schemas. The defect took the shape of a version attribute naming one edition beside a namespace
  * belonging to another, which a test that only reads the document back cannot see.
  *
  * Nothing here is a round trip. An importer built against its own exporter accepts whatever that
  * exporter writes, which is why three separate conformance defects survived every interchange test
- * in the suite: the `id` attributes were not `xs:NMTOKEN`s, and `equator:empty` sat on `<source>`
+ * in the suite: the `id` attributes were not `xs:NMTOKEN`s, and `thoth:empty` sat on `<source>`
  * and `<target>`, the two elements inside a unit that admit no foreign attributes at all. The
  * documents were well-formed, self-consistent, round-tripped perfectly, and validated against
  * nothing.
@@ -165,7 +165,7 @@ const target = catalog(
   targetOptions,
 );
 
-describe('Equator XLIFF 2.2 documents against the OASIS schema', () => {
+describe('Thoth XLIFF 2.2 documents against the OASIS schema', () => {
   it('validates a bilingual export of every message shape', async () => {
     const exported = exportXliff22({ source, target });
     expect(exported.ok).toBe(true);
@@ -194,7 +194,7 @@ describe('Equator XLIFF 2.2 documents against the OASIS schema', () => {
   });
 });
 
-describe('Equator XLIFF inline codes', () => {
+describe('Thoth XLIFF inline codes', () => {
   const exported = exportXliff22({ source, target });
 
   it('carries a placeholder as an element and its text as original data', () => {

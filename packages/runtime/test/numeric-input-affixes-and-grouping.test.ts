@@ -5,7 +5,7 @@ import {
   type FormattingContext,
   type LocalizedInputProfile,
   type LocalizedInputStatus,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A numeric field reads one spelling: the locale's digits, its decimal mark, its grouping where the

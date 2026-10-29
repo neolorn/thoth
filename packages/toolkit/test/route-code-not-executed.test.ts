@@ -16,7 +16,7 @@ import { analyzeApplication } from '../src/static-analysis.js';
  * loader's import specifier in the program, and the trace has to be absent.
  */
 
-const TRACE = 'equatorRouteTrace';
+const TRACE = 'thothRouteTrace';
 
 const roots: string[] = [];
 

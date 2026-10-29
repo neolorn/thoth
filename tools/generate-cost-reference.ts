@@ -336,7 +336,7 @@ line();
 // Read from the published bundle rather than the generated sources, so the figure is what an
 // application receives and the stage reads nothing it does not already read.
 const runtimeBundle = readFileSync(
-  resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-equator.mjs'),
+  resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-thoth.mjs'),
   'utf8',
 );
 const tableLiteral = (name: string) => {
@@ -426,7 +426,7 @@ for (const consumer of consumers) {
 line('## Compiler output');
 line();
 line(
-  'What `equator generate` writes for each application. A second run over unchanged inputs writes nothing, which the consumer stages assert.',
+  'What `thoth generate` writes for each application. A second run over unchanged inputs writes nothing, which the consumer stages assert.',
 );
 line();
 line('| Application | Files | Bytes |');
@@ -476,11 +476,11 @@ if (check) {
     'docs/reference/cost.md is not what the builds measure now. Run pnpm run generate:cost-reference.',
   );
   process.stdout.write(
-    `Equator cost reference verified: ${ENTRY_POINTS.length} entry point(s) measured in ${consumers.length} production build(s).\n`,
+    `Thoth cost reference verified: ${ENTRY_POINTS.length} entry point(s) measured in ${consumers.length} production build(s).\n`,
   );
 } else {
   await writeFile(pagePath, page, 'utf8');
   process.stdout.write(
-    `Equator cost reference written: ${ENTRY_POINTS.length} entry point(s) measured in ${consumers.length} production build(s).\n`,
+    `Thoth cost reference written: ${ENTRY_POINTS.length} entry point(s) measured in ${consumers.length} production build(s).\n`,
   );
 }

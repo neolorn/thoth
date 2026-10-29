@@ -22,11 +22,11 @@ import {
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
 /**
- * Can `equator init` state everything `equator.config.json` accepts?
+ * Can `thoth init` state everything `thoth.config.json` accepts?
  *
- * An option `equator init` does not accept is unreachable from the install line, and the project
+ * An option `thoth init` does not accept is unreachable from the install line, and the project
  * produced without it is *valid*, so nothing fails and nothing says anything; a consumer meets the
- * field by reading Equator's source or by failing at runtime.
+ * field by reading Thoth's source or by failing at runtime.
  *
  * A hand-written option list goes stale on the next key the schema gains, so the option set is not
  * a list that agrees with `CONFIGURATION_SCHEMA`; it is generated from it, and `verify:cli-options`
@@ -107,10 +107,7 @@ describe('the option set is the configuration schema', () => {
     if (!initialized.ok) return;
 
     // Read back off disk rather than off the result, because what matters is what gets written.
-    const written = await readFile(
-      resolve(root, 'equator.config.json'),
-      'utf8',
-    );
+    const written = await readFile(resolve(root, 'thoth.config.json'), 'utf8');
     const reparsed = parseConfiguration(written);
     expect(reparsed.ok).toBe(true);
     if (!reparsed.ok) return;
@@ -135,7 +132,7 @@ describe('the option set is the configuration schema', () => {
     });
     expect(attempted.ok).toBe(false);
     if (attempted.ok) return;
-    const refusal = attempted.diagnostics.find(({ code }) => code === 'EQ1701');
+    const refusal = attempted.diagnostics.find(({ code }) => code === 'TH1701');
     expect(refusal?.summary).toContain('--default-locale <locale>');
     expect(refusal?.summary).toContain('--locale <locale> (repeat for each)');
     // The one that was supplied is not asked for again.

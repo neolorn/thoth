@@ -8,7 +8,7 @@ import {
   withFormattingContext,
   withObservability,
   type LocalizationObservabilityEvent,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -27,11 +27,11 @@ import { runtimeExtensions } from './runtime-extensions';
  */
 
 const TRANSFER_KEY = makeStateKey<unknown>(
-  '@neolorn/equator:localization-state/1',
+  '@neolorn/thoth:localization-state/1',
 );
 
 const valid = (): Record<string, unknown> => ({
-  profile: 'equator-transfer-state/1',
+  profile: 'thoth-transfer-state/1',
   primaryLocale: 'ar-EG',
   formatting: { locale: 'ar-EG' },
   catalogs: [],

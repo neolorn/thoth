@@ -1,8 +1,8 @@
 {
-  "name": "@neolorn/equator",
+  "name": "@neolorn/thoth",
   "version": "1.0.0-rc.1",
   "description": "Localization runtime for Angular applications.",
-  "homepage": "https://github.com/neolorn/equator/tree/main/packages/runtime#readme",
+  "homepage": "https://github.com/neolorn/thoth/tree/main/packages/runtime#readme",
   "keywords": [
     "angular",
     "i18n",
@@ -24,11 +24,11 @@
   "author": "Hossam Ismail <hossam@neolorn.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neolorn/equator.git",
+    "url": "git+https://github.com/neolorn/thoth.git",
     "directory": "packages/runtime"
   },
   "bugs": {
-    "url": "https://github.com/neolorn/equator/issues"
+    "url": "https://github.com/neolorn/thoth/issues"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",

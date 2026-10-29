@@ -6,7 +6,7 @@ import {
   type GeneratedRouteProjectionEntry,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The shape a route's path is held to, segment by segment, in the table and in a locale's spelling.
@@ -48,7 +48,7 @@ const projectionWith = (changes: Changes = {}): RouteRuntimeProjection => {
   ];
   return {
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: changes.identity ?? IDENTITY,
       routes,
     },

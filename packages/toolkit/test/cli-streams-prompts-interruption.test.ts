@@ -105,8 +105,8 @@ describe('the standard streams', () => {
     expect(lines.at(-1)).toBe('');
     expect(lines).toHaveLength(2);
     const result = JSON.parse(lines[0] ?? '') as MachineResult;
-    expect(result.profile).toBe('equator-cli-result/1');
-    expect(result.diagnostics.some(({ code }) => code === 'EQ1311')).toBe(true);
+    expect(result.profile).toBe('thoth-cli-result/1');
+    expect(result.diagnostics.some(({ code }) => code === 'TH1311')).toBe(true);
     expect(run.stdout).not.toContain(ESCAPE);
     expect(run.stderr).not.toContain(ESCAPE);
   });
@@ -125,12 +125,12 @@ describe('the standard streams', () => {
 
     const human = await runCli(['check', '--project', root]);
     expect(human.exitCode).toBe(0);
-    expect(human.stdout).not.toMatch(/EQ\d{4}/u);
+    expect(human.stdout).not.toMatch(/TH\d{4}/u);
     expect(human.stderr).not.toContain(ESCAPE);
     const lines = human.stderr.split('\n').filter((line) => line !== '');
     expect(lines).toHaveLength(machine.diagnostics.length);
     for (const line of lines) {
-      expect(line).toMatch(/\b(?:info|warning|error) EQ\d{4}: /u);
+      expect(line).toMatch(/\b(?:info|warning|error) TH\d{4}: /u);
     }
     for (const diagnostic of spanned) {
       const start = diagnostic.span?.start;
@@ -181,11 +181,11 @@ describe('interactive initialization', () => {
       'Supported locales (comma-separated): ',
       'Aliases (comma-separated alias=locale, optional): ',
     ]);
-    const plan = run.stdout.indexOf('Equator init plan: ');
+    const plan = run.stdout.indexOf('Thoth init plan: ');
     expect(plan).toBeGreaterThanOrEqual(0);
-    expect(run.stdout.indexOf('Equator init updated: ')).toBeGreaterThan(plan);
+    expect(run.stdout.indexOf('Thoth init updated: ')).toBeGreaterThan(plan);
     const configuration = JSON.parse(
-      await readFile(resolve(root, 'equator.config.json'), 'utf8'),
+      await readFile(resolve(root, 'thoth.config.json'), 'utf8'),
     ) as Record<string, unknown>;
     expect(configuration['sourceLocale']).toBe('en-US');
     expect(configuration['locales']).toEqual(['en-US', 'ar-EG']);
@@ -199,7 +199,7 @@ describe('interactive initialization', () => {
     expect(run.exitCode).toBe(2);
     expect(run.stderr).toContain('Complete invocation: ');
     await expect(
-      readFile(resolve(root, 'equator.config.json'), 'utf8'),
+      readFile(resolve(root, 'thoth.config.json'), 'utf8'),
     ).rejects.toThrow();
   });
 });

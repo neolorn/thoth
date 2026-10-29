@@ -131,7 +131,7 @@ describe('an input a message uses as two types', () => {
     ['the number use is written first', '{$count :number} {$count :string}'],
   ])('is refused once, on the message, when %s', (_label, text) => {
     expect(analyze(refined(text))).toEqual({
-      refused: ['EQ1302 messages/subject'],
+      refused: ['TH1302 messages/subject'],
     });
   });
 });

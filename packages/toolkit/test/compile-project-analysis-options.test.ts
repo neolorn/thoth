@@ -60,7 +60,7 @@ function analysisDiagnostics(
       ...options,
     },
   });
-  return compiled.diagnostics.filter(({ code }) => code === 'EQ1401');
+  return compiled.diagnostics.filter(({ code }) => code === 'TH1401');
 }
 
 const located = (diagnostics: readonly ToolkitDiagnostic[]) =>
@@ -96,7 +96,7 @@ describe('the type packages a compilation builds the program with', () => {
   it('are the ones the request names, so one that is not installed is reported', () => {
     // A type package nothing installs has no file to locate the finding in, and it does not block.
     const diagnostics = analysisDiagnostics(clean, {
-      typeNames: ['equator-analysis-options-absent-types'],
+      typeNames: ['thoth-analysis-options-absent-types'],
     });
 
     expect(located(diagnostics)).toEqual([]);

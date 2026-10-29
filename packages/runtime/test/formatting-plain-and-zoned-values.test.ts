@@ -10,7 +10,7 @@ import {
   plainTime,
   zonedDateTime,
 } from '../src/formatting.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 /**
  * What formatting a plain time, a plain date-time and a zoned date-time hands back.

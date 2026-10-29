@@ -75,7 +75,7 @@ describe('formatCatalog', () => {
     const result = formatCatalog({} as Catalog);
 
     expect(result.ok).toBe(false);
-    expect(codes(result)).toEqual(['EQ1102']);
+    expect(codes(result)).toEqual(['TH1102']);
   });
 
   it('takes the registry an assembled catalog calls a function from', () => {

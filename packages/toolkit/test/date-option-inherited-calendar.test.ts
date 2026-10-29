@@ -6,7 +6,7 @@ function summaries(source: string): readonly string[] {
   const parsed = parseMessageSemanticModel(source);
   expect(parsed.ok).toBe(false);
   return parsed.diagnostics
-    .filter(({ code }) => code === 'EQ1204')
+    .filter(({ code }) => code === 'TH1204')
     .map(({ summary }) => summary);
 }
 

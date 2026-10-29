@@ -74,7 +74,7 @@ const target = catalog(
   targetOptions,
 );
 
-describe('Equator XLIFF 2.2 interchange', () => {
+describe('Thoth XLIFF 2.2 interchange', () => {
   it('round-trips MessageFormat, slots, metadata contracts, and explicit empty values', () => {
     const exported = exportXliff22({ source, target });
     expect(exported.ok).toBe(true);
@@ -82,9 +82,9 @@ describe('Equator XLIFF 2.2 interchange', () => {
     expect(exported.value).toContain('version="2.2"');
     // The empty translation is a refinement of the segment's state, not a foreign attribute on
     // <target>, which is one of the two elements in a unit that admit no foreign attributes.
-    expect(exported.value).toContain('subState="equator:empty"');
-    expect(exported.value).not.toContain('equator:empty="true"');
-    expect(exported.value).toContain('equator:contract');
+    expect(exported.value).toContain('subState="thoth:empty"');
+    expect(exported.value).not.toContain('thoth:empty="true"');
+    expect(exported.value).toContain('thoth:contract');
 
     const imported = importXliff22({
       document: exported.value,
@@ -164,7 +164,7 @@ describe('Equator XLIFF 2.2 interchange', () => {
     expect(stale.ok).toBe(true);
     if (!stale.ok) return;
     expect(stale.diagnostics).toMatchObject([
-      { code: 'EQ1803', severity: 'warning' },
+      { code: 'TH1803', severity: 'warning' },
     ]);
     expect(stale.value.messages['greeting']).toBeUndefined();
     expect(stale.value.messages['count']).toBeDefined();
@@ -172,7 +172,7 @@ describe('Equator XLIFF 2.2 interchange', () => {
   });
 });
 
-describe('Equator pseudo-locales', () => {
+describe('Thoth pseudo-locales', () => {
   const plain = 'Open https://site.example {#strong}{$name}{/strong}';
 
   it('transforms only human-language pattern text', () => {
@@ -224,7 +224,7 @@ describe('Equator pseudo-locales', () => {
   it('refuses a length factor outside the range it can honour', () => {
     const tooFar = pseudoLocalizeMessage('Hello', { lengthFactor: -2 });
     expect(tooFar.ok).toBe(false);
-    expect(tooFar.diagnostics.map(({ code }) => code)).toContain('EQ1804');
+    expect(tooFar.diagnostics.map(({ code }) => code)).toContain('TH1804');
   });
 
   it('creates an ordinary target catalog under the tag it is given', () => {
@@ -259,7 +259,7 @@ describe('Equator pseudo-locales', () => {
     const unregistered = pseudoLocalizeMessage(withExtension, {});
     expect(unregistered.ok).toBe(false);
     expect(unregistered.diagnostics.map(({ code }) => code)).toContain(
-      'EQ1203',
+      'TH1203',
     );
 
     const registered = pseudoLocalizeMessage(withExtension, {}, [
@@ -279,7 +279,7 @@ describe('Equator pseudo-locales', () => {
 
   it('refuses a private-use tag, which is why the shipped tags use regions', () => {
     // Both external checks pass for this tag: it canonicalizes, and it maximizes to an Arab-script
-    // locale that the direction lookup reads as rtl. Equator's own catalog-identity rule is the
+    // locale that the direction lookup reads as rtl. Thoth's own catalog-identity rule is the
     // only one that refuses it, so a reader comparing the tags against the platform will conclude
     // the prettier form works. It does not, and this is the check that says so.
     expect(Intl.getCanonicalLocales('en-Arab-x-pscontr')).toEqual([
@@ -292,7 +292,7 @@ describe('Equator pseudo-locales', () => {
       lengthFactor: -0.35,
     });
     expect(refused.ok).toBe(false);
-    expect(refused.diagnostics.map(({ code }) => code)).toContain('EQ1003');
+    expect(refused.diagnostics.map(({ code }) => code)).toContain('TH1003');
 
     // The control: the same call under the shipped tag succeeds, so the refusal above is the
     // private-use subtag and not something else about the source catalog or the settings.
@@ -323,11 +323,11 @@ describe('Equator pseudo-locales', () => {
 });
 
 /**
- * A conformant XLIFF 2.2 document that Equator did not write.
+ * A conformant XLIFF 2.2 document that Thoth did not write.
  *
- * Round-tripping Equator's own export can never catch a conformance defect: whatever the exporter
+ * Round-tripping Thoth's own export can never catch a conformance defect: whatever the exporter
  * writes, the importer is built to read. A check of that kind passes an importer that requires
- * Equator's own prefix spellings and exactly one `<file>`.
+ * Thoth's own prefix spellings and exactly one `<file>`.
  *
  * The document below carries the same information and none of the same serialization decisions:
  *
@@ -335,18 +335,18 @@ describe('Equator pseudo-locales', () => {
  *   written `x:file`, `x:unit`, `x:segment`;
  * - the metadata module is bound to `m:` instead of `mda:`, and declared on the unit that uses it
  *   rather than on the root, which is where a namespace may legally be declared;
- * - there are two `<file>` elements and Equator's is the second, because XLIFF 2.2 Core declares
+ * - there are two `<file>` elements and Thoth's is the second, because XLIFF 2.2 Core declares
  *   `<file>` with `maxOccurs="unbounded"` and a translation-management system holding several
  *   catalogs in one document is conformant;
  * - the placeholder is carried in an `equiv` attribute rather than in `<originalData>`, which is
- *   the other legal way to say what an inline code stands for and is not the way Equator writes it.
+ *   the other legal way to say what an inline code stands for and is not the way Thoth writes it.
  *
  * The unit contract is lifted from a real export rather than invented, because its
  * `sourceFingerprint` is what ties a translation to the source revision it was made from, and a
  * hand-written one would either be wrong or would have to reimplement the fingerprint.
  */
 function contractJson(exported: string): string {
-  const match = /<mda:meta type="equator:contract">([^<]*)<\/mda:meta>/u.exec(
+  const match = /<mda:meta type="thoth:contract">([^<]*)<\/mda:meta>/u.exec(
     exported,
   );
   expect(match).not.toBeNull();
@@ -364,8 +364,8 @@ function foreignDocument(
           `  <x:file id="${options.extraFileId}" original="other/catalog.json">`,
           '    <x:unit id="unrelated">',
           '      <x:segment>',
-          '        <x:source xml:space="preserve">Not Equator.</x:source>',
-          '        <x:target xml:space="preserve">Laysa Equator.</x:target>',
+          '        <x:source xml:space="preserve">Not Thoth.</x:source>',
+          '        <x:target xml:space="preserve">Laysa Thoth.</x:target>',
           '      </x:segment>',
           '    </x:unit>',
           '  </x:file>',
@@ -377,8 +377,8 @@ function foreignDocument(
     `  <x:file id="${options.fileId}" original="i18n/shell/en-US.yaml">`,
     '    <x:unit id="greeting" name="greeting">',
     '      <m:metadata xmlns:m="urn:oasis:names:tc:xliff:metadata:2.0">',
-    '        <m:metaGroup category="equator:unit">',
-    `          <m:meta type="equator:contract">${contract}</m:meta>`,
+    '        <m:metaGroup category="thoth:unit">',
+    `          <m:meta type="thoth:contract">${contract}</m:meta>`,
     '        </m:metaGroup>',
     '      </m:metadata>',
     '      <x:segment state="translated">',
@@ -392,7 +392,7 @@ function foreignDocument(
   ].join('\n');
 }
 
-describe('Equator XLIFF import of a document Equator did not write', () => {
+describe('Thoth XLIFF import of a document Thoth did not write', () => {
   const foreignSource = catalog(
     [
       'messages:',
@@ -470,15 +470,15 @@ describe('Equator XLIFF import of a document Equator did not write', () => {
     // The first of the two files holds a unit with no contract, so reading it would fail too; the
     // refusal has to be the one that names the duplicate, or file order decided the outcome.
     expect(imported.diagnostics[0]?.summary).toContain(
-      'contains 2 files for the Equator catalog "@example/app:shell"',
+      'contains 2 files for the Thoth catalog "@example/app:shell"',
     );
     claimCapability('capability:xliff');
   });
 
-  it('does not read Equator metadata out of a prefix bound to another namespace', () => {
+  it('does not read Thoth metadata out of a prefix bound to another namespace', () => {
     expect(reference.ok).toBe(true);
     if (!reference.ok) return;
-    // `mda:` spelled exactly as Equator writes it, bound to something else. Matching on the
+    // `mda:` spelled exactly as Thoth writes it, bound to something else. Matching on the
     // authored prefix would accept this; matching on the namespace does not.
     const document = foreignDocument(contractJson(reference.value), {
       fileId: 'example:app:shell',
@@ -487,7 +487,7 @@ describe('Equator XLIFF import of a document Equator did not write', () => {
       'xmlns:m="urn:example:not-the-metadata-module"',
     );
     const imported = importXliff22({ document, source: foreignSource });
-    // The unit has no readable Equator contract, so it is reported rather than absorbed. The
+    // The unit has no readable Thoth contract, so it is reported rather than absorbed. The
     // assertion is that `greeting` did not come back, whichever way the import resolves.
     const importedMessageIds = imported.ok
       ? Object.keys(imported.value.messages)
@@ -528,7 +528,7 @@ describe('an XLIFF translation carrying a directional control', () => {
         source: plainSource,
       });
       expect(imported.ok).toBe(false);
-      expect(imported.diagnostics.map(({ code }) => code)).toContain('EQ1103');
+      expect(imported.diagnostics.map(({ code }) => code)).toContain('TH1103');
     }
   });
 
@@ -541,14 +541,14 @@ describe('an XLIFF translation carrying a directional control', () => {
       source: plainSource,
     });
     expect(imported.ok).toBe(false);
-    expect(imported.diagnostics.map(({ code }) => code)).toContain('EQ1103');
+    expect(imported.diagnostics.map(({ code }) => code)).toContain('TH1103');
   });
 });
 
 describe('an XLIFF document that is not text', () => {
   // Specification 10 section 2: a document arrives from a build script, where no declared type
   // holds, so a value that is not text is a diagnostic naming its type and never the value.
-  it('is refused with EQ1801 naming the type it was', () => {
+  it('is refused with TH1801 naming the type it was', () => {
     for (const [document, type] of [
       [42, 'number'],
       [Buffer.from('<xliff/>'), 'object'],
@@ -559,7 +559,7 @@ describe('an XLIFF document that is not text', () => {
         source,
       });
       expect(imported.ok, type).toBe(false);
-      expect(imported.diagnostics[0]?.code).toBe('EQ1801');
+      expect(imported.diagnostics[0]?.code).toBe('TH1801');
       expect(imported.diagnostics[0]?.summary).toContain(type);
       expect(imported.diagnostics[0]?.summary).not.toContain('xliff/');
     }
@@ -578,7 +578,7 @@ describe('an XLIFF unit whose id is not an xs:NMTOKEN', () => {
   const exported = exportXliff22({ source: plainSource, target: plainTarget });
   const document = exported.ok ? exported.value : '';
 
-  it('makes the document one Equator cannot import, and does not repeat the id', () => {
+  it('makes the document one Thoth cannot import, and does not repeat the id', () => {
     expect(document).toContain('<unit id="greeting" name="greeting">');
     for (const id of ['../../greeting', 'greeting/..', 'a b']) {
       const imported = importXliff22({
@@ -592,7 +592,7 @@ describe('an XLIFF unit whose id is not an xs:NMTOKEN', () => {
       expect(
         imported.diagnostics.map(({ code }) => code),
         id,
-      ).toContain('EQ1802');
+      ).toContain('TH1802');
       for (const { summary } of imported.diagnostics) {
         expect(summary, id).not.toContain(id);
       }
@@ -618,7 +618,7 @@ describe('an XLIFF unit that does not belong to the source catalog', () => {
 
   function refusals(result: ReturnType<typeof importXliff22>) {
     return result.diagnostics.filter(
-      ({ code, severity }) => code === 'EQ1803' && severity === 'error',
+      ({ code, severity }) => code === 'TH1803' && severity === 'error',
     );
   }
 

@@ -12,13 +12,13 @@ import {
   pageGone,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What the request handler tells a developer, and how often.
  *
  * Two things a renderer does cannot be put right by the response alone: it drew nothing where a
- * page was asked for, or it declared an outcome at an address Equator had already refused, where
+ * page was asked for, or it declared an outcome at an address Thoth had already refused, where
  * section 5 of `specs/07-routing-rendering-and-seo.spec.md` lets the refusal stand. Each is said
  * once per handler for each distinct thing there is to say, because the addresses are supplied by
  * whoever is asking, and neither is said in production.
@@ -38,7 +38,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-HandlerDevelopmentReportsTestIdentity012345',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -178,7 +178,7 @@ describe('where the handler runs', () => {
   });
 });
 
-describe('a declaration at an address Equator refused', () => {
+describe('a declaration at an address Thoth refused', () => {
   const declaring =
     (declared: () => ReturnType<LocaleRenderer>): LocaleRenderer =>
     () =>

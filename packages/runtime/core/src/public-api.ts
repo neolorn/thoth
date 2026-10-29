@@ -1,16 +1,16 @@
 /**
- * The Angular-free core: Equator's vocabulary, its locale profiles and negotiation, and its route
+ * The Angular-free core: Thoth's vocabulary, its locale profiles and negotiation, and its route
  * classification.
  *
  * This entry point exists for an *environment* boundary, which is the second of the three reasons
  * `specs/02-packages-and-platform.spec.md` section 2 allows, rather than the optional-peer reason
  * `forms`, `router` and `ssr` sit on. Every other entry point of this package fails to load outside
- * a browser or an Angular server: importing `@neolorn/equator` in plain Node throws
+ * a browser or an Angular server: importing `@neolorn/thoth` in plain Node throws
  * `The injectable 'PlatformLocation' needs to be compiled using the JIT compiler`, because the
  * primary carries the Angular integration. Nothing here imports `@angular/*` at all, so a worker, a
- * Lambda, or a Fastify process can hold Equator's classification without holding Angular.
+ * Lambda, or a Fastify process can hold Thoth's classification without holding Angular.
  *
- * **Why the core is below the primary rather than beside it.** `@neolorn/equator` re-exports this
+ * **Why the core is below the primary rather than beside it.** `@neolorn/thoth` re-exports this
  * surface, so a consumer already using the primary sees no change and need not know this entry point
  * exists. The dependency runs one way because the core has to load where Angular is absent. It is
  * also the only arrangement that yields *one* copy: a secondary entry point's bundle keeps a

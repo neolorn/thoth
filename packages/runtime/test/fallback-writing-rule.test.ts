@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type FormattingContext,
   type LocalizedValuePart,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import type { CompiledInputContract } from '../src/catalog-runtime.js';
 import {

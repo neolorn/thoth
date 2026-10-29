@@ -92,8 +92,8 @@ describe('a translation-state record that cannot be read', () => {
       'another profile',
       (record: string) =>
         record.replace(
-          'equator-translation-state/1',
-          'equator-translation-state/2',
+          'thoth-translation-state/1',
+          'thoth-translation-state/2',
         ),
     ],
     [
@@ -115,13 +115,13 @@ describe('a translation-state record that cannot be read', () => {
 
     const generated = await generateProject({ project: root });
     expect(generated.ok).toBe(false);
-    expect(generated.diagnostics.map(({ code }) => code)).toEqual(['EQ1702']);
+    expect(generated.diagnostics.map(({ code }) => code)).toEqual(['TH1702']);
     expect(await readFile(recordPath(root), 'utf8')).toBe(damaged);
     expect(await generatedShell(root)).toBe(before);
 
     const checked = await checkProject({ project: root });
     expect(checked.ok).toBe(false);
-    expect(checked.diagnostics.map(({ code }) => code)).toEqual(['EQ1702']);
+    expect(checked.diagnostics.map(({ code }) => code)).toEqual(['TH1702']);
   });
 
   it('is written afresh when it is absent', async () => {

@@ -61,7 +61,7 @@ import {
 import { compareCodeUnit } from './sorted-records.js';
 
 /** The version stamp on the state a compilation carries forward, checked before one is reused. */
-export const COMPILER_STATE_PROFILE = 'equator-compiler-state/1' as const;
+export const COMPILER_STATE_PROFILE = 'thoth-compiler-state/1' as const;
 
 /**
  * What the static analysis needs to read an application's own source and see which messages it
@@ -202,7 +202,7 @@ export interface CompileProjectResult {
  * Scopes the first render does not use.
  *
  * A scope is deferred when it is used and every use sits behind a lazy route boundary. Used
- * nowhere Equator can see is not the same thing: that scope stays a startup scope, because absence
+ * nowhere Thoth can see is not the same thing: that scope stays a startup scope, because absence
  * of evidence is not evidence that a route will not reach it, and being wrong in that direction
  * renders a component whose text never arrives.
  */
@@ -312,7 +312,7 @@ function unusedSourceMessages(
     const listed = unused.slice(0, 20);
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1311',
+        'TH1311',
         `Scope ${scope.scopeId} defines ${unused.length} source ${
           unused.length === 1 ? 'message' : 'messages'
         } nothing reaches: ${listed.map((id) => JSON.stringify(id)).join(', ')}${
@@ -393,7 +393,7 @@ function compilerInputDigests(
     Object.freeze({
       identity: 'configuration',
       digest: digestCanonicalJson(
-        'equator-compiler-configuration-input/1',
+        'thoth-compiler-configuration-input/1',
         canonicalValue(request.configuration),
       ),
     }),
@@ -411,7 +411,7 @@ function compilerInputDigests(
     inputs.push(
       Object.freeze({
         identity: 'analysis-graph',
-        digest: digestCanonicalJson('equator-compiler-analysis-graph/1', {
+        digest: digestCanonicalJson('thoth-compiler-analysis-graph/1', {
           rootNames: [...request.analysis.rootNames]
             .map((path, index) =>
               portableAnalysisPath(
@@ -441,7 +441,7 @@ function compilerInputDigests(
       Object.freeze({
         identity: 'recovery-message-identities',
         digest: digestCanonicalJson(
-          'equator-compiler-recovery-input/1',
+          'thoth-compiler-recovery-input/1',
           [...recoveryMessageIdentities].sort(compareCodeUnit),
         ),
       }),
@@ -452,7 +452,7 @@ function compilerInputDigests(
       Object.freeze({
         identity: `catalog:${catalog.providerId}:${catalog.scopeId}:${catalog.locale}:${catalog.role}`,
         digest: digestCanonicalJson(
-          'equator-compiler-catalog-input/1',
+          'thoth-compiler-catalog-input/1',
           canonicalValue({
             role: catalog.role,
             providerId: catalog.providerId,
@@ -483,7 +483,7 @@ function compilerInputDigests(
         Object.freeze({
           identity: `source:${sourcePath}`,
           digest: digestCanonicalJson(
-            'equator-compiler-static-source-input/1',
+            'thoth-compiler-static-source-input/1',
             source.contents,
           ),
         }),
@@ -501,7 +501,7 @@ export function fingerprintCompilerInputs(
   return Object.freeze({
     inputs,
     inputFingerprint: digestCanonicalJson(
-      'equator-compiler-input-set/1',
+      'thoth-compiler-input-set/1',
       inputs.map(({ identity, digest }) => ({ identity, digest })),
     ),
   });
@@ -561,22 +561,22 @@ function virtualModules(
     {
       specifier: '#i18n/catalog-set',
       contents:
-        "import type { CatalogSetDescriptor } from '@neolorn/equator';\nexport declare const catalogSet: CatalogSetDescriptor;\n",
+        "import type { CatalogSetDescriptor } from '@neolorn/thoth';\nexport declare const catalogSet: CatalogSetDescriptor;\n",
     },
     {
       specifier: '#i18n/catalog-loaders',
       contents:
-        "import type { CatalogLoaders } from '@neolorn/equator';\nexport declare const catalogLoaders: CatalogLoaders;\n",
+        "import type { CatalogLoaders } from '@neolorn/thoth';\nexport declare const catalogLoaders: CatalogLoaders;\n",
     },
     {
       specifier: '#i18n/recovery-payload',
       contents:
-        "import type { RecoveryRepresentation } from '@neolorn/equator';\nexport declare const recoveryPayload: readonly RecoveryRepresentation[];\n",
+        "import type { RecoveryRepresentation } from '@neolorn/thoth';\nexport declare const recoveryPayload: readonly RecoveryRepresentation[];\n",
     },
     {
       specifier: '#i18n/person-names',
       contents:
-        "import type { PersonNameProfileSet } from '@neolorn/equator';\nexport declare const personNames: PersonNameProfileSet;\n",
+        "import type { PersonNameProfileSet } from '@neolorn/thoth';\nexport declare const personNames: PersonNameProfileSet;\n",
     },
   ];
 }
@@ -669,15 +669,15 @@ function compileProjectCore(
     // commands silently, and the first anyone learns of it is a blank page.
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1310',
-        'This owner composes the Equator application runtime but selects no recovery message. Pass one to provideLocalization through withRecoveryMessage so a failed bootstrap can still say something.',
+        'TH1310',
+        'This owner composes the Thoth application runtime but selects no recovery message. Pass one to provideLocalization through withRecoveryMessage so a failed bootstrap can still say something.',
       ),
     );
   }
 
   // The locale set, stated twice, compared once.
   //
-  // `equator.config.json` says which locales this owner has catalogs for. The route policy says
+  // `thoth.config.json` says which locales this owner has catalogs for. The route policy says
   // which locales have addresses. They are separate statements in separate files and they have to
   // agree, and this is where they are compared.
   //
@@ -733,7 +733,7 @@ function compileProjectCore(
     if (missingFromPolicy.length > 0) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1408',
+          'TH1408',
           `${missingFromPolicy.map((locale) => JSON.stringify(locale)).join(', ')} ${missingFromPolicy.length === 1 ? 'is a configured locale' : 'are configured locales'} that this owner's locale URL policy gives no address. Catalogs are generated for ${missingFromPolicy.length === 1 ? 'it' : 'them'} and nothing can navigate to ${missingFromPolicy.length === 1 ? 'it' : 'them'}. Add ${missingFromPolicy.length === 1 ? 'it' : 'them'} to the policy, or remove ${missingFromPolicy.length === 1 ? 'it' : 'them'} from the configuration.`,
           span,
         ),
@@ -742,7 +742,7 @@ function compileProjectCore(
     if (missingFromConfiguration.length > 0) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1408',
+          'TH1408',
           `${missingFromConfiguration.map((locale) => JSON.stringify(locale)).join(', ')} ${missingFromConfiguration.length === 1 ? 'has an address' : 'have addresses'} in this owner's locale URL policy and no catalogs. ${missingFromConfiguration.length === 1 ? 'That address resolves' : 'Those addresses resolve'} and every message renders in the default locale, which reads as missing translations rather than as a missing locale. Add ${missingFromConfiguration.length === 1 ? 'it' : 'them'} to the configuration, or remove ${missingFromConfiguration.length === 1 ? 'it' : 'them'} from the policy.`,
           span,
         ),
@@ -755,7 +755,7 @@ function compileProjectCore(
     ) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1408',
+          'TH1408',
           `This owner's configuration makes ${JSON.stringify(graph.value.defaultLocale)} the default locale and its locale URL policy makes ${JSON.stringify(policyLocales.defaultLocale)} the default. The policy's default decides which addresses carry no prefix and which locale an unprefixed address means, so the two disagreeing sends visitors to a different locale than the one the application falls back to.`,
           span,
         ),
@@ -777,8 +777,8 @@ function compileProjectCore(
       : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1417',
-        `This owner's locale URL policy takes ${listed} from something the build does not evaluate: a constant, a function, a spread, or a key that is not a literal. EQ1408 and EQ1409 were not checked for what ${one ? 'it holds' : 'they hold'}, so a locale with no address or no catalogs, a different default locale, or a route that begins with a segment the policy claims is not reported there. Write ${one ? 'it' : 'them'} out as literals in the call that builds the policy to have both checked.`,
+        'TH1417',
+        `This owner's locale URL policy takes ${listed} from something the build does not evaluate: a constant, a function, a spread, or a key that is not a literal. TH1408 and TH1409 were not checked for what ${one ? 'it holds' : 'they hold'}, so a locale with no address or no catalogs, a different default locale, or a route that begins with a segment the policy claims is not reported there. Write ${one ? 'it' : 'them'} out as literals in the call that builds the policy to have both checked.`,
         { path: ['routes', policyLocales.sourcePath], severity: 'info' },
       ),
     );
@@ -833,8 +833,8 @@ function compileProjectCore(
       if (claim === undefined) continue;
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1409',
-          `Route ${JSON.stringify(route.id)} is declared at ${JSON.stringify(`/${route.path}`)} and its leading segment ${JSON.stringify(leading)} is this owner's ${claim.kind} ${JSON.stringify(claim.segment)}. Equator reads the first segment of an address as the ${claim.kind} before it reads it as a route, so this route is unreachable at its own address and Equator will publish addresses for it that it cannot resolve. Rename the route's leading segment, or spell the ${claim.kind} differently in ${JSON.stringify(policyDeclaration.sourcePath)}.`,
+          'TH1409',
+          `Route ${JSON.stringify(route.id)} is declared at ${JSON.stringify(`/${route.path}`)} and its leading segment ${JSON.stringify(leading)} is this owner's ${claim.kind} ${JSON.stringify(claim.segment)}. Thoth reads the first segment of an address as the ${claim.kind} before it reads it as a route, so this route is unreachable at its own address and Thoth will publish addresses for it that it cannot resolve. Rename the route's leading segment, or spell the ${claim.kind} differently in ${JSON.stringify(policyDeclaration.sourcePath)}.`,
           { path: ['routes', route.sourcePath] },
         ),
       );
@@ -847,7 +847,7 @@ function compileProjectCore(
     // reported was a console warning in development, after the click, to whoever happened to be
     // looking.
     //
-    // `routerLink` alone, and the reason is what Equator transforms rather than what the HTML
+    // `routerLink` alone, and the reason is what Thoth transforms rather than what the HTML
     // specification calls a URL. A click hands the Router the address as written, and
     // `UrlHandlingStrategy.extract` resolves it to its canonical form before anything matches it:
     // the prefix is removed and the page renders in the locale that is committed now. So the link
@@ -861,7 +861,7 @@ function compileProjectCore(
     // address the Router will not honour.
     //
     // Judged against the claimed segments and not the locale set, which is what makes this the
-    // sibling of the check above rather than a widening of EQ1410. A policy may spell a prefix
+    // sibling of the check above rather than a widening of TH1410. A policy may spell a prefix
     // differently from the tag, and an alias is claimed too. `folded` is asked and `exact` is not,
     // so the neutral roots are excluded: a locale-neutral root is the one leading segment a
     // policy claims that survives the resolution, so an address that begins with one goes where it
@@ -873,8 +873,8 @@ function compileProjectCore(
       if (claim === undefined) continue;
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1411',
-          `The template of ${JSON.stringify(address.componentName)} writes routerLink=${JSON.stringify(address.address)}, whose leading segment ${JSON.stringify(leading)} is this owner's ${claim.kind} ${JSON.stringify(claim.segment)}. Equator resolves a routerLink to its canonical address before the Router matches it, so the locale in this one is discarded and the link opens the page in whichever locale is committed. Write the canonical address without the ${claim.kind}, ${JSON.stringify(address.address.slice(leading.length + 1) || '/')}, and change locale with "Localization.changeLocale()", which is the operation that moves the reader between locales.`,
+          'TH1411',
+          `The template of ${JSON.stringify(address.componentName)} writes routerLink=${JSON.stringify(address.address)}, whose leading segment ${JSON.stringify(leading)} is this owner's ${claim.kind} ${JSON.stringify(claim.segment)}. Thoth resolves a routerLink to its canonical address before the Router matches it, so the locale in this one is discarded and the link opens the page in whichever locale is committed. Write the canonical address without the ${claim.kind}, ${JSON.stringify(address.address.slice(leading.length + 1) || '/')}, and change locale with "Localization.changeLocale()", which is the operation that moves the reader between locales.`,
           { path: ['components', address.templatePath] },
         ),
       );
@@ -885,7 +885,7 @@ function compileProjectCore(
   //
   // A switcher written by hand carries the same thing three or four times per option: the locale as
   // a string, the option's language as a static `lang`, its direction as a static `dir`, and its
-  // name in its own language as literal text. All four are answers Equator already has, and every
+  // name in its own language as literal text. All four are answers Thoth already has, and every
   // one of them is authored again for each locale, in each template, in a language the author may
   // not read. Adding a locale then means finding every one of those places, and nothing fails when
   // one is missed: the option simply reads wrongly, aloud, to the people who need it most.
@@ -898,7 +898,7 @@ function compileProjectCore(
   // A locale spelled as a string inside a template expression is an error. There is no form of it
   // that survives a locale being added: the expression is either a switch to a locale the template
   // names, or a branch on one, and in both cases the template has to be edited for a change that
-  // belongs in the configuration. Equator has the list.
+  // belongs in the configuration. Thoth has the list.
   //
   // A static `lang` is a warning, because there is one legitimate form and this check cannot tell
   // it apart: a page carrying a fixed passage in another language marks that passage up exactly
@@ -932,8 +932,8 @@ function compileProjectCore(
       const literal = mention.kind === 'literal';
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1410',
-          `The template of ${JSON.stringify(mention.componentName)} ${what}. Equator already knows every configured locale, its language subtag, its direction and its name in its own language: read them from "localization.localeChoices()" and put "[localeChoice]" on the control, which writes lang, dir, aria-current and aria-busy and performs the switch. A switcher built that way gains a locale when the configuration gains one.${literal ? '' : ' If this is a fixed passage in another language rather than a locale control, this is the right markup and the warning is expected.'}`,
+          'TH1410',
+          `The template of ${JSON.stringify(mention.componentName)} ${what}. Thoth already knows every configured locale, its language subtag, its direction and its name in its own language: read them from "localization.localeChoices()" and put "[localeChoice]" on the control, which writes lang, dir, aria-current and aria-busy and performs the switch. A switcher built that way gains a locale when the configuration gains one.${literal ? '' : ' If this is a fixed passage in another language rather than a locale control, this is the right markup and the warning is expected.'}`,
           {
             ...(literal ? {} : { severity: 'warning' as const }),
             path: ['components', mention.templatePath],

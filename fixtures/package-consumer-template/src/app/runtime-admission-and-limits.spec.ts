@@ -27,7 +27,7 @@ import {
   type RuntimeExtensionBinding,
   type RuntimeFormattingAdapterDescriptor,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -100,7 +100,7 @@ describe('fixed runtime ceilings', () => {
     );
     claimCapability('format:parseLocalizedInput');
     claimCapability('control:decimal');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('rejects spoofing controls, oversized allowlists, and unsupported targets', () => {
@@ -120,7 +120,7 @@ describe('fixed runtime ceilings', () => {
         Array.from({ length: 65 }, () => 'https://site.example'),
       ),
     ).toThrow(/safety policy/u);
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -140,7 +140,7 @@ describe('closed configuration admission', () => {
     await expect(localization.changeLocale('ar-EG')).resolves.toMatchObject({
       status: 'committed',
     });
-    expect(localization.text(messages.appTitle)).toContain('Equator');
+    expect(localization.text(messages.appTitle)).toContain('Thoth');
     localization.dispose();
 
     expect(() =>
@@ -150,7 +150,7 @@ describe('closed configuration admission', () => {
         formattingContext: { timeZone: 'UTC' },
       }),
     ).toThrow(/duplicate generated scope/u);
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('copies and freezes descriptors, then rejects cycles and post-admission mutation', () => {
@@ -195,7 +195,7 @@ describe('closed configuration admission', () => {
         } as unknown as RuntimeExtensionBinding,
       ]),
     ).toThrow(/cycle|inert/iu);
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -283,7 +283,7 @@ describe('catalog and lifetime admission', () => {
  * Seeding the transfer with `TestBed.inject(TransferState).set(...)` and then injecting
  * `Localization`, which reads it, never lets the runtime see the value. `TestBed.inject` of
  * anything calls `finalize()`, which runs the app initializers (`@angular/core/testing` 22.2.1,
- * `TestBedCompiler.finalize`), and Equator's initializer injects `Localization`, whose factory
+ * `TestBedCompiler.finalize`), and Thoth's initializer injects `Localization`, whose factory
  * reads the transfer at construction. The first `inject` in such a test builds the runtime against an empty
  * store, and the `set` on the line above the assertion runs after the read it is seeding: the test
  * asserts a fallback the sanitizer has nothing to do with, and passes for whatever the sanitizer
@@ -303,7 +303,7 @@ describe('catalog and lifetime admission', () => {
  * cycle can exist: `defineRuntimeExtensions`, in this file, against a live object.
  */
 describe('hostile transfer state', () => {
-  const KEY = '@neolorn/equator:localization-state/1';
+  const KEY = '@neolorn/thoth:localization-state/1';
   /**
    * The application id this test delivers under, stated rather than assumed.
    *
@@ -315,7 +315,7 @@ describe('hostile transfer state', () => {
    */
   const APP = 'transfer-lab';
   const valid = (route?: unknown): Record<string, unknown> => ({
-    profile: 'equator-transfer-state/1',
+    profile: 'thoth-transfer-state/1',
     primaryLocale: 'ar-EG',
     formatting: { locale: 'ar-EG' },
     catalogs: [],
@@ -439,7 +439,7 @@ describe('hostile transfer state', () => {
 
   it('drops the whole transfer for anything it does not recognise', async () => {
     const refused: readonly [string, unknown][] = [
-      ['not a record', ['equator-transfer-state/1']],
+      ['not a record', ['thoth-transfer-state/1']],
       ['a profile from something else', { ...valid(), profile: 'other/1' }],
       ['a key the profile does not declare', { ...valid(), extra: 1 }],
       [

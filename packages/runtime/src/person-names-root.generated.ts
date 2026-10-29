@@ -30,7 +30,7 @@ export const PERSON_NAME_ROOT: {
     readonly string[], readonly string[],
   ])[];
 } = Object.freeze({
-  profile: "cldr-48.2/equator-person-names-1",
+  profile: "cldr-48.2/thoth-person-names-1",
   patterns: Object.freeze(["{title} {given} {given2} {surname} {surname2} {credentials}","{given-monogram-allCaps}{given2-monogram-allCaps}{surname-monogram-allCaps}","{surname} {surname2} {title} {given} {given2} {credentials}","{surname-monogram-allCaps}{given-monogram-allCaps}{given2-monogram-allCaps}","{surname} {surname2}, {title} {given} {given2} {credentials}","{0}.","{0} {1}"," "] as const),
   rows: Object.freeze([["und",[0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,2,2,2,2,3,3,2,2,2,2,3,3,2,2,2,2,3,3,4,4,-1,-1,-1,-1,4,4,-1,-1,-1,-1,4,4,-1,-1,-1,-1],5,6,7,7,1,0,["und"],["ja","ko","vi","yue","zh"]]] as const),
 });

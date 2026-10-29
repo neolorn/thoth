@@ -6,13 +6,13 @@ inherits from.
 
 ## Before you begin
 
-You need a project that `equator init` has set up.
+You need a project that `thoth init` has set up.
 
 ## Declare the locale
 
-`equator.config.json` holds the locale set:
+`thoth.config.json` holds the locale set:
 
-```json excerpt equator.config.json
+```json excerpt thoth.config.json
 {
   "sourceLocale": "en-US",
   "defaultLocale": "en-US",
@@ -39,8 +39,8 @@ the source catalog. Writing one is
 ## Compile and check
 
 ```text
-npx equator generate
-npx equator check --require-complete
+npx thoth generate
+npx thoth check --require-complete
 ```
 
 `--require-complete` fails while any scope is missing the locale, any message is missing a plural
@@ -50,7 +50,7 @@ changed. Ship the locale before its catalogs are finished with an `inProgress` e
 
 ## Choose the sources a locale is resolved from
 
-Equator asks four sources for a visitor's locale and takes the first answer: the address, a
+Thoth asks four sources for a visitor's locale and takes the first answer: the address, a
 persisted choice, `Accept-Language`, then `defaultLocale`. `withLocaleSources` names the ones to
 ask and the order to ask them in:
 

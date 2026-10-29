@@ -110,7 +110,7 @@ function parseIdentity<T extends string>(
     return toolkitFailure([
       toolkitDiagnostic(
         code,
-        `${label} does not match the Equator identity grammar.`,
+        `${label} does not match the Thoth identity grammar.`,
       ),
     ]);
   }
@@ -122,7 +122,7 @@ export function parseProviderId(value: unknown): ToolkitResult<ProviderId> {
   return parseIdentity<ProviderId>(
     value,
     providerPattern,
-    'EQ1104',
+    'TH1104',
     'Provider identity',
   );
 }
@@ -131,7 +131,7 @@ export function parseScopeId(value: unknown): ToolkitResult<ScopeId> {
   return parseIdentity<ScopeId>(
     value,
     scopePattern,
-    'EQ1104',
+    'TH1104',
     'Scope identity',
   );
 }
@@ -140,7 +140,7 @@ export function parseMessageId(value: unknown): ToolkitResult<MessageId> {
   return parseIdentity<MessageId>(
     value,
     messagePattern,
-    'EQ1104',
+    'TH1104',
     'Message identity',
   );
 }

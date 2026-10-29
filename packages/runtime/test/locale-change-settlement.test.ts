@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { LocalizationCommitHook } from '../src/localization.js';
 import type { LocalizationEventEmitter } from '../src/observability.js';
-import type { LocalizationParticipantReport } from '@neolorn/equator/core';
+import type { LocalizationParticipantReport } from '@neolorn/thoth/core';
 
 import {
   catalogKey,

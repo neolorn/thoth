@@ -49,7 +49,7 @@ assert.ok(
   `Found ${lockfiles.length} committed fixture lockfiles, which is fewer than the four consumer rows this repository ships. The search is wrong, not the repository.`,
 );
 
-// The fixtures take Equator as a `file:` dependency on the built packages, and `pnpm fetch` reads
+// The fixtures take Thoth as a `file:` dependency on the built packages, and `pnpm fetch` reads
 // a `file:` dependency's directory to list what it packs. Named here because the failure it
 // otherwise gets is an I/O error from inside pnpm about a path this script never mentions.
 for (const built of ['dist/runtime', 'dist/toolkit']) {
@@ -204,7 +204,7 @@ for (const lockfile of lockfiles) {
   );
 
   // A manifest of its own, and without it this file stages nothing. Given a directory holding only
-  // a lockfile, pnpm walks up for the nearest `package.json`, finds Equator's own, decides that
+  // a lockfile, pnpm walks up for the nearest `package.json`, finds Thoth's own, decides that
   // project is already installed and prints "Already up to date": five fetches in four seconds,
   // nothing added to the store, exit zero.
   // A workspace file does not prevent it, because what pnpm found was a manifest and not the
@@ -243,7 +243,7 @@ for (const lockfile of lockfiles) {
   // beside the lockfile, and a fixture directory is not the place for it.
   //
   // The workspace file copied above is what makes this the consumer's lockfile rather than
-  // Equator's, and it is not a tidiness measure. Without a workspace file of its own pnpm walks up to
+  // Thoth's, and it is not a tidiness measure. Without a workspace file of its own pnpm walks up to
   // the repository's `pnpm-workspace.yaml`, treats the command as a workspace fetch, and
   // `pnpm fetch` **purges the workspace's node_modules** on the way: `node_modules/` at the
   // repository root is emptied and the next command cannot find `prettier`. The confirmation prompt
@@ -280,7 +280,7 @@ for (const lockfile of lockfiles) {
 }
 
 console.log(
-  `Equator consumer store staged: ${staged.length} lockfile(s), ${staged
+  `Thoth consumer store staged: ${staged.length} lockfile(s), ${staged
     .map(({ lockfile, imported }) => `${lockfile} (${imported})`)
     .join(', ')}.`,
 );

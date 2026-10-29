@@ -68,7 +68,7 @@ import {
   type ZonedDateTimeValue,
   ɵlistOption,
   ɵrecordOption,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import {
   LocalCatalogStore,
   scopeIdentity,
@@ -869,7 +869,7 @@ interface PendingTransition {
 }
 
 interface TransferSnapshot {
-  readonly profile: 'equator-transfer-state/1';
+  readonly profile: 'thoth-transfer-state/1';
   readonly primaryLocale: string;
   readonly formatting: Omit<FormattingContext, 'pseudoLocale'>;
   readonly route?: LocalizationRouteSnapshot;
@@ -917,7 +917,7 @@ function freezeScope(scope: LocalizationScope): LocalizationScope {
         'semanticRegistryFingerprint',
         'requiredExtensions',
         // Whether the first render uses this scope. Optional, so a configuration generated before
-        // Equator derived it still admits.
+        // Thoth derived it still admits.
         'startup',
       ],
     ) ||
@@ -1915,7 +1915,7 @@ class LocalizationInternal {
       loadedScopes: Object.freeze(activations.map(({ scope }) => scope)),
       degraded,
       generatedAbi: GENERATED_ABI,
-      standardsProfile: 'equator-1',
+      standardsProfile: 'thoth-1',
       catalogSetIds: this.store.catalogSetIds(),
       formatting: this.formatting(targetLocale),
       ...(route === undefined ? {} : { route: Object.freeze({ ...route }) }),
@@ -2016,9 +2016,9 @@ class LocalizationInternal {
     };
     const outputBound = recoveryOutputBound(representation.body);
     const catalog: CompiledCatalog = {
-      profile: 'equator-compiled-ir/1',
+      profile: 'thoth-compiled-ir/1',
       generatedAbi: GENERATED_ABI,
-      standardsProfile: 'equator-1',
+      standardsProfile: 'thoth-1',
       key: {
         providerId: parsed.providerId,
         scopeId: parsed.scopeId,
@@ -2029,7 +2029,7 @@ class LocalizationInternal {
       requiredExtensions: Object.freeze([]),
       messages: Object.freeze([message]),
       resources: {
-        profile: 'equator-resource-summary/1',
+        profile: 'thoth-resource-summary/1',
         decodedBytes: 0,
         messages: 1,
         identifiers: 1,
@@ -3190,7 +3190,7 @@ class LocalizationInternal {
     // `specs/03-locale-identity-and-resolution.spec.md` section 9. A message that came from a
     // locale the primary one inherits from is the primary locale's own answer, which is also what
     // the release completeness gate counts, so refusing it here would let
-    // `equator check --require-complete` report green on a project this throws in.
+    // `thoth check --require-complete` report green on a project this throws in.
     if (
       this.options.setup.fallbackPolicy === 'strict' &&
       !activation.inheritedLocales.has(candidate.catalog.key.catalogLocale)
@@ -3284,7 +3284,7 @@ class LocalizationInternal {
       }
     }
     return Object.freeze({
-      profile: 'equator-transfer-state/1',
+      profile: 'thoth-transfer-state/1',
       primaryLocale: this.active.publicSnapshot.primaryLocale,
       formatting: transferredFormatting(this.active.publicSnapshot.formatting),
       ...(this.active.publicSnapshot.route === undefined
@@ -3383,7 +3383,7 @@ class RuntimeLocalization implements Localization {
   private internal(): LocalizationInternal {
     const value = internals.get(this);
     if (value === undefined)
-      throw new Error('Equator localization invariant failed.');
+      throw new Error('Thoth localization invariant failed.');
     return value;
   }
 

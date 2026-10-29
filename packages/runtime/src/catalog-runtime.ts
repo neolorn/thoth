@@ -16,7 +16,7 @@ import {
   type MessageResourceSummary,
   type ProviderCatalogSet,
   type RuntimeExtensionDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import {
   type AsReceived,
   RUNTIME_LIMITS,
@@ -65,7 +65,7 @@ export interface CompiledMessage {
 export interface CompiledCatalog {
   readonly profile: typeof COMPILED_IR_PROFILE;
   readonly generatedAbi: typeof GENERATED_ABI;
-  readonly standardsProfile: 'equator-1';
+  readonly standardsProfile: 'thoth-1';
   readonly key: CatalogKey;
   readonly applicationContractFingerprint: string;
   readonly semanticRegistryFingerprint: string;
@@ -167,7 +167,7 @@ async function digestCanonicalCatalog(value: unknown): Promise<string> {
     throw new TypeError('Web Crypto SHA-256 is unavailable.');
   }
   const bytes = new TextEncoder().encode(
-    `equator-compiled-catalog/1\u0000${canonicalize(value)}`,
+    `thoth-compiled-catalog/1\u0000${canonicalize(value)}`,
   );
   const digest = await subtle.digest('SHA-256', bytes);
   return `sha256-${base64Url(new Uint8Array(digest))}`;
@@ -436,8 +436,8 @@ function comparedArtifacts(
         provider.providerId !== address.key.providerId ||
         !configuration.locales.includes(address.key.catalogLocale) ||
         address.compiledIrProfile !== COMPILED_IR_PROFILE ||
-        address.schema !== 'equator-compiled-catalog/1' ||
-        address.standardsProfile !== 'equator-1' ||
+        address.schema !== 'thoth-compiled-catalog/1' ||
+        address.standardsProfile !== 'thoth-1' ||
         address.generatedAbi !== configuration.generatedAbi ||
         address.applicationContractFingerprint !==
           scope.applicationContractFingerprint ||
@@ -857,7 +857,7 @@ function remeasureCatalog(catalog: CompiledCatalog): CatalogResourceSummary {
  * Residual, stated rather than hidden: a candidate object mutated in place *after* it was admitted
  * would be served from its earlier verified snapshot rather than re-rejected. Generated catalogs
  * are frozen module exports, so this is not reachable through the supported path, and the stored
- * value is Equator's own inert snapshot which the mutation cannot reach.
+ * value is Thoth's own inert snapshot which the mutation cannot reach.
  */
 const admittedCatalogs = new WeakMap<
   object,
@@ -975,7 +975,7 @@ async function admitCatalog(
     }
     return catalog;
   } catch (cause) {
-    // Admission failures Equator can name are thrown above with their specific reason; rethrow
+    // Admission failures Thoth can name are thrown above with their specific reason; rethrow
     // those rather than collapsing them back into one generic message.
     if (cause instanceof LocalizationError) throw cause;
     throw new LocalizationError(

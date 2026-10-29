@@ -118,7 +118,7 @@ const pnpm = (args: readonly string[], expectedStatus = 0) =>
 
 const parseMachineResult = (result: SpawnSyncReturns<string>) => {
   const value = JSON.parse(result.stdout.trim()) as MachineResult;
-  assert.equal(value.profile, 'equator-cli-result/1');
+  assert.equal(value.profile, 'thoth-cli-result/1');
   return value;
 };
 
@@ -155,8 +155,8 @@ const manifestPath = resolve(consumerRoot, 'package.json');
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
 const packageLocator = (outputRoot: string) =>
   builtPackageLocator(consumerRoot, workspaceRoot, outputRoot);
-manifest.dependencies['@neolorn/equator'] = packageLocator('dist/runtime');
-manifest.devDependencies['@neolorn/equator-toolkit'] =
+manifest.dependencies['@neolorn/thoth'] = packageLocator('dist/runtime');
+manifest.devDependencies['@neolorn/thoth-toolkit'] =
   packageLocator('dist/toolkit');
 await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 
@@ -165,41 +165,37 @@ await assert.rejects(lstat(generatedRoot), { code: 'ENOENT' });
 pnpm([...OFFLINE_INSTALL]);
 
 const firstGeneration = parseMachineResult(
-  pnpm(['exec', 'equator', 'generate', '--json']),
+  pnpm(['exec', 'thoth', 'generate', '--json']),
 );
 assert.equal(firstGeneration.status, 'success');
 assert.equal(firstGeneration.result.changed, true);
 const generatedSnapshot = await snapshotFiles(generatedRoot);
 assert.ok(generatedSnapshot.length > 0, 'Minimal generation emitted no files.');
 
-const checked = parseMachineResult(
-  pnpm(['exec', 'equator', 'check', '--json']),
-);
+const checked = parseMachineResult(pnpm(['exec', 'thoth', 'check', '--json']));
 assert.equal(checked.status, 'success');
 assert.equal(checked.result.fresh, true);
 const unchangedGeneration = parseMachineResult(
-  pnpm(['exec', 'equator', 'generate', '--json']),
+  pnpm(['exec', 'thoth', 'generate', '--json']),
 );
 assert.equal(unchangedGeneration.result.changed, false);
 assert.deepEqual(await snapshotFiles(generatedRoot), generatedSnapshot);
 
-const cleaned = parseMachineResult(
-  pnpm(['exec', 'equator', 'clean', '--json']),
-);
+const cleaned = parseMachineResult(pnpm(['exec', 'thoth', 'clean', '--json']));
 assert.equal(cleaned.status, 'success');
 assert.equal(cleaned.result.changed, true);
 await assert.rejects(lstat(generatedRoot), { code: 'ENOENT' });
-await assert.rejects(lstat(resolve(consumerRoot, '.equator')), {
+await assert.rejects(lstat(resolve(consumerRoot, '.thoth')), {
   code: 'ENOENT',
 });
 
 const regenerated = parseMachineResult(
-  pnpm(['exec', 'equator', 'generate', '--json']),
+  pnpm(['exec', 'thoth', 'generate', '--json']),
 );
 assert.equal(regenerated.result.changed, true);
 assert.deepEqual(await snapshotFiles(generatedRoot), generatedSnapshot);
 assert.equal(
-  parseMachineResult(pnpm(['exec', 'equator', 'check', '--json'])).status,
+  parseMachineResult(pnpm(['exec', 'thoth', 'check', '--json'])).status,
   'success',
 );
 
@@ -217,10 +213,10 @@ assert.equal(
 );
 
 const installedRuntimeRoot = await realpath(
-  resolve(consumerRoot, 'node_modules/@neolorn/equator'),
+  resolve(consumerRoot, 'node_modules/@neolorn/thoth'),
 );
 const installedToolkitRoot = await realpath(
-  resolve(consumerRoot, 'node_modules/@neolorn/equator-toolkit'),
+  resolve(consumerRoot, 'node_modules/@neolorn/thoth-toolkit'),
 );
 const installedRuntimePackage = JSON.parse(
   await readFile(resolve(installedRuntimeRoot, 'package.json'), 'utf8'),
@@ -270,13 +266,13 @@ const canonicalProductionInputs = new Set(
 assert.equal(
   canonicalProductionInputs.has(runtimeEntries['.']!),
   true,
-  'Minimal consumer did not bundle the supported Equator runtime entrypoint.',
+  'Minimal consumer did not bundle the supported Thoth runtime entrypoint.',
 );
 for (const entrypoint of ['./forms', './router', './testing']) {
   assert.equal(
     canonicalProductionInputs.has(runtimeEntries[entrypoint]!),
     false,
-    `Minimal consumer retained the unused Equator ${entrypoint} entrypoint.`,
+    `Minimal consumer retained the unused Thoth ${entrypoint} entrypoint.`,
   );
 }
 for (const [input, canonicalInput] of await Promise.all(
@@ -379,15 +375,15 @@ assert.deepEqual(
 const publicImport = run(process.execPath, [
   '--input-type=module',
   '--eval',
-  "await import('@angular/compiler'); await import('@neolorn/equator');",
+  "await import('@angular/compiler'); await import('@neolorn/thoth');",
 ]);
 assert.equal(publicImport.stderr, '');
-const privateRuntimeSpecifier = '@neolorn/equator/fesm2022/neolorn-equator.mjs';
-const privateTypesSpecifier = '@neolorn/equator/types/neolorn-equator';
+const privateRuntimeSpecifier = '@neolorn/thoth/fesm2022/neolorn-thoth.mjs';
+const privateTypesSpecifier = '@neolorn/thoth/types/neolorn-thoth';
 assert.equal((await lstat(runtimeEntries['.']!)).isFile(), true);
 assert.equal(
   (
-    await lstat(resolve(installedRuntimeRoot, 'types/neolorn-equator.d.ts'))
+    await lstat(resolve(installedRuntimeRoot, 'types/neolorn-thoth.d.ts'))
   ).isFile(),
   true,
 );
@@ -428,5 +424,5 @@ assert.match(
 );
 
 process.stdout.write(
-  'Equator focused package consumers verified: deterministic minimal generation, zoneless runtime behavior, optional-entrypoint tree shaking, toolkit and Node isolation, declarations, and deep-import rejection.\n',
+  'Thoth focused package consumers verified: deterministic minimal generation, zoneless runtime behavior, optional-entrypoint tree shaking, toolkit and Node isolation, declarations, and deep-import rejection.\n',
 );

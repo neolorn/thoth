@@ -1,11 +1,11 @@
 /**
  * What the consumer's exercise sheet should show, written by the host's own formatters.
  *
- * `specs/12-verification.spec.md` section 8 has formatting checked against an authority Equator did
+ * `specs/12-verification.spec.md` section 8 has formatting checked against an authority Thoth did
  * not write. For every value the sheet formats, that authority is the host's `Intl`, handed the
  * inputs the sheet was handed and the options each function's own documentation states. A
  * formatter that picked the wrong digits, the wrong zone, the wrong calendar or the wrong locale
- * would still round-trip through Equator's own parser, and it disagrees with this.
+ * would still round-trip through Thoth's own parser, and it disagrees with this.
  *
  * Some answers are not the host's to give, and are written out here instead:
  *
@@ -13,7 +13,7 @@
  *   direction CLDR gives its locale, also from the caller;
  * - a person's name, which `Intl` has no formatter for, written by hand from the pinned CLDR
  *   release with the pattern quoted beside it;
- * - which unit a relative time is counted in, which is a rule of Equator's policy rather than of
+ * - which unit a relative time is counted in, which is a rule of Thoth's policy rather than of
  *   any locale, worked out by hand from that rule below;
  * - how a field writes a date, a time, a duration or a zone, which is the pattern its profile
  *   declares, filled with the digits the host writes, and how it writes an instant, which is
@@ -136,7 +136,7 @@ export function exerciseAuthority({
     },
     inputs.zonedDateTime.epochMilliseconds,
   );
-  // Node 22 has no duration formatter. There the sheet shows the typed result Equator returns in
+  // Node 22 has no duration formatter. There the sheet shows the typed result Thoth returns in
   // its place, and a pipe shows nothing, which is what section 3 of
   // `specs/08-formatting-parsing-and-domain.spec.md` has a runtime without the capability do.
   const hostWritesDurations =

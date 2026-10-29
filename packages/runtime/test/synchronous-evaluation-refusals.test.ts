@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { GENERATED_ABI, type MessageHandle } from '@neolorn/equator/core';
+import { GENERATED_ABI, type MessageHandle } from '@neolorn/thoth/core';
 
 import { decimal } from '../src/formatting.js';
 
@@ -108,7 +108,7 @@ describe('a message read synchronously', () => {
 
   it('is refused when its handle was generated under another ABI', async () => {
     const { localization } = await ready();
-    const foreign = { ...TITLE, generatedAbi: 'equator-generated/0' };
+    const foreign = { ...TITLE, generatedAbi: 'thoth-generated/0' };
 
     expect(localization.text(TITLE)).toBe('Catalog store');
     expect(

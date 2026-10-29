@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseLocalizedInput } from '../src/localized-input.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 /**
  * Each marker requirement belongs to one kind of field: the currency to money, the unit to a

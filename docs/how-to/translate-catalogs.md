@@ -11,7 +11,7 @@ You need catalogs, which is [How to write a message](write-messages.md).
 
 ## Export and import
 
-`exportXliff22` and `importXliff22` are exported from `@neolorn/equator-toolkit` and work on one
+`exportXliff22` and `importXliff22` are exported from `@neolorn/thoth-toolkit` and work on one
 scope in one target locale at a time, so a project with two scopes and one translated locale
 exchanges two documents. Both take catalogs read with `parseCatalog`, whose `providerId` is the
 `name` in the owner's `package.json`.
@@ -46,7 +46,7 @@ message missing a plural form its language needs, and a translation written agai
 that has since changed.
 
 ```text
-npx equator check --require-complete
+npx thoth check --require-complete
 ```
 
 All four stop the run under `--require-complete` and are ordinary warnings without it, because during
@@ -57,8 +57,8 @@ as an answer.
 
 Name the locale rather than turning the gate off for every locale.
 
-`equator.config.json` takes an `inProgress` entry naming the locale and a note, which
-`equator init --in-progress` writes for you. That locale's findings are still printed, with your
+`thoth.config.json` takes an `inProgress` entry naming the locale and a note, which
+`thoth init --in-progress` writes for you. That locale's findings are still printed, with your
 note quoted into them, and they stop blocking.
 
 The note is required, and it is what tells the next person whether the exemption still holds.
@@ -75,26 +75,26 @@ compiled.
 ## Accept a translation that still fits
 
 After a source edit that does not change the meaning, the translation written against the old
-wording is reported stale until it changes. `.equator-translation-state.json` records, one line per
+wording is reported stale until it changes. `.thoth-translation-state.json` records, one line per
 message and locale, the source each translation was written against. Delete the line for that
 message and locale, and the next `generate` records the translation as written against the current
 source. When it is the last entry, delete the comma that ends the line before it too. A record that
 is not valid JSON, such as one a merge left conflict markers in, stops `generate` and `check` with
-`EQ1702` and is left as it is until you resolve it.
+`TH1702` and is left as it is until you resolve it.
 
 ## What is checked in
 
-The catalogs, `equator.config.json` and `.equator-translation-state.json` are yours and are checked
+The catalogs, `thoth.config.json` and `.thoth-translation-state.json` are yours and are checked
 in. Without the translation state, a fresh checkout reports no translation stale.
 
 Everything under the generated root, `src/generated/i18n/` unless configured otherwise, is output:
-it carries an ownership marker, it regenerates, and `equator clean` removes it. A hand-edited
-generated file is overwritten by the next `generate`. `.equator/` holds a cache that is safe to
+it carries an ownership marker, it regenerates, and `thoth clean` removes it. A hand-edited
+generated file is overwritten by the next `generate`. `.thoth/` holds a cache that is safe to
 delete. Add both to `.gitignore`:
 
 ```text
 src/generated/i18n/
-.equator/
+.thoth/
 ```
 
 ## Related

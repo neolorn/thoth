@@ -132,7 +132,7 @@ describe('the type inferred from a built-in function operand', () => {
   ])('counts :%s as a use that :%s contradicts', (first, second) => {
     expect(
       refusalCodes(analyze(`{$value :${first}} and {$value :${second}}`)),
-    ).toEqual(['EQ1302']);
+    ).toEqual(['TH1302']);
   });
 });
 
@@ -170,11 +170,11 @@ describe('the type inferred from a registered function', () => {
           after.value,
         ),
       ),
-    ).toEqual(['EQ1805']);
+    ).toEqual(['TH1805']);
   });
 
   it('is not asked of a function called without an operand', () => {
-    expect(refusalCodes(analyze('{:demo:plain}'))).toEqual(['EQ1805']);
+    expect(refusalCodes(analyze('{:demo:plain}'))).toEqual(['TH1805']);
   });
 });
 

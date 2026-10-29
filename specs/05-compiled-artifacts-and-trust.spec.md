@@ -1,6 +1,6 @@
 # Compiled artifacts and trust
 
-What Equator's compiler produces from an accepted catalog set, what identifies it, what a running
+What Thoth's compiler produces from an accepted catalog set, what identifies it, what a running
 application checks before it will use it, and what the loader and the memory cache are allowed to
 hold.
 

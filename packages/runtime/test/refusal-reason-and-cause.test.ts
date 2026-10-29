@@ -4,7 +4,7 @@ import {
   createHostLocalePolicy,
   createPathPrefixLocalePolicy,
   LocalizationError,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { externalDestination } from '../src/destinations.js';
 
@@ -40,7 +40,7 @@ describe('a refused value carries its reason and its cause', () => {
     const failure = thrown as LocalizationError;
     expect(failure.diagnostic.code).toBe('invalid-configuration');
     expect(failure.diagnostic.reason).toBe('malformed-input');
-    // Equator's own grammar refused the tag, so no platform error stands behind it.
+    // Thoth's own grammar refused the tag, so no platform error stands behind it.
     expect(failure.cause).toBeUndefined();
     claimCapability('policy:path-prefix');
   });

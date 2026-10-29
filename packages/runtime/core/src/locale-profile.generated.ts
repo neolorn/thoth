@@ -1,6 +1,6 @@
 /** Generated from cldr-core 48.2.0 and Unicode 17.0.0 by tools/generate-locale-profile.ts. */
 export const LOCALE_DATA_PROFILE =
-  'cldr-48.2+unicode-17.0/equator-rtl-bidi-1' as const;
+  'cldr-48.2+unicode-17.0/thoth-rtl-bidi-1' as const;
 
 /**
  * Every script code written right to left, from the CLDR release named above.

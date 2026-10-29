@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { contentPresentation, languagePresentation } from '@neolorn/equator';
-import { LocalizationError } from '@neolorn/equator/core';
+import { contentPresentation, languagePresentation } from '@neolorn/thoth';
+import { LocalizationError } from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 
@@ -12,14 +12,14 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
  * language-independent values "retain
  * their own known language and direction … or an explicit unknown state". The unknown state had no
  * representation: `languagePresentation('und')` answered `ltr`, so content explicitly marked
- * undetermined was assigned a direction Equator had no basis for.
+ * undetermined was assigned a direction Thoth had no basis for.
  *
  * A customer types their name in Arabic, the application stores it without a language tag
  * (user-supplied text usually arrives without one) and it renders left-to-right, with nothing in
  * the output to record that the direction was guessed.
  *
  * `auto` is not a third direction. It defers to the renderer's first-strong rule, which is what
- * `dir="auto"` already does in a browser, so Equator still never determines the authoritative
+ * `dir="auto"` already does in a browser, so Thoth still never determines the authoritative
  * language of consumer content.
  */
 
@@ -35,7 +35,7 @@ describe('content whose language is known', () => {
       direction: 'ltr',
       classification: 'known',
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('keeps a direction that comes from the script when the language is undetermined', () => {
@@ -45,7 +45,7 @@ describe('content whose language is known', () => {
       direction: 'rtl',
       classification: 'known',
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -55,7 +55,7 @@ describe('content whose language is not known', () => {
       direction: 'auto',
       classification: 'unknown',
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('defers for an explicitly undetermined tag', () => {
@@ -66,17 +66,17 @@ describe('content whose language is not known', () => {
       classification: 'unknown',
     });
     expect(languagePresentation('und').direction).toBe('ltr');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('does not infer a direction from region alone', () => {
     // und-EG is "undetermined, in Egypt". Reading Arabic out of the region would be inferring the
-    // language of consumer content, which is exactly what Equator must not do.
+    // language of consumer content, which is exactly what Thoth must not do.
     expect(contentPresentation('und-EG')).toMatchObject({
       direction: 'auto',
       classification: 'unknown',
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('treats language-independent content as its own case', () => {
@@ -86,7 +86,7 @@ describe('content whose language is not known', () => {
       direction: 'auto',
       classification: 'language-independent',
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('still rejects a malformed tag', () => {
@@ -106,6 +106,6 @@ describe('content whose language is not known', () => {
       });
       expect((failure as LocalizationError).cause).toBeInstanceOf(RangeError);
     }
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

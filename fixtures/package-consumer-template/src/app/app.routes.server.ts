@@ -1,5 +1,5 @@
 import { RenderMode } from '@angular/ssr';
-import { provideLocalizedServerRendering } from '@neolorn/equator/ssr';
+import { provideLocalizedServerRendering } from '@neolorn/thoth/ssr';
 import { configuration } from '#i18n';
 
 import {
@@ -14,7 +14,7 @@ import { publishedRoutes } from './published-routes';
  *
  * The generated `configuration` is the third argument and it is what decides which locales get
  * addresses. The policy names three; a production build generates two, so two are emitted. The
- * same table under `equator generate --pseudo` emits six. Nothing here changes between the two
+ * same table under `thoth generate --pseudo` emits six. Nothing here changes between the two
  * builds, which is the point: a development locale must not cost a source edit in either
  * direction.
  */
@@ -26,7 +26,7 @@ export const serverRendering = provideLocalizedServerRendering(
   {
     // The addresses the two-layer table produces and nobody visits: `/second`, `/articles/:slug`,
     // `/items/:id`. Rendered on demand, so the build writes a file only where a visitor can
-    // actually arrive. Equator refuses to emit the table without this under a prefixing policy:
+    // actually arrive. Thoth refuses to emit the table without this under a prefixing policy:
     // leaving it to the `**` fallback worked, and worked equally well if someone answered the
     // build error by declaring them `Prerender` instead.
     canonicalRenderMode: RenderMode.Server,

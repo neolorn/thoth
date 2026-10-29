@@ -8,17 +8,17 @@ import {
   Localization,
   withRouting,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   RouteLocalization,
   provideLocalizedRouter,
   type RouteLocalizationContext,
   type RouteLocalizationOptions,
-} from '@neolorn/equator/router';
+} from '@neolorn/thoth/router';
 import {
   LocalizationTestingController,
   provideLocalizationTesting,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -49,7 +49,7 @@ class RouteProbe {}
 /**
  * The application's own routes, canonical, and every address this file navigates to.
  *
- * Every address this file reaches is declared, the lazy page included. Equator appends no
+ * Every address this file reaches is declared, the lazy page included. Thoth appends no
  * catch-all, so an application without a not-found page does not silently acquire one, and an
  * address this list omits renders nothing rather than falling into an appended `**` with the
  * resolver on it and leaving the assertions below about the adapter alone. The `**` here is this
@@ -66,20 +66,18 @@ const routes: Routes = [
  * What this application decides, and nothing more.
  *
  * No `requiredScopes`. The generated route table names what each route must have ready and the
- * adapter loads it, so declaring the shell scope here restated a fact Equator already holds, and
+ * adapter loads it, so declaring the shell scope here restated a fact Thoth already holds, and
  * while it was declared, this file passed whether or not the derivation worked at all.
  */
 const ROUTING_OPTIONS = {
   origin: localeOrigin('en-US'),
   document: ({ resolution }: RouteLocalizationContext) => ({
     title:
-      resolution.locale === 'ar-EG'
-        ? 'مختبر ميزات Equator'
-        : 'Equator feature lab',
+      resolution.locale === 'ar-EG' ? 'مختبر ميزات Thoth' : 'Thoth feature lab',
   }),
 } as const;
 
-describe('Equator Router transaction integration', () => {
+describe('Thoth Router transaction integration', () => {
   /**
    * The integration as an application configures it, with nothing added for the test's benefit
    * beyond the options a case is about.
@@ -142,8 +140,8 @@ describe('Equator Router transaction integration', () => {
               return {
                 title:
                   resolution.locale === 'ar-EG'
-                    ? 'مختبر ميزات Equator'
-                    : 'Equator feature lab',
+                    ? 'مختبر ميزات Thoth'
+                    : 'Thoth feature lab',
               };
             },
           }),
@@ -180,7 +178,7 @@ describe('Equator Router transaction integration', () => {
           canonicalPath: pagePath('home', 'en-US'),
         },
       });
-      expect(document.title).toBe('Equator feature lab');
+      expect(document.title).toBe('Thoth feature lab');
 
       // The switch, which is the operation that changes locale. The address bar follows it, so the
       // state this navigation has to be restored to is an Arabic one throughout.
@@ -201,7 +199,7 @@ describe('Equator Router transaction integration', () => {
         TestBed.inject(LocationStrategy).prepareExternalUrl(router.url);
       expect(router.url).toBe('/');
       expect(externalUrl()).toBe(pagePath('home', 'ar-EG'));
-      expect(document.title).toBe('مختبر ميزات Equator');
+      expect(document.title).toBe('مختبر ميزات Thoth');
 
       failDocument = true;
       await router.navigateByUrl('/second');
@@ -230,12 +228,12 @@ describe('Equator Router transaction integration', () => {
       });
       expect(document.documentElement.lang).toBe('ar-EG');
       expect(document.documentElement.dir).toBe('rtl');
-      expect(document.title).toBe('مختبر ميزات Equator');
+      expect(document.title).toBe('مختبر ميزات Thoth');
       claimCapability('feature:provideLocalizedRouter', {
         policy: routePolicy,
       });
-      claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('entry:@neolorn/thoth/router', { policy: routePolicy });
+      claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
     },
   );
 
@@ -264,7 +262,7 @@ describe('Equator Router transaction integration', () => {
       'the scope the generated route table lists in the lazy route’s scopes',
     ).toBe('ready');
     const platform = TestBed.inject(PLATFORM_ID) as string;
-    claimCapability('entry:@neolorn/equator', {
+    claimCapability('entry:@neolorn/thoth', {
       policy: routePolicy,
       platform,
     });
@@ -527,7 +525,7 @@ describe('Equator Router transaction integration', () => {
       // language is not. What the adapter keeps in `context()` afterwards is a separate question and
       // is deliberately not asserted here.
       expect(localization.snapshot()).toMatchObject({ primaryLocale: 'ar-EG' });
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
     },
   );
 
@@ -552,7 +550,7 @@ describe('Equator Router transaction integration', () => {
       const router = TestBed.inject(Router);
       await localization.initialize();
       await router.navigateByUrl(pagePath('home', 'en-US'));
-      expect(document.title).toBe('Equator feature lab');
+      expect(document.title).toBe('Thoth feature lab');
 
       await localization.changeLocale('ar-EG');
       // The re-projection runs in an effect, as the address sync's does, so it lands on the next
@@ -560,10 +558,10 @@ describe('Equator Router transaction integration', () => {
       // itself; a zoneless TestBed has to be told.
       TestBed.tick();
 
-      expect(document.title).toBe('مختبر ميزات Equator');
+      expect(document.title).toBe('مختبر ميزات Thoth');
       expect(document.documentElement.lang).toBe('ar-EG');
       expect(document.documentElement.dir).toBe('rtl');
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
     },
   );
 
@@ -605,7 +603,7 @@ describe('Equator Router transaction integration', () => {
         );
 
         expect(scrollTo).toHaveBeenCalled();
-        claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+        claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
       } finally {
         scrollTo.mockRestore();
       }

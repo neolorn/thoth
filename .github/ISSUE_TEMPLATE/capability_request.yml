@@ -1,10 +1,10 @@
-# A request for something Equator does not do.
+# A request for something Thoth does not do.
 #
 # The third field decides most of these. A capability that only makes sense for one application
 # belongs in that application, and asking before anyone writes code is cheaper than finding it out
 # in review.
 name: Capability request
-description: Something you need Equator to do that it does not do yet.
+description: Something you need Thoth to do that it does not do yet.
 body:
   - type: textarea
     id: what-you-are-trying-to-do
@@ -25,20 +25,20 @@ body:
       required: true
 
   - type: textarea
-    id: why-equator
+    id: why-thoth
     attributes:
-      label: Why this belongs in Equator
+      label: Why this belongs in Thoth
       description: >-
         Say whether this would be right for every application that localizes, or only for yours. If
-        it depends on your routes, your content, or your business rules, describe what Equator would
+        it depends on your routes, your content, or your business rules, describe what Thoth would
         need to know about them.
     validations:
       required: true
 
   - type: input
-    id: equator-version
+    id: thoth-version
     attributes:
-      label: Equator version
+      label: Thoth version
       description: The version you are on, so the answer is about the code you have.
       placeholder: 1.0.0-alpha.3
     validations:

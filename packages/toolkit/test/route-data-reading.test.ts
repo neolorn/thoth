@@ -35,11 +35,11 @@ const ROUTER_TYPES = resolve(
   ).exports['.'].types,
 );
 
-const EQUATOR_STUB =
+const THOTH_STUB =
   'export declare function withRouting(options: unknown): unknown;\n';
 
-const EQUATOR_MANIFEST = `${JSON.stringify(
-  { name: '@neolorn/equator', version: '0.0.0', types: './index.d.ts' },
+const THOTH_MANIFEST = `${JSON.stringify(
+  { name: '@neolorn/thoth', version: '0.0.0', types: './index.d.ts' },
   null,
   2,
 )}
@@ -56,8 +56,8 @@ async function analyse(
   const root = await mkdtemp(resolve(tmpdir(), 'route-data-'));
   temporaryRoots.push(root);
   const all = {
-    'node_modules/@neolorn/equator/index.d.ts': EQUATOR_STUB,
-    'node_modules/@neolorn/equator/package.json': EQUATOR_MANIFEST,
+    'node_modules/@neolorn/thoth/index.d.ts': THOTH_STUB,
+    'node_modules/@neolorn/thoth/package.json': THOTH_MANIFEST,
     ...files,
   };
   for (const [path, contents] of Object.entries(all)) {
@@ -106,14 +106,14 @@ function routeFile(
   };
 }
 
-/** A provider file: the lines before the call, then Equator's routing options. */
+/** A provider file: the lines before the call, then Thoth's routing options. */
 function routingFile(
   options: string,
   ...before: readonly string[]
 ): Record<string, string> {
   return {
     'src/app.config.ts': [
-      "import { withRouting } from '@neolorn/equator';",
+      "import { withRouting } from '@neolorn/thoth';",
       '',
       ...before,
       `export const routing = withRouting(${options});`,
@@ -163,7 +163,7 @@ describe('route data written through a binding', () => {
   it('reads a class written through a const', async () => {
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'account', component: Page, data: { equatorCaching: CLASS } }]",
+        "[{ path: 'account', component: Page, data: { thothCaching: CLASS } }]",
         "const CLASS = 'per-visitor';",
       ),
     );
@@ -179,7 +179,7 @@ describe('route data written through a binding', () => {
     const analysed = await analyse({
       'src/classes.ts': "export const PRIVATE = 'private';\n",
       ...routeFile(
-        "[{ path: 'admin', component: Page, data: { equatorIndexing: PRIVATE } }]",
+        "[{ path: 'admin', component: Page, data: { thothIndexing: PRIVATE } }]",
         "import { PRIVATE } from './classes';",
       ),
     });
@@ -195,7 +195,7 @@ describe('route data written through a binding', () => {
     const analysed = await analyse(
       routeFile(
         "[{ path: 'admin', component: Page, data: DATA }]",
-        "const DATA = { equatorIndexing: 'non-indexable', equatorCaching: 'per-visitor' };",
+        "const DATA = { thothIndexing: 'non-indexable', thothCaching: 'per-visitor' };",
       ),
     );
 
@@ -210,7 +210,7 @@ describe('route data written through a binding', () => {
     const analysed = await analyse(
       routeFile(
         "[{ path: 'admin', component: Page, data }]",
-        "const data = { equatorIndexing: 'non-indexable' };",
+        "const data = { thothIndexing: 'non-indexable' };",
       ),
     );
 
@@ -224,9 +224,9 @@ describe('route data written through a binding', () => {
   it('reads a spread of a const, with the later key winning either way', async () => {
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'over', component: Page, data: { ...BASE, equatorCaching: 'not-stored' } }, { path: 'under', component: Page, data: { equatorIndexing: 'indexable', ...MAYBE } }]",
-        "const BASE = { equatorIndexing: 'non-indexable', equatorCaching: 'per-visitor' };",
-        'const MAYBE: { equatorIndexing?: string; equatorCaching?: string } = BASE;',
+        "[{ path: 'over', component: Page, data: { ...BASE, thothCaching: 'not-stored' } }, { path: 'under', component: Page, data: { thothIndexing: 'indexable', ...MAYBE } }]",
+        "const BASE = { thothIndexing: 'non-indexable', thothCaching: 'per-visitor' };",
+        'const MAYBE: { thothIndexing?: string; thothCaching?: string } = BASE;',
       ),
     );
 
@@ -263,7 +263,7 @@ describe('route data written through a binding', () => {
     ).join(', ');
     const analysed = await analyse(
       routeFile(
-        `[{ path: 'admin', component: Page, data: { ${others}, equatorIndexing: 'private' } }]`,
+        `[{ path: 'admin', component: Page, data: { ${others}, thothIndexing: 'private' } }]`,
       ),
     );
 
@@ -279,7 +279,7 @@ describe('route data the build cannot read', () => {
   it('answers a class behind a binding it cannot follow as private, once, where it is written', async () => {
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'admin', data: { equatorIndexing: CLASS }, children: [{ path: 'users', component: Page }, { path: 'roles', component: Page }] }]",
+        "[{ path: 'admin', data: { thothIndexing: CLASS }, children: [{ path: 'users', component: Page }, { path: 'roles', component: Page }] }]",
         "let CLASS = 'indexable';",
       ),
     );
@@ -289,17 +289,17 @@ describe('route data the build cannot read', () => {
       'route:admin.users': { indexing: 'private', caching: undefined },
       'route:admin.roles': { indexing: 'private', caching: undefined },
     });
-    expect(summaries(analysed, 'EQ1414')).toEqual([
-      'Route "/admin" sets "equatorIndexing" to something other than a string literal or a `const` bound to one, so the build cannot read which indexing class it names. It and every route that inherits its data are answered as private until the value is corrected.',
+    expect(summaries(analysed, 'TH1414')).toEqual([
+      'Route "/admin" sets "thothIndexing" to something other than a string literal or a `const` bound to one, so the build cannot read which indexing class it names. It and every route that inherits its data are answered as private until the value is corrected.',
     ]);
-    expect(codes(analysed)).toEqual(['EQ1414']);
+    expect(codes(analysed)).toEqual(['TH1414']);
     claimCapability('declaration:route-indexing-class');
   });
 
   it('answers a class a resolver supplies as private, for the route and what inherits it', async () => {
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'admin', resolve: { equatorIndexing: () => 'indexable' }, children: [{ path: '', component: Page }, { path: 'users', component: Page }] }]",
+        "[{ path: 'admin', resolve: { thothIndexing: () => 'indexable' }, children: [{ path: '', component: Page }, { path: 'users', component: Page }] }]",
       ),
     );
 
@@ -307,17 +307,17 @@ describe('route data the build cannot read', () => {
       'route:admin': { indexing: 'private', caching: undefined },
       'route:admin.users': { indexing: 'private', caching: undefined },
     });
-    expect(summaries(analysed, 'EQ1414')).toEqual([
-      'Route "/admin" supplies "equatorIndexing" through a resolver, which runs only when the page is visited, so the build cannot read which indexing class it names. It and every route that inherits its data are answered as private until the value is corrected.',
+    expect(summaries(analysed, 'TH1414')).toEqual([
+      'Route "/admin" supplies "thothIndexing" through a resolver, which runs only when the page is visited, so the build cannot read which indexing class it names. It and every route that inherits its data are answered as private until the value is corrected.',
     ]);
-    expect(codes(analysed)).toEqual(['EQ1414']);
+    expect(codes(analysed)).toEqual(['TH1414']);
     claimCapability('declaration:route-indexing-class');
   });
 
   it('answers a class a spread may set as private, and a caching class as not-stored', async () => {
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'admin', component: Page, data: { ...shared(), equatorRouteId: 'route:admin' } }]",
+        "[{ path: 'admin', component: Page, data: { ...shared(), thothRouteId: 'route:admin' } }]",
         'declare function shared(): Data;',
       ),
     );
@@ -325,12 +325,12 @@ describe('route data the build cannot read', () => {
     expect(rows(analysed)).toEqual({
       'route:admin': { indexing: 'private', caching: 'not-stored' },
     });
-    expect(codes(analysed)).toEqual(['EQ1413', 'EQ1414']);
-    expect(summaries(analysed, 'EQ1413')[0]).toContain(
-      'may set "equatorCaching" through a spread the build cannot follow',
+    expect(codes(analysed)).toEqual(['TH1413', 'TH1414']);
+    expect(summaries(analysed, 'TH1413')[0]).toContain(
+      'may set "thothCaching" through a spread the build cannot follow',
     );
-    expect(summaries(analysed, 'EQ1414')[0]).toContain(
-      'may set "equatorIndexing" through a spread the build cannot follow',
+    expect(summaries(analysed, 'TH1414')[0]).toContain(
+      'may set "thothIndexing" through a spread the build cannot follow',
     );
     claimCapability('declaration:route-caching-class');
   });
@@ -339,23 +339,23 @@ describe('route data the build cannot read', () => {
     const analysed = await analyse(
       routeFile(
         "[{ path: 'admin', component: Page, data: { [KEY]: 'indexable' } }]",
-        "declare const KEY: 'equatorIndexing' | 'title';",
+        "declare const KEY: 'thothIndexing' | 'title';",
       ),
     );
 
     expect(rows(analysed)).toEqual({
       'route:admin': { indexing: 'private', caching: undefined },
     });
-    expect(codes(analysed)).toEqual(['EQ1414']);
-    expect(summaries(analysed, 'EQ1414')[0]).toContain(
-      'may set "equatorIndexing" through a computed key the build cannot read',
+    expect(codes(analysed)).toEqual(['TH1414']);
+    expect(summaries(analysed, 'TH1414')[0]).toContain(
+      'may set "thothIndexing" through a computed key the build cannot read',
     );
     claimCapability('declaration:route-indexing-class');
   });
 
   it('follows eight spreads deep, and answers a class past them as private', async () => {
     const chain = (length: number): readonly string[] => [
-      "const D0 = { equatorIndexing: 'non-indexable' };",
+      "const D0 = { thothIndexing: 'non-indexable' };",
       ...Array.from(
         { length },
         (_, index) =>
@@ -376,10 +376,10 @@ describe('route data the build cannot read', () => {
     expect(rows(past)).toEqual({
       'route:admin': { indexing: 'private', caching: undefined },
     });
-    expect(summaries(past, 'EQ1414')[0]).toContain(
-      'may set "equatorIndexing" through a spread the build cannot follow',
+    expect(summaries(past, 'TH1414')[0]).toContain(
+      'may set "thothIndexing" through a spread the build cannot follow',
     );
-    expect(codes(past)).toEqual(['EQ1414']);
+    expect(codes(past)).toEqual(['TH1414']);
     claimCapability('declaration:route-indexing-class');
   });
 
@@ -394,10 +394,10 @@ describe('route data the build cannot read', () => {
     expect(rows(analysed)).toEqual({
       'route:news': { indexing: 'indexable', caching: undefined },
     });
-    expect(summaries(analysed, 'EQ1404')).toEqual([
-      'Route "/admin" takes its `data` from an expression the build cannot read, which may set "equatorRouteId", so the build cannot read the identity it declares, and it is not indexed until the value is corrected.',
+    expect(summaries(analysed, 'TH1404')).toEqual([
+      'Route "/admin" takes its `data` from an expression the build cannot read, which may set "thothRouteId", so the build cannot read the identity it declares, and it is not indexed until the value is corrected.',
     ]);
-    expect(codes(analysed)).toEqual(['EQ1404']);
+    expect(codes(analysed)).toEqual(['TH1404']);
   });
 });
 
@@ -466,10 +466,10 @@ describe('routing options the build cannot read', () => {
       'route:admin': { indexing: 'private', caching: undefined },
       'route:news': { indexing: 'indexable', caching: undefined },
     });
-    expect(summaries(analysed, 'EQ1414')).toEqual([
+    expect(summaries(analysed, 'TH1414')).toEqual([
       'This owner\'s indexing declaration cannot be used as written: "staff" does not name its class as a string literal or a `const` bound to one, so its routes are answered as private.',
     ]);
-    expect(codes(analysed)).toEqual(['EQ1414']);
+    expect(codes(analysed)).toEqual(['TH1414']);
     claimCapability('declaration:route-indexing-class');
   });
 
@@ -488,14 +488,14 @@ describe('routing options the build cannot read', () => {
       'route:admin': { indexing: 'private', caching: undefined },
       'route:news': { indexing: 'indexable', caching: undefined },
     });
-    expect(codes(analysed)).toEqual(['EQ1414']);
+    expect(codes(analysed)).toEqual(['TH1414']);
     claimCapability('declaration:route-indexing-class');
   });
 
   it('reports an indexing field it cannot read, and reads the default field', async () => {
     const analysed = await analyse({
       ...routeFile(
-        "[{ path: 'admin', component: Page, data: { equatorIndexing: 'private' } }, { path: 'staff', component: Page, data: { area: 'staff' } }]",
+        "[{ path: 'admin', component: Page, data: { thothIndexing: 'private' } }, { path: 'staff', component: Page, data: { area: 'staff' } }]",
       ),
       ...routingFile(
         "{ indexing: { field: FIELD, values: { staff: 'private' } } }",
@@ -507,10 +507,10 @@ describe('routing options the build cannot read', () => {
       'route:admin': { indexing: 'private', caching: undefined },
       'route:staff': { indexing: 'indexable', caching: undefined },
     });
-    expect(summaries(analysed, 'EQ1414')).toEqual([
-      "This owner's indexing declaration cannot be used as written: the build cannot read its `field` as a string literal or a `const` bound to one, so it cannot tell which field its routes use, and they are read from `equatorIndexing`.",
+    expect(summaries(analysed, 'TH1414')).toEqual([
+      "This owner's indexing declaration cannot be used as written: the build cannot read its `field` as a string literal or a `const` bound to one, so it cannot tell which field its routes use, and they are read from `thothIndexing`.",
     ]);
-    expect(codes(analysed)).toEqual(['EQ1414']);
+    expect(codes(analysed)).toEqual(['TH1414']);
     claimCapability('declaration:route-indexing-class');
   });
 
@@ -528,7 +528,7 @@ describe('routing options the build cannot read', () => {
     expect(rows(analysed)).toEqual({
       'route:news': { indexing: 'indexable', caching: undefined },
     });
-    expect(codes(analysed)).toEqual(['EQ1412']);
+    expect(codes(analysed)).toEqual(['TH1412']);
     claimCapability('declaration:route-sitemap-entry');
   });
 
@@ -551,7 +551,7 @@ describe('routing options the build cannot read', () => {
         sitemap: { changefreq: 'yearly' },
       },
     });
-    expect(codes(analysed)).toEqual(['EQ1412']);
+    expect(codes(analysed)).toEqual(['TH1412']);
     claimCapability('declaration:route-sitemap-entry');
   });
 
@@ -573,7 +573,7 @@ describe('routing options the build cannot read', () => {
         sitemap: { changefreq: 'daily' },
       },
     });
-    expect(codes(analysed)).toEqual(['EQ1412']);
+    expect(codes(analysed)).toEqual(['TH1412']);
     claimCapability('declaration:route-sitemap-entry');
   });
 
@@ -592,14 +592,14 @@ describe('routing options the build cannot read', () => {
     expect(rows(analysed)).toEqual({
       'route:news': { indexing: 'indexable', caching: undefined },
     });
-    expect(codes(analysed)).toEqual(['EQ1412', 'EQ1412']);
+    expect(codes(analysed)).toEqual(['TH1412', 'TH1412']);
     claimCapability('declaration:route-sitemap-entry');
   });
 
   it('reports options it cannot read, once for each declaration they may hold', async () => {
     const analysed = await analyse({
       ...routeFile(
-        "[{ path: 'admin', component: Page, data: { equatorIndexing: 'private' } }]",
+        "[{ path: 'admin', component: Page, data: { thothIndexing: 'private' } }]",
       ),
       ...routingFile('options()', 'declare function options(): unknown;'),
     });
@@ -607,7 +607,7 @@ describe('routing options the build cannot read', () => {
     expect(rows(analysed)).toEqual({
       'route:admin': { indexing: 'private', caching: undefined },
     });
-    expect(codes(analysed)).toEqual(['EQ1412', 'EQ1413', 'EQ1414']);
+    expect(codes(analysed)).toEqual(['TH1412', 'TH1413', 'TH1414']);
     claimCapability('declaration:route-indexing-class');
   });
 });
@@ -622,10 +622,10 @@ describe('route tables the build does not follow', () => {
     );
 
     expect(Object.keys(rows(analysed))).toEqual(['route:section']);
-    expect(summaries(analysed, 'EQ1406')).toEqual([
-      '"/section" takes its children from `KIDS`, which Equator does not follow, so their addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare those children inline to localize them.',
+    expect(summaries(analysed, 'TH1406')).toEqual([
+      '"/section" takes its children from `KIDS`, which Thoth does not follow, so their addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare those children inline to localize them.',
     ]);
-    expect(codes(analysed)).toEqual(['EQ1406']);
+    expect(codes(analysed)).toEqual(['TH1406']);
   });
 
   it('reports children taken from a binding that is not a route table', async () => {
@@ -637,7 +637,7 @@ describe('route tables the build does not follow', () => {
     );
 
     expect(Object.keys(rows(analysed))).toEqual(['route:section']);
-    expect(codes(analysed)).toEqual(['EQ1406']);
+    expect(codes(analysed)).toEqual(['TH1406']);
   });
 
   it('reports children written as a shorthand, and keeps that table out of the root', async () => {
@@ -649,10 +649,10 @@ describe('route tables the build does not follow', () => {
     );
 
     expect(Object.keys(rows(analysed))).toEqual(['route:section']);
-    expect(summaries(analysed, 'EQ1406')[0]).toContain(
+    expect(summaries(analysed, 'TH1406')[0]).toContain(
       'takes its children from `children`',
     );
-    expect(codes(analysed)).toEqual(['EQ1406']);
+    expect(codes(analysed)).toEqual(['TH1406']);
   });
 
   it('reports children a spread may set', async () => {
@@ -664,10 +664,10 @@ describe('route tables the build does not follow', () => {
     );
 
     expect(Object.keys(rows(analysed))).toEqual(['route:section']);
-    expect(summaries(analysed, 'EQ1406')[0]).toContain(
+    expect(summaries(analysed, 'TH1406')[0]).toContain(
       '"/section" may take its `children` from a spread or a computed key',
     );
-    expect(codes(analysed)).toEqual(['EQ1406']);
+    expect(codes(analysed)).toEqual(['TH1406']);
   });
 
   it('reports a route table spread in among child routes, and keeps it out of the root', async () => {
@@ -682,10 +682,10 @@ describe('route tables the build does not follow', () => {
       'route:section',
       'route:section.own',
     ]);
-    expect(summaries(analysed, 'EQ1406')).toEqual([
-      'A spread of `MORE` in the children of "/section" brings in routes Equator does not follow, so their addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare those routes inline to localize them.',
+    expect(summaries(analysed, 'TH1406')).toEqual([
+      'A spread of `MORE` in the children of "/section" brings in routes Thoth does not follow, so their addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare those routes inline to localize them.',
     ]);
-    expect(codes(analysed)).toEqual(['EQ1406']);
+    expect(codes(analysed)).toEqual(['TH1406']);
   });
 
   it('reads a route table spread in among root routes as root routes', async () => {
@@ -712,10 +712,10 @@ describe('route tables the build does not follow', () => {
     );
 
     expect(Object.keys(rows(analysed))).toEqual(['route:own']);
-    expect(summaries(analysed, 'EQ1406')[0]).toContain(
+    expect(summaries(analysed, 'TH1406')[0]).toContain(
       'A spread of `MORE` in the route table `routes`',
     );
-    expect(codes(analysed)).toEqual(['EQ1406']);
+    expect(codes(analysed)).toEqual(['TH1406']);
   });
 
   it('reports a route written as a binding', async () => {
@@ -727,10 +727,10 @@ describe('route tables the build does not follow', () => {
     );
 
     expect(Object.keys(rows(analysed))).toEqual(['route:own']);
-    expect(summaries(analysed, 'EQ1406')).toEqual([
-      'An entry of the route table `routes` is written as `DETAIL`, which Equator does not follow, so its address stays outside the localized route table and is served at its canonical spelling, in the default locale. Declare the route inline to localize it.',
+    expect(summaries(analysed, 'TH1406')).toEqual([
+      'An entry of the route table `routes` is written as `DETAIL`, which Thoth does not follow, so its address stays outside the localized route table and is served at its canonical spelling, in the default locale. Declare the route inline to localize it.',
     ]);
-    expect(codes(analysed)).toEqual(['EQ1406']);
+    expect(codes(analysed)).toEqual(['TH1406']);
   });
 
   it('reports a route table written as a call', async () => {
@@ -739,10 +739,10 @@ describe('route tables the build does not follow', () => {
     );
 
     expect(analysed.routes).toEqual([]);
-    expect(summaries(analysed, 'EQ1406')).toEqual([
-      'The route table `routes` is written as a call to `build`, which Equator does not follow, so its addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare its routes as an array literal to localize them.',
+    expect(summaries(analysed, 'TH1406')).toEqual([
+      'The route table `routes` is written as a call to `build`, which Thoth does not follow, so its addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare its routes as an array literal to localize them.',
     ]);
-    expect(codes(analysed)).toEqual(['EQ1406']);
+    expect(codes(analysed)).toEqual(['TH1406']);
   });
 
   it('keeps a table spread in among the routes of a child route file out of the root', async () => {
@@ -768,7 +768,7 @@ describe('route tables the build does not follow', () => {
     });
 
     expect(Object.keys(rows(analysed))).toEqual(['route:section']);
-    expect(codes(analysed)).toEqual(['EQ1406']);
+    expect(codes(analysed)).toEqual(['TH1406']);
   });
 
   it('keeps a table named both at the root and below it at the root', async () => {
@@ -783,7 +783,7 @@ describe('route tables the build does not follow', () => {
       'route:detail',
       'route:section',
     ]);
-    expect(codes(analysed)).toEqual(['EQ1406']);
+    expect(codes(analysed)).toEqual(['TH1406']);
   });
 });
 
@@ -793,7 +793,7 @@ describe('a provider file', () => {
     // declaration without executing consumer code. The file below leaves a mark on the global object
     // when it runs, so a build that ran it to learn the table would still answer correctly and be
     // caught by the mark rather than by the answer.
-    const MARK = 'equatorProviderFileEvaluated';
+    const MARK = 'thothProviderFileEvaluated';
     const analysed = await analyse({
       ...routeFile(
         "[{ path: 'admin', component: Page, data: { area: 'staff' } }]",

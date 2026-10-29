@@ -444,7 +444,7 @@ const declared: readonly StageDeclaration[] = Object.freeze([
     reads: ['dist:toolkit', 'source:packages'],
   },
   // Reads the built schema rather than the source, so it waits for `build`, and it is the stage
-  // that fails when a settable configuration key has no `equator init` flag. `dist:toolkit` is the
+  // that fails when a settable configuration key has no `thoth init` flag. `dist:toolkit` is the
   // input; `source:packages` is the checked-in table it compares against.
   {
     id: 'verify:cli-options',
@@ -668,7 +668,7 @@ const declared: readonly StageDeclaration[] = Object.freeze([
       },
     ],
   },
-  // What a new project costs Equator between `equator init` and its second scope, run cold against
+  // What a new project costs Thoth between `thoth init` and its second scope, run cold against
   // the installed toolkit rather than against the workspace. It reads that consumer and writes
   // nothing it does not create itself, under `tmp/cold-start`, which is nested and so is not an
   // artefact any other stage can see.
@@ -728,7 +728,7 @@ const declared: readonly StageDeclaration[] = Object.freeze([
     processors: 4,
     reads: ['dist:runtime', 'dist:toolkit', 'source:docs', 'source:packages'],
   },
-  // The one check in this list whose cases Equator did not write. It compiles each of the working
+  // The one check in this list whose cases Thoth did not write. It compiles each of the working
   // group's MessageFormat 2 cases with the installed toolkit and evaluates it through the built
   // runtime.
   // "What compiles, renders", as an invariant rather than as cases. Every option in the built-in
@@ -852,7 +852,7 @@ const declared: readonly StageDeclaration[] = Object.freeze([
   ),
   // The specs that claim a testing helper or call the locale matcher, run in each engine through the
   // test builder's browser mode. Alone for the reason the browser rows are. A writer of the
-  // development seat, because the pseudo-locale spec reads what `equator generate --pseudo` writes
+  // development seat, because the pseudo-locale spec reads what `thoth generate --pseudo` writes
   // there, and the stage generates the production output again after the run.
   {
     id: 'verify:browser-specs',

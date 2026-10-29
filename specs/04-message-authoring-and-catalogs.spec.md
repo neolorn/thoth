@@ -1,6 +1,6 @@
 # Message authoring and catalogs
 
-How a message is written for Equator, what identifies it, what its inputs and its rich structure
+How a message is written for Thoth, what identifies it, what its inputs and its rich structure
 are, and how a catalog is composed. This document owns the authored source format and everything
 derived from it up to the point of compilation, which `05-compiled-artifacts-and-trust.spec.md`
 takes over.

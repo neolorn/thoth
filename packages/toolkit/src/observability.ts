@@ -16,7 +16,7 @@ import type { ToolkitDiagnosticCode } from './diagnostics.js';
  * different vocabularies and one union of both would name neither.
  */
 export const TOOLKIT_OBSERVABILITY_PROFILE =
-  'equator-toolkit-observability-event/1' as const;
+  'thoth-toolkit-observability-event/1' as const;
 
 /**
  * The three areas the toolkit reports on, as stable codes for filtering a log.
@@ -25,9 +25,9 @@ export const TOOLKIT_OBSERVABILITY_PROFILE =
  * identity.
  */
 export const TOOLKIT_EVENT_CODES = Object.freeze({
-  compilation: 'EQ-E1001',
-  interchange: 'EQ-E1002',
-  migration: 'EQ-E1003',
+  compilation: 'TH-E1001',
+  interchange: 'TH-E1002',
+  migration: 'TH-E1003',
 } as const);
 
 /** Any of the three codes. Worth naming when a sink switches on one. */
@@ -103,7 +103,7 @@ export interface ToolkitObservabilityEvent {
 /**
  * Where toolkit events go. Supply one on an operation; with none, no event is built at all.
  *
- * Equator ships no transport and knows no endpoint, so this is the whole contract. It must not
+ * Thoth ships no transport and knows no endpoint, so this is the whole contract. It must not
  * throw and must not block: an event is raised in the middle of a build somebody is waiting on.
  */
 export interface ToolkitObservabilitySink {

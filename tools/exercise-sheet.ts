@@ -104,7 +104,7 @@ export async function readCatalogMessage(
 
 /**
  * The direction CLDR gives a locale: that of its likely script, from the pinned CLDR release's
- * script metadata, rather than from anything Equator derives.
+ * script metadata, rather than from anything Thoth derives.
  */
 async function directionOf(locale: string): Promise<'rtl' | 'ltr'> {
   const { scriptMetadata } = JSON.parse(
@@ -220,7 +220,7 @@ export function sheetInDocument(html: string): Sheet {
 
 /**
  * One line of the sheet, held to what the host's own formatter wrote for it. Where it matters which
- * part of Equator wrote the line, the failure says so.
+ * part of Thoth wrote the line, the failure says so.
  */
 function holds(
   { lines }: Sheet,
@@ -247,12 +247,12 @@ export function claimExercisedPipes(
   context: CapabilityObservation,
 ): void {
   const pipe = (id: string) =>
-    holds(sheet, expected, id, 'by a pipe of @neolorn/equator');
+    holds(sheet, expected, id, 'by a pipe of @neolorn/thoth');
   holds(
     sheet,
     expected,
     'localize',
-    'from the catalog provideLocalizationSetup installed, by a pipe of @neolorn/equator',
+    'from the catalog provideLocalizationSetup installed, by a pipe of @neolorn/thoth',
   );
   recordCapabilityClaim(check, 'feature:provideLocalizationSetup', context);
   recordCapabilityClaim(check, 'pipe:localize', context);
@@ -280,7 +280,7 @@ export function claimExercisedPipes(
   if (expected.localizedDuration !== '') {
     recordCapabilityClaim(check, 'pipe:localizedDuration', context);
   }
-  recordCapabilityClaim(check, 'entry:@neolorn/equator', context);
+  recordCapabilityClaim(check, 'entry:@neolorn/thoth', context);
 }
 
 /**
@@ -392,11 +392,11 @@ export function claimSheetParameter(
   assert.equal(
     sheet.sheet,
     name,
-    `${check}: the RouteParameterCodec the exercise route declares did not read the sheet's ${locale} spelling as ${name} through provideLocalizedRouter from @neolorn/equator/router`,
+    `${check}: the RouteParameterCodec the exercise route declares did not read the sheet's ${locale} spelling as ${name} through provideLocalizedRouter from @neolorn/thoth/router`,
   );
   recordCapabilityClaim(check, 'declaration:route-parameter-codec', context);
   recordCapabilityClaim(check, 'feature:provideLocalizedRouter', context);
-  recordCapabilityClaim(check, 'entry:@neolorn/equator/router', context);
+  recordCapabilityClaim(check, 'entry:@neolorn/thoth/router', context);
 }
 
 /**
@@ -460,10 +460,10 @@ export function claimExercisedContext(
   );
   recordCapabilityClaim(check, 'feature:withFormattingContext', context);
   const core = (id: string) =>
-    holds(sheet, expected, id, 'by @neolorn/equator/core');
+    holds(sheet, expected, id, 'by @neolorn/thoth/core');
   core('core:directionForLocale');
   core('core:openGraphLocale');
-  recordCapabilityClaim(check, 'entry:@neolorn/equator/core', context);
+  recordCapabilityClaim(check, 'entry:@neolorn/thoth/core', context);
 }
 
 /**

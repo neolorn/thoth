@@ -13,15 +13,15 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 /**
  * Is the release gate about completeness, or about two of its findings?
  *
- * Escalating `EQ1307` and `EQ1308` alone leaves a hole exactly where the failure is largest: with
+ * Escalating `TH1307` and `TH1308` alone leaves a hole exactly where the failure is largest: with
  * the gate **on**, a locale with no catalog at all would return `ok: true` and one warning,
  * identical to the same call with the gate off, while the same locale missing one message of three
  * returns `ok: false`. Translating two messages of three would stop the release; translating none
  * would ship it.
  *
- * So the family escalates as one. `EQ1306` (no catalog for this scope), `EQ1307` (a message
- * missing) and `EQ1308` (a plural category missing) are one question at three granularities, and
- * `EQ1309` (a translation written against an older source) is the fourth: it needs a project on
+ * So the family escalates as one. `TH1306` (no catalog for this scope), `TH1307` (a message
+ * missing) and `TH1308` (a plural category missing) are one question at three granularities, and
+ * `TH1309` (a translation written against an older source) is the fourth: it needs a project on
  * disk and a published translation record, so its cases build one below, and the whole gate is run
  * end-to-end through the built CLI in `tools/verify-package-consumer.ts`.
  *
@@ -82,7 +82,7 @@ describe('the release gate covers the completeness family', () => {
     // severity a release policy raised says a locale is unfinished, not that there is no model
     // here. Everything the run reports after the compile depends on it.
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).toContain('EQ1307 error');
+    expect(codes(graph)).toContain('TH1307 error');
   });
 
   it('blocks a locale that has no catalog at all', () => {
@@ -93,7 +93,7 @@ describe('the release gate covers the completeness family', () => {
     // severity a release policy raised says a locale is unfinished, not that there is no model
     // here. Everything the run reports after the compile depends on it.
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).toContain('EQ1306 error');
+    expect(codes(graph)).toContain('TH1306 error');
   });
 
   it('leaves that same locale a warning when no release gate asked', () => {
@@ -102,7 +102,7 @@ describe('the release gate covers the completeness family', () => {
     // unusable.
     const graph = analyze([source], false);
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).toEqual(['EQ1306 warning']);
+    expect(codes(graph)).toEqual(['TH1306 warning']);
   });
 });
 
@@ -112,7 +112,7 @@ describe('a locale the project declares still in progress', () => {
     expect(graph.ok).toBe(true);
     // Reported, not silenced. The difference between an exemption and a blind spot is whether the
     // finding still reaches the person reading the output.
-    expect(codes(graph)).toContain('EQ1307 warning');
+    expect(codes(graph)).toContain('TH1307 warning');
   });
 
   it('quotes the declared reason into the finding it downgraded', () => {
@@ -125,7 +125,7 @@ describe('a locale the project declares still in progress', () => {
   it('exempts the whole family for that locale, not the message half of it', () => {
     const graph = analyze([source], true, true);
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).toEqual(['EQ1306 warning']);
+    expect(codes(graph)).toEqual(['TH1306 warning']);
   });
 
   it('says nothing extra when no gate is on, because nothing was downgraded', () => {
@@ -148,8 +148,8 @@ describe('a locale the project declares still in progress', () => {
       requireCompleteTargets: true,
     });
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).toContain('EQ1306 warning');
-    expect(codes(graph)).toContain('EQ1306 error');
+    expect(codes(graph)).toContain('TH1306 warning');
+    expect(codes(graph)).toContain('TH1306 error');
   });
 });
 
@@ -177,13 +177,13 @@ async function write(
  * A project whose only fault is that its translation answers an older question.
  *
  * The lab consumer cannot show this member escalating on its own: it ships a message `ar-EG`
- * deliberately does not translate, so under the gate an `EQ1307` error stops the compile before
+ * deliberately does not translate, so under the gate an `TH1307` error stops the compile before
  * the translation record is ever reconciled. Here the target is complete, the source moves after
  * the record is written, and staleness is the only thing left to find.
  */
 async function staleProject(
   options: {
-    /** Merged into `equator.config.json`. */
+    /** Merged into `thoth.config.json`. */
     readonly configuration?: Readonly<Record<string, unknown>>;
     /** Drop a message from the target too, so the project is incomplete as well as stale. */
     readonly incomplete?: boolean;
@@ -210,7 +210,7 @@ async function staleProject(
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -249,12 +249,12 @@ async function staleProject(
   await write(
     root,
     'i18n/shell/en-US.yaml',
-    `messages:\n  app-title: Equator${tagline}\n`,
+    `messages:\n  app-title: Thoth${tagline}\n`,
   );
   await write(
     root,
     'i18n/shell/ar-EG.yaml',
-    `messages:\n  app-title: Equator${
+    `messages:\n  app-title: Thoth${
       options.incomplete === true ? '\n  app-tagline: توطين' : ''
     }\n`,
   );
@@ -285,13 +285,13 @@ async function staleProject(
   await write(
     root,
     'i18n/shell/en-US.yaml',
-    `messages:\n  app-title: Equator, renamed${tagline}\n`,
+    `messages:\n  app-title: Thoth, renamed${tagline}\n`,
   );
   if (options.incomplete === true) {
     await write(
       root,
       'i18n/shell/ar-EG.yaml',
-      'messages:\n  app-title: Equator\n',
+      'messages:\n  app-title: Thoth\n',
     );
   }
   return root;
@@ -309,7 +309,7 @@ describe('a translation written against an older source', () => {
     // through the built CLI in `tools/verify-package-consumer.ts`.
     expect(
       result.diagnostics
-        .filter(({ code }) => code === 'EQ1309')
+        .filter(({ code }) => code === 'TH1309')
         .map(({ severity }) => severity),
     ).toEqual(['error']);
     claimCapability('cli:check');
@@ -319,7 +319,7 @@ describe('a translation written against an older source', () => {
     const result = await checkProject({ project: await staleProject() });
     expect(
       result.diagnostics.map(({ code, severity }) => `${code} ${severity}`),
-    ).toContain('EQ1309 warning');
+    ).toContain('TH1309 warning');
     claimCapability('cli:check');
   });
 
@@ -334,7 +334,7 @@ describe('a translation written against an older source', () => {
       }),
       requireCompleteTargets: true,
     });
-    const stale = result.diagnostics.filter(({ code }) => code === 'EQ1309');
+    const stale = result.diagnostics.filter(({ code }) => code === 'TH1309');
     expect(stale.map(({ severity }) => severity)).toEqual(['warning']);
     expect(stale[0]?.summary).toContain('Q4 launch');
     claimCapability('cli:check');
@@ -347,8 +347,8 @@ describe('a translation written against an older source', () => {
  * Returning the moment the catalog analysis reports an error means that under the release gate,
  * where an incomplete locale *is* an error, output freshness goes uninspected and the translation
  * record goes unreconciled, so the two findings they would have produced are absent rather than
- * downgraded. On this project, both incomplete and stale: gate off reports `EQ1307`, `EQ1309`
- * and `EQ1704`; gate on reports `EQ1307` alone. A team that turns the gate on to learn more
+ * downgraded. On this project, both incomplete and stale: gate off reports `TH1307`, `TH1309`
+ * and `TH1704`; gate on reports `TH1307` alone. A team that turns the gate on to learn more
  * learns less.
  *
  * A run reports every member it can observe, and stops at the first only when it cannot go further.
@@ -361,9 +361,9 @@ describe('a stricter run reports more', () => {
       result.diagnostics.map(({ code, severity }) => `${code} ${severity}`);
 
     expect(shape(await checkProject({ project: root }))).toEqual([
-      'EQ1307 warning',
-      'EQ1309 warning',
-      'EQ1704 warning',
+      'TH1307 warning',
+      'TH1309 warning',
+      'TH1704 warning',
     ]);
     expect(
       shape(
@@ -372,7 +372,7 @@ describe('a stricter run reports more', () => {
           requireCompleteTargets: true,
         }),
       ),
-    ).toEqual(['EQ1307 error', 'EQ1309 error', 'EQ1704 warning']);
+    ).toEqual(['TH1307 error', 'TH1309 error', 'TH1704 warning']);
     // Freshness is a second switch and answers for itself. This row exists so that "everything is
     // reported" cannot be satisfied by reporting everything at one severity.
     expect(
@@ -383,7 +383,7 @@ describe('a stricter run reports more', () => {
           requireFreshOutput: true,
         }),
       ),
-    ).toEqual(['EQ1307 error', 'EQ1309 error', 'EQ1704 error']);
+    ).toEqual(['TH1307 error', 'TH1309 error', 'TH1704 error']);
     claimCapability('cli:check');
   });
 });

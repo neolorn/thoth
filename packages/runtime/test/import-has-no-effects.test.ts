@@ -2,7 +2,7 @@
  * Importing a runtime entry point defines it and does nothing else.
  *
  * `specs/02-packages-and-platform.spec.md` section 8: a runtime module is free of side effects on
- * import, and importing `@neolorn/equator` starts no timer, watcher or request, reads or writes no
+ * import, and importing `@neolorn/thoth` starts no timer, watcher or request, reads or writes no
  * document, storage or global state, and registers nothing. Each of those is reached through a
  * global, so the globals are the instrument: every one is replaced with a recorder before the
  * import and read after it. The import is fresh, because a module evaluated by an earlier case
@@ -91,8 +91,8 @@ afterEach(() => {
 
 describe('importing a runtime entry point', () => {
   it.each([
-    ['@neolorn/equator', '../src/public-api.js'],
-    ['@neolorn/equator/core', '../core/src/public-api.js'],
+    ['@neolorn/thoth', '../src/public-api.js'],
+    ['@neolorn/thoth/core', '../core/src/public-api.js'],
   ])('%s touches no global and adds none', async (_entry, specifier) => {
     vi.resetModules();
     const touched: string[] = [];

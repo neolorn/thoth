@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { LocalizationError } from '@neolorn/equator/core';
+import { LocalizationError } from '@neolorn/thoth/core';
 
 import { RUNTIME_LIMITS } from '../src/runtime-safety.js';
 import {
@@ -315,19 +315,19 @@ describe('a catalog that is not the one its address names', () => {
     [
       'a profile this release does not read',
       (catalog) => {
-        catalog['profile'] = 'equator-compiled-ir/2';
+        catalog['profile'] = 'thoth-compiled-ir/2';
       },
     ],
     [
       'another generated ABI',
       (catalog) => {
-        catalog['generatedAbi'] = 'equator-generated/2';
+        catalog['generatedAbi'] = 'thoth-generated/2';
       },
     ],
     [
       'another standards profile',
       (catalog) => {
-        catalog['standardsProfile'] = 'equator-2';
+        catalog['standardsProfile'] = 'thoth-2';
       },
     ],
     [

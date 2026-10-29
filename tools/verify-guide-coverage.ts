@@ -69,5 +69,5 @@ if (uncovered.length > 0) {
 }
 
 process.stdout.write(
-  `Equator guide coverage verified: ${composables.size} composable export(s) across ${new Set([...composables.values()]).size} entry point(s), each named by at least one of ${guides.length} how-to guide(s).\n`,
+  `Thoth guide coverage verified: ${composables.size} composable export(s) across ${new Set([...composables.values()]).size} entry point(s), each named by at least one of ${guides.length} how-to guide(s).\n`,
 );

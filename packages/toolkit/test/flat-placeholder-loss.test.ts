@@ -97,7 +97,7 @@ describe('a flat translation that drops a value', () => {
     });
     expect(dropped.ok).toBe(false);
     expect(summaries(dropped.diagnostics)).toContain('"$count"');
-    expect(dropped.diagnostics.map(({ code }) => code)).toContain('EQ1802');
+    expect(dropped.diagnostics.map(({ code }) => code)).toContain('TH1802');
 
     // The control: the same two variants, same locale, same call, with the count printed.
     expect(
@@ -206,7 +206,7 @@ describe('a flat translation that drops a value', () => {
   });
 
   it('is refused on import, which is where it actually arrives', () => {
-    // Export is Equator checking its own catalogs. Import is the direction a translation comes back
+    // Export is Thoth checking its own catalogs. Import is the direction a translation comes back
     // from someone else, so it is the one that has to hold.
     const document = exportXliff22({
       source: ENGLISH,
@@ -231,7 +231,7 @@ describe('a flat translation that drops a value', () => {
     const imported = importXliff22({ document: edited, source: ENGLISH });
     expect(imported.ok).toBe(false);
     expect(summaries(imported.diagnostics)).toContain('"$count"');
-    expect(imported.diagnostics.map(({ code }) => code)).toContain('EQ1803');
+    expect(imported.diagnostics.map(({ code }) => code)).toContain('TH1803');
     claimCapability('capability:xliff');
   });
 });

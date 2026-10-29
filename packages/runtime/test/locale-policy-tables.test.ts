@@ -8,7 +8,7 @@ import {
   createPathPrefixLocalePolicy,
   LocalizationError,
   type GeneratedConfiguration,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The tables a policy constructor hands back, and the entries it refuses to put in them.
@@ -37,7 +37,7 @@ const codeOf = (call: () => unknown) => refusal(call)?.diagnostic.code;
 const configurationFor = (
   locales: readonly string[],
 ): GeneratedConfiguration => ({
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales,

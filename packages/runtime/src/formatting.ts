@@ -44,7 +44,7 @@ import {
   type PlainTimeValue,
   type TimeZoneValue,
   type ZonedDateTimeValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import {
   FormatterCache,
   formattingLocale,
@@ -88,7 +88,7 @@ import { TIME_ZONE_IDENTITIES } from './time-zone-identities.generated';
  * is "explicit cache to prevent leaking memory", because the FormatJS store is an unbounded
  * `Record<string, V>` and hoisting an unbounded cache is how it leaks.
  *
- * **Equator's is bounded, which is why hoisting it is safe here.** `FormatterCache` is an LRU with
+ * **Thoth's is bounded, which is why hoisting it is safe here.** `FormatterCache` is an LRU with
  * a fixed ceiling, so this changes who owns the bound and not whether there is one. Sized at
  * `RUNTIME_LIMITS.formatterCacheEntries` because the store is process-wide: there is no catalog
  * count or instance to scale it from, which is exactly what `Localization` scales its own cache by,
@@ -204,7 +204,7 @@ export function instant(epochNanoseconds: string): InstantValue {
  *
  * Naming any other calendar means the three numbers are that calendar's. Such a date can be stored
  * and exchanged, and `formatPlainDate` reports it as one it cannot write, because writing it needs
- * a conversion between calendars and Equator performs none.
+ * a conversion between calendars and Thoth performs none.
  *
  * The calendar is named as a zoned date-time's is: lower-case subtags of three to eight letters
  * and digits joined by hyphens, so `gregory` and `islamic-civil` and not `Gregory`. The host is
@@ -991,7 +991,7 @@ export function formatPercentagePoints(
  * discards, and refusing was declining to answer a question that had been asked at a precision the
  * value could satisfy. Decision section 10: format to the precision the options request, and
  * refuse only where sub-millisecond output is genuinely requested, which no Intl option can do.
- * Silent truncation was rejected as the guessing Equator refuses elsewhere.
+ * Silent truncation was rejected as the guessing Thoth refuses elsewhere.
  *
  * The division floors rather than truncating toward zero. For an instant before 1970 those differ,
  * and truncation would name the millisecond *after* the one the instant falls in: displaying a
@@ -1076,7 +1076,7 @@ export function formatInstant(
 /**
  * A calendar option safe to hand to `Intl.DateTimeFormat`.
  *
- * `iso8601` describes how an Equator plain value is *expressed*: proleptic Gregorian, ISO rules.
+ * `iso8601` describes how a Thoth plain value is *expressed*: proleptic Gregorian, ISO rules.
  * It is not a display calendar. CLDR defines no month names for it, so passing it through makes
  * ICU drop the month from any pattern that would spell it out: `dateStyle: 'medium'` renders
  * "2026  14" instead of "Mar 14, 2026", in every locale, with no diagnostic.
@@ -1641,7 +1641,7 @@ interface NativeDurationFormatConstructor {
  * Writes a length of time in the locale's words for its units.
  *
  * The options are the platform's duration options, typed loosely because the duration formatter is
- * newer than the type definitions Equator compiles against. A host without it reports rather than
+ * newer than the type definitions Thoth compiles against. A host without it reports rather than
  * assembling a sentence out of separate numbers, which would put the units in an order that is
  * wrong in most locales.
  */
@@ -1728,7 +1728,7 @@ export function formatList(
     );
   if (!bounded) {
     return unsupported(
-      'The list exceeds Equator formatting resource bounds.',
+      'The list exceeds Thoth formatting resource bounds.',
       context,
     );
   }
@@ -1772,7 +1772,7 @@ export function formatRelativeTime(
   const number = nativeNumber(value, context);
   if (typeof number !== 'number') return number;
   try {
-    // Typed loosely because the type definitions Equator compiles against do not give the
+    // Typed loosely because the type definitions Thoth compiles against do not give the
     // relative-time formatter the numbering system ECMA-402 gives it.
     const named = (options as { readonly numberingSystem?: unknown })
       .numberingSystem;
@@ -1828,10 +1828,7 @@ export function formatDisplayName(
     typeof value !== 'string' ||
     codePointLengthAtMost(value, 1_024) === undefined
   ) {
-    return unsupported(
-      'The display-name input exceeds Equator bounds.',
-      context,
-    );
+    return unsupported('The display-name input exceeds Thoth bounds.', context);
   }
   try {
     const host = hostFormatting(
@@ -2211,7 +2208,7 @@ function parsePersonNamePattern(
     }
     at = start + match[0].length;
     const resolved = personNameFieldText(value, profile, match[1] ?? '', cache);
-    // A placeholder naming no field Equator knows is literal text, not a silent disappearance.
+    // A placeholder naming no field Thoth knows is literal text, not a silent disappearance.
     if (resolved === undefined)
       tokens.push({ kind: 'literal', text: match[0] });
     else tokens.push({ kind: 'field', ...resolved });
@@ -2294,7 +2291,7 @@ function coalesceLiterals(
  * Writes a name in the order, length and formality a locale asks for.
  *
  * Takes the name, the reading context, the options that say which arrangement is wanted, and the
- * profile set the rules come from. The profiles default to the root set Equator ships; a caller
+ * profile set the rules come from. The profiles default to the root set Thoth ships; a caller
  * passing its own must pass one of the same profile version, and one that is not is refused.
  *
  * The name's own language decides the arrangement, not the reader's locale, so a name keeps its
@@ -2308,7 +2305,7 @@ export function formatPersonName(
 ): FormattingResult {
   if (profiles.profile !== PERSON_NAME_ROOT.profile) {
     return unsupported(
-      `Person-name data profile ${JSON.stringify(profiles.profile)} is not the one this runtime reads (${JSON.stringify(PERSON_NAME_ROOT.profile)}). Regenerate this application against a matching Equator.`,
+      `Person-name data profile ${JSON.stringify(profiles.profile)} is not the one this runtime reads (${JSON.stringify(PERSON_NAME_ROOT.profile)}). Regenerate this application against a matching Thoth.`,
       context,
       'integrity-mismatch',
     );
@@ -2582,7 +2579,7 @@ export function segmentText(
       undefined
   ) {
     return capabilityFailure(
-      'The segmentation input exceeds Equator bounds.',
+      'The segmentation input exceeds Thoth bounds.',
       context,
     );
   }
@@ -2629,7 +2626,7 @@ interface ExtendedLocale {
  * What a locale tag implies: its direction, its calendar, its numbering system, its week.
  *
  * Takes the tag and returns what the host resolves for it, so this is the platform's answer rather
- * than a table Equator keeps. The tag it reports is canonicalized from the pinned alias data, as
+ * than a table Thoth keeps. The tag it reports is canonicalized from the pinned alias data, as
  * every identity is, and a tag that is not well formed or that the host rejects is reported.
  */
 export function localeMetadata(

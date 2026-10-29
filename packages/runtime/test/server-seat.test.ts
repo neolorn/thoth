@@ -2,7 +2,7 @@
  * The seat that answers an address, for the questions only a response can answer.
  *
  * Section 12 of `specs/06-runtime-and-angular.spec.md` puts a server seat in
- * `@neolorn/equator/testing` and requires it to answer through the request handler a deployment
+ * `@neolorn/thoth/testing` and requires it to answer through the request handler a deployment
  * uses rather than through a second implementation of the same rules, without a socket, a built
  * bundle or a browser. What is asserted here is that it does: the status table, the cacheability,
  * the narrow rule about a declaration at a refused address, and the target arriving as written are
@@ -28,7 +28,7 @@ import {
   ɵrememberPageOutcome,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
@@ -44,7 +44,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-ServerSeatTestProjectionIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -119,7 +119,7 @@ describe('an address answered through the seat', () => {
     expect(answered.resolution.status).toBe('malformed');
   });
 
-  it('reports an address Equator declined rather than answering for it', async () => {
+  it('reports an address Thoth declined rather than answering for it', async () => {
     const answered = await seatFor().request('/assets/main-A1B2C3.js');
 
     expect(answered.declined).toBe(true);

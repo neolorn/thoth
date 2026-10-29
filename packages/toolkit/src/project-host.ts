@@ -103,13 +103,13 @@ import {
   writeSynced,
 } from './file-system.js';
 
-export const COMPILER_CACHE_PROFILE = 'equator-compiler-cache/1' as const;
+export const COMPILER_CACHE_PROFILE = 'thoth-compiler-cache/1' as const;
 
-const CONFIGURATION_NAME = 'equator.config.json';
+const CONFIGURATION_NAME = 'thoth.config.json';
 const PACKAGE_MANIFEST_NAME = 'package.json';
-const EXTENSION_REGISTRY_NAME = 'equator.extensions.json';
+const EXTENSION_REGISTRY_NAME = 'thoth.extensions.json';
 const GENERATED_ROOT = 'src/generated/i18n';
-const WORK_ROOT = '.equator';
+const WORK_ROOT = '.thoth';
 /**
  * The `#i18n` map for an owner whose generated output sits at `generatedRootPortablePath`.
  *
@@ -129,16 +129,16 @@ function packageImports(
 /**
  * The script entries `init` writes and keeps.
  *
- * Exported so a verification gate can assert what Equator declares rather than what a fixture
- * author happened to type. A gate that runs `pnpm run equator:init` proves only that a person added
- * that entry to the fixture manifest, because Equator writes no such script.
+ * Exported so a verification gate can assert what Thoth declares rather than what a fixture
+ * author happened to type. A gate that runs `pnpm run thoth:init` proves only that a person added
+ * that entry to the fixture manifest, because Thoth writes no such script.
  */
 export const PACKAGE_SCRIPTS = Object.freeze({
-  'equator:generate': 'equator generate',
-  'equator:check': 'equator check',
-  'equator:format': 'equator format',
-  'equator:clean': 'equator clean',
-  'equator:watch': 'equator watch',
+  'thoth:generate': 'thoth generate',
+  'thoth:check': 'thoth check',
+  'thoth:format': 'thoth format',
+  'thoth:clean': 'thoth clean',
+  'thoth:watch': 'thoth watch',
 });
 
 /**
@@ -150,15 +150,15 @@ export const PACKAGE_SCRIPTS = Object.freeze({
 export interface ProjectSelection extends ToolkitObservabilityOptions {
   /** Where to start looking for the project. Defaults to the current working directory. */
   readonly cwd?: string;
-  /** The configuration file to use, for a repository holding more than one Equator project. */
+  /** The configuration file to use, for a repository holding more than one Thoth project. */
   readonly project?: string;
   /**
    * Generate the catalogs for the configured pseudo-locales. Off unless asked for.
    *
    * The switch is here, on the invocation, rather than in the configuration file that declares the
    * pseudo-locales, so one configuration serves both builds and the production build differs by
-   * what it was asked to do, not by a file it had to edit first. `equator generate --pseudo` is a
-   * development command; a production build runs `equator generate` and receives a locale table
+   * what it was asked to do, not by a file it had to edit first. `thoth generate --pseudo` is a
+   * development command; a production build runs `thoth generate` and receives a locale table
    * with no pseudo-locale in it and no catalog to load.
    *
    * Deliberately not an environment variable. An environment variable set once on a CI runner
@@ -234,11 +234,11 @@ export interface CheckProjectOptions extends ProjectSelection {
    * ordinarily lands before its translations and a hard failure there would stop the work that
    * produces them.
    *
-   * **What it covers is the whole family, not a selection from it.** `EQ1306` (the locale has no
-   * catalog for a scope at all), `EQ1307` (a catalog omits a message), `EQ1308` (a message omits
-   * a plural or ordinal category) and `EQ1309` (a translation was written against an older
+   * **What it covers is the whole family, not a selection from it.** `TH1306` (the locale has no
+   * catalog for a scope at all), `TH1307` (a catalog omits a message), `TH1308` (a message omits
+   * a plural or ordinal category) and `TH1309` (a translation was written against an older
    * source) are one question asked at four granularities, and they escalate together. They did not
-   * always: this switch reached `EQ1307` and `EQ1308` only, so a locale missing one message of
+   * always: this switch reached `TH1307` and `TH1308` only, so a locale missing one message of
    * three blocked a release and the same locale with no catalog at all passed it.
    *
    * **Which locales it applies to is not this option's to say.** Every locale is required unless
@@ -247,7 +247,7 @@ export interface CheckProjectOptions extends ProjectSelection {
    *
    * **The name is `require`, and it stays.** The behaviour is a severity escalation, and the word
    * looked like a mismatch for that, until the pair is read together. `requireFreshOutput` does
-   * the same thing to `EQ1704`, and both say the same true thing: the condition is *required for
+   * the same thing to `TH1704`, and both say the same true thing: the condition is *required for
    * this run*, and a run that does not meet it does not pass. Renaming one would separate a pair
    * that reads as a pair, and renaming both would spend a public-surface break on a word that was
    * already accurate.
@@ -259,7 +259,7 @@ export interface CheckProjectOptions extends ProjectSelection {
    * Off by default and deliberately so: `specs/10-compiler-and-tooling.spec.md` section 12 keeps
    * freshness a non-blocking advisory in friendly mode, because generated output is routinely
    * stale in the middle of ordinary
-   * authoring and a command that failed on it would be unusable. On, `EQ1704` is raised at
+   * authoring and a command that failed on it would be unusable. On, `TH1704` is raised at
    * `error` rather than `warning`, which is what makes it blocking: the exit code is keyed to
    * severity, so nothing else has to be told about this option.
    *
@@ -303,7 +303,7 @@ export interface FormatProjectResult {
  */
 export interface InitProjectOptions extends ProjectSelection {
   /**
-   * The configuration fields to write, spelled as `equator.config.json` spells them.
+   * The configuration fields to write, spelled as `thoth.config.json` spells them.
    *
    * One field rather than one per key, and that is correctness rather than convenience. Naming
    * four of the six the parser accepts leaves `personNameLocales` and `pseudoLocales` unreachable
@@ -340,7 +340,7 @@ export interface CleanProjectOptions extends ProjectSelection {
   readonly dryRun?: boolean;
 }
 
-/** Which project to remove Equator from, whether to delete anything, and how far to go. */
+/** Which project to remove Thoth from, whether to delete anything, and how far to go. */
 export interface UninstallProjectOptions extends ProjectSelection {
   /** Work out what would be removed and remove none of it. */
   readonly dryRun?: boolean;
@@ -355,7 +355,7 @@ export interface UninstallProjectResult {
   /** The files taken back, as repository-relative paths, sorted. */
   readonly removed: readonly string[];
   /**
-   * What Equator wrote, then somebody changed, and Equator therefore left alone.
+   * What Thoth wrote, then somebody changed, and Thoth therefore left alone.
    *
    * Named rather than reverted: an edited script or a repointed `#i18n` specifier belongs to
    * whoever edited it, and silently undoing that is the same class of mistake as silently
@@ -451,11 +451,11 @@ async function assertOrdinaryContainedPath(
   target: string,
 ): Promise<void> {
   if (!containedPath(target, ownerRoot)) {
-    throw new TypeError(`Equator path escapes its selected owner: ${target}`);
+    throw new TypeError(`Thoth path escapes its selected owner: ${target}`);
   }
   const linked = await linkedSegment(ownerRoot, target);
   if (linked !== undefined) {
-    throw new TypeError(`Equator refuses linked project content: ${linked}`);
+    throw new TypeError(`Thoth refuses linked project content: ${linked}`);
   }
 }
 
@@ -479,7 +479,7 @@ async function readUtf8(path: string, maximumBytes: number): Promise<string> {
   const contents = await readFile(path);
   if (contents.byteLength > maximumBytes) {
     throw new TypeError(
-      `Equator refuses ${path} because it exceeds ${maximumBytes} bytes.`,
+      `Thoth refuses ${path} because it exceeds ${maximumBytes} bytes.`,
     );
   }
   return contents.toString('utf8');
@@ -516,7 +516,7 @@ async function readAuthoredText(
     toolkitFailure([
       toolkitDiagnostic(
         input.code,
-        `Equator refuses ${named} because it exceeds the ${input.maximumBytes}-byte implementation ceiling.`,
+        `Thoth refuses ${named} because it exceeds the ${input.maximumBytes}-byte implementation ceiling.`,
       ),
     ]);
   // Read through one handle and no further than one byte past the ceiling, as the migration plan
@@ -547,7 +547,7 @@ async function readAuthoredText(
     return toolkitFailure([
       toolkitDiagnostic(
         input.code,
-        `Equator refuses ${named} because it is not UTF-8 text.`,
+        `Thoth refuses ${named} because it is not UTF-8 text.`,
       ),
     ]);
   }
@@ -571,7 +571,7 @@ function projectDiagnostic(
   summary: string,
   severity: ToolkitDiagnosticSeverity = 'error',
 ): ToolkitDiagnostic {
-  return toolkitDiagnostic('EQ1702', summary, { severity });
+  return toolkitDiagnostic('TH1702', summary, { severity });
 }
 
 async function explicitOwner(
@@ -583,13 +583,13 @@ async function explicitOwner(
   if (metadata === undefined) {
     return toolkitFailure([
       projectDiagnostic(
-        `Selected Equator project ${JSON.stringify(project)} does not exist.`,
+        `Selected Thoth project ${JSON.stringify(project)} does not exist.`,
       ),
     ]);
   }
   if (metadata.isSymbolicLink()) {
     return toolkitFailure([
-      projectDiagnostic('Equator project selection cannot be a symbolic link.'),
+      projectDiagnostic('Thoth project selection cannot be a symbolic link.'),
     ]);
   }
   if (metadata.isDirectory()) return toolkitSuccess(candidate);
@@ -598,7 +598,7 @@ async function explicitOwner(
   }
   return toolkitFailure([
     projectDiagnostic(
-      'Equator --project must select an owner directory or equator.config.json.',
+      'Thoth --project must select an owner directory or thoth.config.json.',
     ),
   ]);
 }
@@ -607,20 +607,20 @@ async function explicitOwner(
  * The owner this working directory is in, searched no further than the package it is in.
  *
  * Discovery walks upward, and unbounded it walks to the filesystem root, selecting one
- * `equator.config.json` however far above and whatever stands between.
+ * `thoth.config.json` however far above and whatever stands between.
  * `specs/10-compiler-and-tooling.spec.md` section 4 says a working-directory accident never merges
  * projects, and section 10 says an application never inherits a neighboring configuration by
  * directory accident; this is the same accident one directory up.
  *
- * Unbounded, `equator init` inside `parent/child`, where `child` has its own `package.json` and
- * `parent` has an `equator.config.json`, initializes **`parent`** and reports success, naming three
+ * Unbounded, `thoth init` inside `parent/child`, where `child` has its own `package.json` and
+ * `parent` has an `thoth.config.json`, initializes **`parent`** and reports success, naming three
  * files the reader cannot find where they are standing. In this repository it goes further: a stray
  * configuration at the workspace root makes every consumer materialized under `tmp/` select that
- * root as its owner instead of itself, and four gate stages then fail with "Equator init is already
+ * root as its owner instead of itself, and four gate stages then fail with "Thoth init is already
  * complete" against a consumer whose configuration does not exist.
  *
  * **So the boundary is the nearest `package.json` upward, inclusive.** That directory is the
- * project's root (it is what a package manager, Node's own resolution and Equator's provider
+ * project's root (it is what a package manager, Node's own resolution and Thoth's provider
  * identity all already treat as one) and a configuration above it belongs to a different project.
  * The workspace-root owner with a nested application still resolves, because nothing between the
  * application and that root carries a manifest of its own (section 134).
@@ -678,7 +678,7 @@ async function discoverOwnerWithinPackage(
   if (search.outcome === 'many') {
     return toolkitFailure([
       projectDiagnostic(
-        `Equator project discovery is ambiguous: ${search.candidates
+        `Thoth project discovery is ambiguous: ${search.candidates
           .map((path) => JSON.stringify(path))
           .join(', ')}. Use --project.`,
       ),
@@ -691,8 +691,8 @@ function noOwnerFound(
   search: Extract<OwnerSearch, { outcome: 'none' }>,
 ): string {
   return search.beyond === undefined
-    ? `No equator.config.json was found in ${JSON.stringify(search.boundary)}. Select an owner with --project or run equator init.`
-    : `No equator.config.json was found in ${JSON.stringify(search.boundary)}, which is the package this directory is in. There is one at ${JSON.stringify(search.beyond)}, above that boundary, and it belongs to that project rather than this one. Run equator init here, or select that project with --project if this directory really is part of it.`;
+    ? `No thoth.config.json was found in ${JSON.stringify(search.boundary)}. Select an owner with --project or run thoth init.`
+    : `No thoth.config.json was found in ${JSON.stringify(search.boundary)}, which is the package this directory is in. There is one at ${JSON.stringify(search.beyond)}, above that boundary, and it belongs to that project rather than this one. Run thoth init here, or select that project with --project if this directory really is part of it.`;
 }
 
 /** The nearest configuration strictly above a boundary, for a diagnostic that has to name it. */
@@ -728,9 +728,7 @@ export async function discoverProject(
     ownerMetadata.isSymbolicLink()
   ) {
     return toolkitFailure([
-      projectDiagnostic(
-        'Equator owner must be an existing ordinary directory.',
-      ),
+      projectDiagnostic('Thoth owner must be an existing ordinary directory.'),
     ]);
   }
   const generatedRoot = await generatedRootPath(ownerRoot);
@@ -750,7 +748,7 @@ export async function discoverProject(
 /**
  * The manifest an owner is identified by.
  *
- * `create` is set only by `equator init`. Scaffolding commands author files and build commands do
+ * `create` is set only by `thoth init`. Scaffolding commands author files and build commands do
  * not, which is the division `tsc --init` and `tsc`, `eslint --init`, `git init` and
  * `cargo init` all draw. The practical reason is stronger than the convention: `generate`,
  * `check` and `watch` run unattended inside build pipelines and dev servers, so letting them
@@ -771,14 +769,14 @@ async function readPackageManifest(
   if (metadata !== undefined && metadata.isSymbolicLink()) {
     return toolkitFailure([
       projectDiagnostic(
-        'The selected Equator owner package.json is a link. Equator refuses linked project content; replace it with an ordinary file.',
+        'The selected Thoth owner package.json is a link. Thoth refuses linked project content; replace it with an ordinary file.',
       ),
     ]);
   }
   if (metadata !== undefined && !metadata.isFile()) {
     return toolkitFailure([
       projectDiagnostic(
-        'The selected Equator owner package.json is not an ordinary file.',
+        'The selected Thoth owner package.json is not an ordinary file.',
       ),
     ]);
   }
@@ -789,7 +787,7 @@ async function readPackageManifest(
       // command.
       return toolkitFailure([
         projectDiagnostic(
-          `The selected Equator owner has no package.json at ${JSON.stringify(portablePath(location.ownerRoot, location.packagePath))}. Run equator init in that directory to create it; generate, check, format and watch never author files.`,
+          `The selected Thoth owner has no package.json at ${JSON.stringify(portablePath(location.ownerRoot, location.packagePath))}. Run thoth init in that directory to create it; generate, check, format and watch never author files.`,
         ),
       ]);
     }
@@ -813,7 +811,7 @@ async function readPackageManifest(
     location.ownerRoot,
     location.packagePath,
     {
-      code: 'EQ1702',
+      code: 'TH1702',
       name: 'the owner package.json',
       maximumBytes: 1024 * 1024,
     },
@@ -845,7 +843,7 @@ async function readPackageManifest(
   if (!provider.ok) {
     return toolkitFailure([
       projectDiagnostic(
-        `Package name ${JSON.stringify(manifest['name'])} is not a valid Equator provider identity.`,
+        `Package name ${JSON.stringify(manifest['name'])} is not a valid Thoth provider identity.`,
       ),
     ]);
   }
@@ -860,9 +858,9 @@ async function readPackageManifest(
 }
 
 /**
- * The manifest `equator init` writes when an application has none.
+ * The manifest `thoth init` writes when an application has none.
  *
- * The package name comes from the directory, because that is the only name present: Equator has no
+ * The package name comes from the directory, because that is the only name present: Thoth has no
  * way to know a workspace's scope, and inventing one would put a wrong provider identity into
  * every compiled artifact. A directory whose name is not a usable identity is reported rather than
  * sanitized, since the identity is durable and a silently corrected one is worse than a refusal.
@@ -873,7 +871,7 @@ function createdPackageManifest(ownerRoot: string): ToolkitResult<string> {
   if (!provider.ok) {
     return toolkitFailure([
       projectDiagnostic(
-        `Equator cannot name a package after the directory ${JSON.stringify(name)}, which is not a valid package name. Create package.json with a name of your choosing and run equator init again.`,
+        `Thoth cannot name a package after the directory ${JSON.stringify(name)}, which is not a valid package name. Create package.json with a name of your choosing and run thoth init again.`,
       ),
     ]);
   }
@@ -895,8 +893,8 @@ function packageSetupDiagnostics(
   ) {
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1705',
-        'package.json does not contain the Equator #i18n import mappings. Run equator init.',
+        'TH1705',
+        'package.json does not contain the Thoth #i18n import mappings. Run thoth init.',
       ),
     );
     return diagnostics;
@@ -907,8 +905,8 @@ function packageSetupDiagnostics(
     if ((imports as Record<string, unknown>)[specifier] !== target) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1705',
-          `package.json must map ${JSON.stringify(specifier)} to ${JSON.stringify(target)}. Run equator init.`,
+          'TH1705',
+          `package.json must map ${JSON.stringify(specifier)} to ${JSON.stringify(target)}. Run thoth init.`,
           { path: ['imports', specifier] },
         ),
       );
@@ -931,7 +929,7 @@ async function readConfiguration(location: ProjectLocation): Promise<
   ) {
     return toolkitFailure([
       projectDiagnostic(
-        'The selected Equator owner requires an ordinary equator.config.json.',
+        'The selected Thoth owner requires an ordinary thoth.config.json.',
       ),
     ]);
   }
@@ -939,7 +937,7 @@ async function readConfiguration(location: ProjectLocation): Promise<
     location.ownerRoot,
     location.configurationPath,
     {
-      code: 'EQ1001',
+      code: 'TH1001',
       name: 'the configuration',
       maximumBytes: RESOURCE_LIMITS.configurationBytes,
     },
@@ -978,7 +976,7 @@ async function readExtensionRegistry(location: ProjectLocation): Promise<
   }
   await assertOrdinaryContainedPath(location.ownerRoot, path);
   const read = await readAuthoredText(location.ownerRoot, path, {
-    code: 'EQ1805',
+    code: 'TH1805',
     name: 'the extension registry',
     maximumBytes: RESOURCE_LIMITS.configurationBytes,
   });
@@ -1054,7 +1052,7 @@ async function discoverCatalogs(
   ) {
     return toolkitFailure([
       projectDiagnostic(
-        'The selected Equator owner requires an ordinary i18n directory.',
+        'The selected Thoth owner requires an ordinary i18n directory.',
       ),
     ]);
   }
@@ -1068,7 +1066,7 @@ async function discoverCatalogs(
     if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {
       diagnostics.push(
         projectDiagnostic(
-          `Equator catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,
+          `Thoth catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,
         ),
       );
       continue;
@@ -1084,7 +1082,7 @@ async function discoverCatalogs(
       ) {
         diagnostics.push(
           projectDiagnostic(
-            `Equator scope ${JSON.stringify(scopeEntry.name)} contains unsupported entry ${JSON.stringify(localeEntry.name)}.`,
+            `Thoth scope ${JSON.stringify(scopeEntry.name)} contains unsupported entry ${JSON.stringify(localeEntry.name)}.`,
           ),
         );
         continue;
@@ -1106,7 +1104,7 @@ async function discoverCatalogs(
       // between the two is the whole of the diagnostic below.
       unreadable.push(portable);
       const read = await readAuthoredText(location.ownerRoot, absolutePath, {
-        code: 'EQ1101',
+        code: 'TH1101',
         name: 'the catalog',
         maximumBytes: RESOURCE_LIMITS.catalogBytes,
       });
@@ -1141,10 +1139,10 @@ async function discoverCatalogs(
     }
   }
   if (catalogs.length === 0) {
-    // One sentence for both cases, *"Equator found no conventional i18n/<scope>/<locale>.yaml
+    // One sentence for both cases, *"Thoth found no conventional i18n/<scope>/<locale>.yaml
     // catalogs"*, would be printed whether none exist or every one exists and fails to parse, above
     // the parse errors for the very files just read. A reader who has an `en-US.yaml` open in front
-    // of them is told Equator cannot find it, which sends them to check the path convention, the
+    // of them is told Thoth cannot find it, which sends them to check the path convention, the
     // scope name and the locale spelling, none of which is wrong.
     //
     // Absence and unreadability are different facts and they take different sentences. The
@@ -1152,21 +1150,21 @@ async function discoverCatalogs(
     // business and "see the errors below" is a claim about a layout this code does not control.
     //
     // They are also different *severities*. A project with no messages is not a broken
-    // project: it is the state every project is in the moment after `equator init`, and the install
+    // project: it is the state every project is in the moment after `thoth init`, and the install
     // line is `init` then `generate` with nothing authored in between. So absence is a note that
     // says where the first message goes, and only unreadability is an error. The severity carries
-    // it rather than a second code, the way `EQ1704` does: one fact, one diagnostic, and the
+    // it rather than a second code, the way `TH1704` does: one fact, one diagnostic, and the
     // severity-keyed exit path decides whether it blocks.
     diagnostics.push(
       unreadable.length === 0
         ? projectDiagnostic(
-            `Equator found no messages yet. Write the first catalog at i18n/<scope>/${configuration.sourceLocale}.yaml, for example i18n/shell/${configuration.sourceLocale}.yaml.`,
+            `Thoth found no messages yet. Write the first catalog at i18n/<scope>/${configuration.sourceLocale}.yaml, for example i18n/shell/${configuration.sourceLocale}.yaml.`,
             'info',
           )
         : projectDiagnostic(
             unreadable.length === 1
-              ? `Equator found 1 conventional catalog and could not read it: ${namedPaths(unreadable)}.`
-              : `Equator found ${unreadable.length} conventional catalogs and could not read any of them: ${namedPaths(unreadable)}.`,
+              ? `Thoth found 1 conventional catalog and could not read it: ${namedPaths(unreadable)}.`
+              : `Thoth found ${unreadable.length} conventional catalogs and could not read any of them: ${namedPaths(unreadable)}.`,
           ),
     );
   }
@@ -1189,9 +1187,9 @@ function typescriptDiagnostic(
     diagnostic.start === undefined ||
     diagnostic.length === undefined
   ) {
-    return toolkitDiagnostic('EQ1401', `TypeScript configuration: ${summary}`);
+    return toolkitDiagnostic('TH1401', `TypeScript configuration: ${summary}`);
   }
-  return toolkitDiagnostic('EQ1401', `TypeScript configuration: ${summary}`, {
+  return toolkitDiagnostic('TH1401', `TypeScript configuration: ${summary}`, {
     span: spanAt(
       diagnostic.file.text,
       diagnostic.start,
@@ -1292,7 +1290,7 @@ function angularApplication(
   if (unique.length > 1) {
     return toolkitFailure([
       projectDiagnostic(
-        `Equator found multiple Angular application TypeScript graphs: ${unique
+        `Thoth found multiple Angular application TypeScript graphs: ${unique
           .map(({ tsConfig }) =>
             JSON.stringify(portablePath(ownerRoot, tsConfig)),
           )
@@ -1309,7 +1307,7 @@ async function selectAngularApplication(
   const angularPath = resolve(ownerRoot, 'angular.json');
   if (await pathExists(angularPath)) {
     const read = await readAuthoredText(ownerRoot, angularPath, {
-      code: 'EQ1702',
+      code: 'TH1702',
       name: 'the owner angular.json',
       maximumBytes: 4 * 1024 * 1024,
     });
@@ -1346,7 +1344,7 @@ async function selectAngularApplication(
 /**
  * Where this owner's generated source belongs.
  *
- * Inside the Angular application Equator analyzed, always. When the owner is the application, the
+ * Inside the Angular application Thoth analyzed, always. When the owner is the application, the
  * per-application layout, that is `src/generated/i18n` under the owner. When an owner at a
  * workspace root has its application nested, writing to the owner's own `src/generated/i18n` would
  * create a source directory belonging to no Angular project and sitting outside the tsconfig of
@@ -1360,7 +1358,7 @@ async function generatedRootPath(
   const path = root === '' ? GENERATED_ROOT : `${root}/${GENERATED_ROOT}`;
   // Not inside a tree something else rewrites. A package manager replaces a dependency's directory
   // on install and a build empties its output, so generated source placed in either is lost the
-  // next time one runs, and whatever was there is Equator's to overwrite no more than it is ours.
+  // next time one runs, and whatever was there is Thoth's to overwrite no more than it is ours.
   const absolute = resolve(ownerRoot, ...path.split('/'));
   const outputPath = application.ok ? application.value?.outputPath : undefined;
   const foreign = path.split('/').includes('node_modules')
@@ -1371,7 +1369,7 @@ async function generatedRootPath(
   if (foreign !== undefined) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1601',
+        'TH1601',
         `The generated root ${JSON.stringify(path)} lies inside ${foreign}. Place the Angular application outside it.`,
       ),
     ]);
@@ -1467,16 +1465,16 @@ async function loadAnalysisGraph(
   const selected = await selectAngularApplication(location.ownerRoot);
   if (!selected.ok) return selected;
   if (selected.value === undefined) {
-    // Silence was the worst available answer. With no TypeScript graph, Equator cannot see a single
+    // Silence was the worst available answer. With no TypeScript graph, Thoth cannot see a single
     // template or call site, so every message looks unused, reachability is empty, and generation
     // produces an owner with nothing in it, and it all reports success. Every application meets
-    // first-time configuration exactly once, so this is the moment a workspace adopting Equator is
+    // first-time configuration exactly once, so this is the moment a workspace adopting Thoth is
     // most likely to hit it and least able to recognise it. Reported as a project-selection
     // failure rather than an environment one, because the fix is in the project.
     return toolkitFailure([
       ...selected.diagnostics,
       projectDiagnostic(
-        'Equator found no TypeScript graph for this owner, so no template or call site can be analyzed and every message would appear unused. Expected an Angular application build tsConfig in angular.json, or tsconfig.app.json or tsconfig.json beside package.json.',
+        'Thoth found no TypeScript graph for this owner, so no template or call site can be analyzed and every message would appear unused. Expected an Angular application build tsConfig in angular.json, or tsconfig.app.json or tsconfig.json beside package.json.',
       ),
     ]);
   }
@@ -1515,8 +1513,8 @@ async function loadAnalysisGraph(
   if (rootNames.length > RESOURCE_LIMITS.analysisSourceFiles) {
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1403',
-        `Equator TypeScript analysis exceeds the ${RESOURCE_LIMITS.analysisSourceFiles}-source implementation ceiling.`,
+        'TH1403',
+        `Thoth TypeScript analysis exceeds the ${RESOURCE_LIMITS.analysisSourceFiles}-source implementation ceiling.`,
       ),
     );
   }
@@ -1524,7 +1522,7 @@ async function loadAnalysisGraph(
     if (!containedPath(path, location.ownerRoot)) {
       diagnostics.push(
         projectDiagnostic(
-          `The selected TypeScript graph contains root ${JSON.stringify(path)} outside the Equator owner.`,
+          `The selected TypeScript graph contains root ${JSON.stringify(path)} outside the Thoth owner.`,
         ),
       );
     }
@@ -1551,12 +1549,12 @@ async function loadAnalysisGraph(
     if (linked !== undefined) {
       return toolkitFailure([
         projectDiagnostic(
-          `The selected TypeScript graph contains root ${JSON.stringify(portablePath(location.ownerRoot, path))} behind the link ${JSON.stringify(portablePath(location.ownerRoot, linked))}, and Equator reads no linked project content.`,
+          `The selected TypeScript graph contains root ${JSON.stringify(portablePath(location.ownerRoot, path))} behind the link ${JSON.stringify(portablePath(location.ownerRoot, linked))}, and Thoth reads no linked project content.`,
         ),
       ]);
     }
     const read = await readAuthoredText(location.ownerRoot, path, {
-      code: 'EQ1403',
+      code: 'TH1403',
       name: 'the analysis source',
       maximumBytes: 4 * 1024 * 1024,
       decoding: 'replacement',
@@ -1566,8 +1564,8 @@ async function loadAnalysisGraph(
     if (!addSource(path, source)) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1403',
-          `Equator analysis exceeds its ${RESOURCE_LIMITS.analysisSourceFiles}-source or ${RESOURCE_LIMITS.analysisSourceBytes}-byte implementation ceiling.`,
+          'TH1403',
+          `Thoth analysis exceeds its ${RESOURCE_LIMITS.analysisSourceFiles}-source or ${RESOURCE_LIMITS.analysisSourceBytes}-byte implementation ceiling.`,
         ),
       ]);
     }
@@ -1580,8 +1578,8 @@ async function loadAnalysisGraph(
       if (metadata?.isSymbolicLink()) {
         return toolkitFailure([
           toolkitDiagnostic(
-            'EQ1402',
-            `Equator refuses linked Angular template ${JSON.stringify(
+            'TH1402',
+            `Thoth refuses linked Angular template ${JSON.stringify(
               portablePath(location.ownerRoot, templatePath),
             )}.`,
           ),
@@ -1596,7 +1594,7 @@ async function loadAnalysisGraph(
           location.ownerRoot,
           templatePath,
           {
-            code: 'EQ1403',
+            code: 'TH1403',
             name: 'the Angular template',
             maximumBytes: 4 * 1024 * 1024,
             decoding: 'replacement',
@@ -1606,8 +1604,8 @@ async function loadAnalysisGraph(
         if (!addSource(templatePath, template.value)) {
           return toolkitFailure([
             toolkitDiagnostic(
-              'EQ1403',
-              `Equator analysis exceeds its ${RESOURCE_LIMITS.analysisSourceFiles}-source or ${RESOURCE_LIMITS.analysisSourceBytes}-byte implementation ceiling.`,
+              'TH1403',
+              `Thoth analysis exceeds its ${RESOURCE_LIMITS.analysisSourceFiles}-source or ${RESOURCE_LIMITS.analysisSourceBytes}-byte implementation ceiling.`,
             ),
           ]);
         }
@@ -1774,7 +1772,7 @@ function parseCompilerState(value: unknown): CompilerState | undefined {
   if (
     Object.keys(state).sort().join(',') !==
       'inputFingerprint,inputs,outputPlanDigest,profile' ||
-    state['profile'] !== 'equator-compiler-state/1' ||
+    state['profile'] !== 'thoth-compiler-state/1' ||
     !validDigest(state['inputFingerprint']) ||
     !validDigest(state['outputPlanDigest']) ||
     !Array.isArray(state['inputs'])
@@ -1807,7 +1805,7 @@ function parseCompilerState(value: unknown): CompilerState | undefined {
     return undefined;
   }
   return Object.freeze({
-    profile: 'equator-compiler-state/1',
+    profile: 'thoth-compiler-state/1',
     inputFingerprint: state['inputFingerprint'],
     outputPlanDigest: state['outputPlanDigest'],
     inputs: Object.freeze(inputs.map((input) => Object.freeze(input))),
@@ -1815,7 +1813,7 @@ function parseCompilerState(value: unknown): CompilerState | undefined {
 }
 
 function compilerCacheContents(ownerId: string, state: CompilerState): string {
-  const stateDigest = digestCanonicalJson('equator-compiler-cache-state/1', {
+  const stateDigest = digestCanonicalJson('thoth-compiler-cache-state/1', {
     ownerId,
     state: JSON.parse(JSON.stringify(state)),
   });
@@ -1841,15 +1839,15 @@ function ignoredCompilerCache(
   return Object.freeze({
     ownerId: '',
     state: Object.freeze({
-      profile: 'equator-compiler-state/1',
+      profile: 'thoth-compiler-state/1',
       inputFingerprint: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       outputPlanDigest: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       inputs: Object.freeze([]),
     }),
     diagnostics: Object.freeze([
       toolkitDiagnostic(
-        'EQ1703',
-        `Equator ignored ${what} incremental compiler cache and will recompute it.`,
+        'TH1703',
+        `Thoth ignored ${what} incremental compiler cache and will recompute it.`,
         { severity: 'info' },
       ),
     ]),
@@ -1891,7 +1889,7 @@ async function readCompilerCache(
   try {
     expectedDigest =
       typeof ownerId === 'string' && state !== undefined
-        ? digestCanonicalJson('equator-compiler-cache-state/1', {
+        ? digestCanonicalJson('thoth-compiler-cache-state/1', {
             ownerId,
             state: JSON.parse(JSON.stringify(state)),
           })
@@ -1935,8 +1933,8 @@ async function writeCompilerCache(
   ) {
     return Object.freeze([
       toolkitDiagnostic(
-        'EQ1703',
-        'Equator skipped incremental cache persistence because work ownership changed.',
+        'TH1703',
+        'Thoth skipped incremental cache persistence because work ownership changed.',
         { severity: 'warning' },
       ),
     ]);
@@ -2104,13 +2102,13 @@ async function readTranslationState(
   const refusal = (reason: string) =>
     toolkitFailure([
       projectDiagnostic(
-        `Equator cannot read the translation-state record ${JSON.stringify(TRANSLATION_STATE_PATH)} because ${reason}, and leaves it unchanged. Resolve it, or delete it to record every translation as current.`,
+        `Thoth cannot read the translation-state record ${JSON.stringify(TRANSLATION_STATE_PATH)} because ${reason}, and leaves it unchanged. Resolve it, or delete it to record every translation as current.`,
       ),
     ]);
   let read: ToolkitResult<string>;
   try {
     read = await readAuthoredText(ownerRoot, path, {
-      code: 'EQ1702',
+      code: 'TH1702',
       name: 'the translation-state record',
       maximumBytes: 4 * 1024 * 1024,
     });
@@ -2149,7 +2147,7 @@ function staleTranslationDiagnostics(
         entry.locale,
       );
       return toolkitDiagnostic(
-        'EQ1309',
+        'TH1309',
         `Translation ${JSON.stringify(entry.messageId)} in ${entry.locale} was written against an older ${entry.scopeId} source and may no longer match it.${policy.suffix}`,
         { path: ['messages', entry.messageId], severity: policy.severity },
       );
@@ -2256,8 +2254,8 @@ async function generateProjectCore(
     } catch {
       cacheDiagnostics = Object.freeze([
         toolkitDiagnostic(
-          'EQ1703',
-          'Equator accepted generated output but could not persist its disposable incremental cache.',
+          'TH1703',
+          'Thoth accepted generated output but could not persist its disposable incremental cache.',
           { severity: 'warning' },
         ),
       ]);
@@ -2406,8 +2404,8 @@ export async function checkProject(
   if (!freshness.value.fresh) {
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1704',
-        `Generated output is stale (${freshness.value.missing.length} missing, ${freshness.value.changed.length} changed, ${freshness.value.stale.length} stale). Run equator generate.`,
+        'TH1704',
+        `Generated output is stale (${freshness.value.missing.length} missing, ${freshness.value.changed.length} changed, ${freshness.value.stale.length} stale). Run thoth generate.`,
         // The same finding either way; the policy decides whether it blocks. Escalating the
         // severity rather than raising a second code keeps one diagnostic for one fact, and the
         // severity-keyed exit path does the rest.
@@ -2434,7 +2432,7 @@ async function applyTextChanges(
 ): Promise<ToolkitResult<FormatProjectResult>> {
   const changed = changes
     .map((change) =>
-      // A mark the file was saved with is the file's, and Equator writes only what it changed.
+      // A mark the file was saved with is the file's, and Thoth writes only what it changed.
       change.previous?.startsWith(BYTE_ORDER_MARK) === true &&
       !change.contents.startsWith(BYTE_ORDER_MARK)
         ? { ...change, contents: `${BYTE_ORDER_MARK}${change.contents}` }
@@ -2452,7 +2450,7 @@ async function applyTextChanges(
       }),
     );
   }
-  const lockPath = resolve(ownerRoot, '.equator-authoring.lock');
+  const lockPath = resolve(ownerRoot, '.thoth-authoring.lock');
   let lockHandle: Awaited<ReturnType<typeof open>> | undefined;
   const transactionId = randomBytes(12).toString('hex');
   const operations: {
@@ -2470,16 +2468,16 @@ async function applyTextChanges(
         : undefined;
       if (current !== change.previous) {
         throw new TypeError(
-          `Equator input ${change.portablePath} changed before publication.`,
+          `Thoth input ${change.portablePath} changed before publication.`,
         );
       }
       const temporary = resolve(
         dirname(change.absolutePath),
-        `.${basename(change.absolutePath)}.equator-${transactionId}.tmp`,
+        `.${basename(change.absolutePath)}.thoth-${transactionId}.tmp`,
       );
       const backup = resolve(
         dirname(change.absolutePath),
-        `.${basename(change.absolutePath)}.equator-${transactionId}.bak`,
+        `.${basename(change.absolutePath)}.thoth-${transactionId}.bak`,
       );
       await writeSynced(temporary, change.contents);
       operations.push({ change, temporary, backup, published: false });
@@ -2513,16 +2511,16 @@ async function applyTextChanges(
       } catch {
         return toolkitFailure([
           toolkitDiagnostic(
-            'EQ1602',
-            'Equator authoring publication failed and automatic rollback could not be completed safely.',
+            'TH1602',
+            'Thoth authoring publication failed and automatic rollback could not be completed safely.',
           ),
         ]);
       }
     }
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1602',
-        `Equator authoring publication failed safely: ${error instanceof Error ? error.message : String(error)}`,
+        'TH1602',
+        `Thoth authoring publication failed safely: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
   } finally {
@@ -2560,8 +2558,8 @@ export async function formatProject(
   ) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1703',
-        'Equator refused configuration formatting because semantic equality was not proven.',
+        'TH1703',
+        'Thoth refused configuration formatting because semantic equality was not proven.',
       ),
     ]);
   }
@@ -2584,8 +2582,8 @@ export async function formatProject(
     ) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1703',
-          'Equator refused extension-registry formatting because semantic equality was not proven.',
+          'TH1703',
+          'Thoth refused extension-registry formatting because semantic equality was not proven.',
         ),
       ]);
     }
@@ -2619,8 +2617,8 @@ export async function formatProject(
     ) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1703',
-          `Equator refused formatting ${JSON.stringify(file.portablePath)} because semantic equality was not proven.`,
+          'TH1703',
+          `Thoth refused formatting ${JSON.stringify(file.portablePath)} because semantic equality was not proven.`,
         ),
       ]);
     }
@@ -2651,7 +2649,7 @@ async function initOwner(
   }
   // `init` is the one command that may proceed when discovery finds nothing: creating the project
   // is what it is for. Which outcome it was is read from the search rather than from the wording of
-  // the diagnostic. Reading it as `summary.startsWith('No equator.config.json was found.')` makes
+  // the diagnostic. Reading it as `summary.startsWith('No thoth.config.json was found.')` makes
   // improving that sentence turn `init` into a command that refuses an empty directory.
   const ownerRoot = resolve(selection.cwd ?? process.cwd());
   const search = await searchOwnerWithinPackage(ownerRoot);
@@ -2666,7 +2664,7 @@ async function initOwner(
   ) {
     return toolkitFailure([
       projectDiagnostic(
-        'Equator init requires an existing ordinary owner directory.',
+        'Thoth init requires an existing ordinary owner directory.',
       ),
     ]);
   }
@@ -2704,8 +2702,8 @@ function requestedConfiguration(
   if (missing.length > 0) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1701',
-        `Noninteractive equator init requires ${missing
+        'TH1701',
+        `Noninteractive thoth init requires ${missing
           .map(
             (option) =>
               `${option.flag} ${option.value}${option.repeatable ? ' (repeat for each)' : ''}`,
@@ -2728,7 +2726,7 @@ function requestedConfiguration(
 /**
  * A package manifest written back in the style it was read in.
  *
- * `package.json` is the application's file, and Equator's part of it is a few entries. Rewriting the
+ * `package.json` is the application's file, and Thoth's part of it is a few entries. Rewriting the
  * rest in another style would put a change nobody made into the application's history, so the file
  * is left exactly as it is when its entries are what they already were, and otherwise keeps its
  * indentation and line endings. The style is read the way npm reads a manifest
@@ -2766,7 +2764,7 @@ function updatedPackageSource(
       Array.isArray(currentImports))
   ) {
     return toolkitFailure([
-      toolkitDiagnostic('EQ1705', 'package.json imports must be an object.'),
+      toolkitDiagnostic('TH1705', 'package.json imports must be an object.'),
     ]);
   }
   const imports = (currentImports ?? {}) as Record<string, unknown>;
@@ -2777,8 +2775,8 @@ function updatedPackageSource(
     if (existing !== undefined && existing !== target) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1705',
-          `Equator init refuses conflicting package import ${JSON.stringify(specifier)}.`,
+          'TH1705',
+          `Thoth init refuses conflicting package import ${JSON.stringify(specifier)}.`,
           { path: ['imports', specifier] },
         ),
       ]);
@@ -2794,7 +2792,7 @@ function updatedPackageSource(
       Array.isArray(currentScripts))
   ) {
     return toolkitFailure([
-      toolkitDiagnostic('EQ1705', 'package.json scripts must be an object.'),
+      toolkitDiagnostic('TH1705', 'package.json scripts must be an object.'),
     ]);
   }
   const scripts = (currentScripts ?? {}) as Record<string, unknown>;
@@ -2803,8 +2801,8 @@ function updatedPackageSource(
     if (existing !== undefined && existing !== command) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1705',
-          `Equator init refuses conflicting package script ${JSON.stringify(name)}.`,
+          'TH1705',
+          `Thoth init refuses conflicting package script ${JSON.stringify(name)}.`,
           { path: ['scripts', name] },
         ),
       ]);
@@ -2862,8 +2860,8 @@ export async function initializeProject(
   ) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1705',
-        'Equator init arguments conflict with the existing equator.config.json.',
+        'TH1705',
+        'Thoth init arguments conflict with the existing thoth.config.json.',
       ),
     ]);
   }
@@ -2884,7 +2882,7 @@ export async function initializeProject(
     {
       absolutePath: location.value.packagePath,
       portablePath: 'package.json',
-      // A manifest Equator is creating has no previous contents, and claiming one would make the
+      // A manifest Thoth is creating has no previous contents, and claiming one would make the
       // change look like an edit to a file that was never there.
       previous: packageManifest.value.created
         ? undefined
@@ -2905,7 +2903,7 @@ export async function initializeProject(
   // project is in the moment after `init` and the install line is `init` then `generate`. The one
   // thing a consumer cannot work out for themselves is the directory's name, so `init` makes it.
   //
-  // It writes no catalog. A first catalog would be Equator's words sitting in a consumer's product,
+  // It writes no catalog. A first catalog would be Thoth's words sitting in a consumer's product,
   // and an empty one is not a file that can exist: `messages.minProperties: 1` in
   // `SOURCE_CATALOG_SCHEMA` refuses `messages: {}`. Relaxing that would admit empty scopes,
   // which `specs/04-message-authoring-and-catalogs.spec.md` section 3 prohibits as reservation
@@ -2937,18 +2935,18 @@ export async function initializeProject(
       //
       // Both are content, and content is the consumer's. The first catalog is their words; the
       // recovery message is the sentence a visitor reads when the translations cannot be loaded.
-      // Equator writing either would be Equator's words sitting in someone else's product, so
+      // Thoth writing either would be Thoth's words sitting in someone else's product, so
       // neither is scaffolded, and what `init` owes instead is to name them.
       //
-      // The recovery message is here because it is the one nobody expects. `EQ1702` already names
+      // The recovery message is here because it is the one nobody expects. `TH1702` already names
       // the first catalog at the next `generate`; nothing named the recovery message until
-      // `EQ1310` refused a build that was otherwise finished, by which time the reader has already
+      // `TH1310` refused a build that was otherwise finished, by which time the reader has already
       // composed `provideLocalization` believing every feature optional. It is not optional for an
       // owner that composes the application runtime, and the honest time to say so is before the
       // composing rather than after it.
       toolkitDiagnostic(
-        'EQ1706',
-        `Equator init is done. Two things are yours to write: the first catalog at i18n/<scope>/${requested.value.sourceLocale}.yaml, for example i18n/shell/${requested.value.sourceLocale}.yaml, and a recovery message. One plain message passed to provideLocalization through withRecoveryMessage, which is what a visitor reads if the translations cannot be loaded.`,
+        'TH1706',
+        `Thoth init is done. Two things are yours to write: the first catalog at i18n/<scope>/${requested.value.sourceLocale}.yaml, for example i18n/shell/${requested.value.sourceLocale}.yaml, and a recovery message. One plain message passed to provideLocalization through withRecoveryMessage, which is what a visitor reads if the translations cannot be loaded.`,
         { severity: 'info' },
       ),
     ],
@@ -2956,7 +2954,7 @@ export async function initializeProject(
 }
 
 /**
- * Removes Equator from a project: the generated output, the configuration, and the package scripts.
+ * Removes Thoth from a project: the generated output, the configuration, and the package scripts.
  *
  * Takes the project to work on, whether to write, and whether to take the authored catalogs with
  * it; with no options it uninstalls the project found from the current directory and leaves the
@@ -2971,7 +2969,7 @@ export async function initializeProject(
  * Deleting a project's translations as a side effect of uninstalling a tool would be
  * indefensible.
  *
- * Only what Equator wrote is taken back. A `#i18n` specifier a consumer has repointed, or a script
+ * Only what Thoth wrote is taken back. A `#i18n` specifier a consumer has repointed, or a script
  * they have edited, is theirs now: it is left exactly as it is and named in the result, because
  * silently reverting an edit is the same class of mistake as silently deleting a comment.
  */
@@ -3096,7 +3094,7 @@ export async function uninstallProject(
  * Removes a project's generated output and leaves everything else alone.
  *
  * The configuration, the authored catalogs and the package scripts stay, which is what `clean`
- * means everywhere else. Removing Equator itself is `uninstallProject`, a separate call rather
+ * means everywhere else. Removing Thoth itself is `uninstallProject`, a separate call rather
  * than a flag on this one, because a flag that turns "remove build output" into "remove the tool"
  * eventually runs in a pipeline by accident.
  *
@@ -3260,8 +3258,8 @@ export async function watchProject(
           sequence: cycles,
           result: toolkitFailure([
             toolkitDiagnostic(
-              'EQ1703',
-              `Equator watch reconciliation failed: ${error instanceof Error ? error.message : String(error)}`,
+              'TH1703',
+              `Thoth watch reconciliation failed: ${error instanceof Error ? error.message : String(error)}`,
             ),
           ]),
         }),
@@ -3301,8 +3299,8 @@ export async function watchProject(
   } catch (error) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1703',
-        `Equator could not start its foreground watcher: ${error instanceof Error ? error.message : String(error)}`,
+        'TH1703',
+        `Thoth could not start its foreground watcher: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
   }
@@ -3322,8 +3320,8 @@ export async function watchProject(
   if (watcherError !== undefined) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1703',
-        `Equator foreground watcher failed: ${watcherError.message}`,
+        'TH1703',
+        `Thoth foreground watcher failed: ${watcherError.message}`,
       ),
     ]);
   }

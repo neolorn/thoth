@@ -214,7 +214,7 @@ describe('two families', () => {
         '  first: "status.{state}"',
         '  second: "status.{state}"',
       ]),
-    ).toEqual({ refused: ['EQ1305 families/second'] });
+    ).toEqual({ refused: ['TH1305 families/second'] });
   });
 
   it('are refused, at the second, where one message matches both', () => {
@@ -226,7 +226,7 @@ describe('two families', () => {
         '  by-state: "status.{state}"',
         '  ready-of: "{subject}.ready"',
       ]),
-    ).toEqual({ refused: ['EQ1305 families/ready-of'] });
+    ).toEqual({ refused: ['TH1305 families/ready-of'] });
   });
 });
 
@@ -240,6 +240,6 @@ describe('a family whose members disagree on their contract', () => {
         'families:',
         '  status: "status.{state}"',
       ]),
-    ).toEqual({ refused: ['EQ1305 families/status'] });
+    ).toEqual({ refused: ['TH1305 families/status'] });
   });
 });

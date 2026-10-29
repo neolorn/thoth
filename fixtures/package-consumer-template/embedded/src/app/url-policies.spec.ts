@@ -19,7 +19,7 @@ import {
   withLocaleSources,
   withRouting,
   type LocaleUrlPolicy,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration, localizationSetup } from '#i18n';
 import { routeProjection } from '#i18n/routes';
 import { messages } from '#i18n/shell';

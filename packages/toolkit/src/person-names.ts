@@ -62,10 +62,10 @@ const INDEX: ReadonlyMap<string, PersonNameRow> = new Map(
 /**
  * The person-name profiles a set of locales resolves to, and nothing else.
  *
- * Equator carries the whole pinned release in this package because it cannot know which locales an
+ * Thoth carries the whole pinned release in this package because it cannot know which locales an
  * application will configure. The application's generated artifact carries only what its own
  * locales reach (typically two or three rows, against 379) because a table that is almost
- * entirely index for locales nobody uses is the one place Equator would stop being
+ * entirely index for locales nobody uses is the one place Thoth would stop being
  * pay-for-what-you-use.
  *
  * **Rows keep their own tag, not the tag that asked for them.** A consumer configuring `ar-EG`

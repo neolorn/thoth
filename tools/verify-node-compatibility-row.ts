@@ -36,7 +36,7 @@ interface RowManifest {
   readonly name?: unknown;
   readonly engines?: { readonly node?: unknown };
   readonly exports?: Readonly<Record<string, unknown>>;
-  readonly bin?: { readonly equator?: unknown };
+  readonly bin?: { readonly thoth?: unknown };
 }
 
 /** A loaded module's namespace, read by export name. */
@@ -246,14 +246,14 @@ async function createProjectFixture(projectRoot: string): Promise<void> {
           '#i18n/*': './src/generated/i18n/*.ts',
         },
         scripts: {
-          'equator:generate': 'equator generate',
-          'equator:check': 'equator check',
+          'thoth:generate': 'thoth generate',
+          'thoth:check': 'thoth check',
         },
       },
       null,
       2,
     )}\n`,
-    'equator.config.json': `${JSON.stringify(
+    'thoth.config.json': `${JSON.stringify(
       {
         schemaVersion: 1,
         sourceLocale: 'en-US',
@@ -265,14 +265,14 @@ async function createProjectFixture(projectRoot: string): Promise<void> {
     )}\n`,
     'i18n/shell/en-US.yaml': [
       'messages:',
-      '  app-title: Equator Node row fixture',
+      '  app-title: Thoth Node row fixture',
       "  welcome: 'Welcome, {$name}!'",
       '  recovery.unavailable: Localization is temporarily unavailable.',
       '',
     ].join('\n'),
     'i18n/shell/ar-EG.yaml': [
       'messages:',
-      '  app-title: تطبيق Equator',
+      '  app-title: تطبيق Thoth',
       "  welcome: 'مرحبًا، {$name}!'",
       '  recovery.unavailable: الترجمة غير متاحة مؤقتًا.',
       '',
@@ -365,7 +365,7 @@ async function snapshotGeneratedOutput(generatedRoot: string) {
     }
   };
   await visit(generatedRoot);
-  assert.ok(files.length > 0, 'Equator generate did not publish any files');
+  assert.ok(files.length > 0, 'Thoth generate did not publish any files');
   return Object.freeze({ files: Object.freeze(files), bytes });
 }
 
@@ -404,47 +404,47 @@ function runMachineCommand(
   assert.equal(
     result.error,
     undefined,
-    `Equator ${command} could not launch: ${cliFailure(result)}`,
+    `Thoth ${command} could not launch: ${cliFailure(result)}`,
   );
-  assert.equal(result.signal, null, `Equator ${command} ${cliFailure(result)}`);
+  assert.equal(result.signal, null, `Thoth ${command} ${cliFailure(result)}`);
   assert.equal(
     result.status,
     0,
-    `Equator ${command} failed: ${cliFailure(result)}`,
+    `Thoth ${command} failed: ${cliFailure(result)}`,
   );
   assert.equal(
     result.stderr,
     '',
-    `Equator ${command} emitted stderr: ${result.stderr}`,
+    `Thoth ${command} emitted stderr: ${result.stderr}`,
   );
   const source = result.stdout.trim();
   const lines = source.split(/\r?\n/u).filter((line) => line !== '');
   assert.equal(
     lines.length,
     1,
-    `Equator ${command} must emit exactly one machine-result line`,
+    `Thoth ${command} must emit exactly one machine-result line`,
   );
   let record: CliRecord;
   try {
     record = JSON.parse(lines[0] as string) as CliRecord;
   } catch (error) {
     throw new Error(
-      `Equator ${command} emitted invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
+      `Thoth ${command} emitted invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
   assert.equal(
     validateCliResult(record),
     true,
-    `Equator ${command} machine result violates the public schema: ${JSON.stringify(validateCliResult.errors)}`,
+    `Thoth ${command} machine result violates the public schema: ${JSON.stringify(validateCliResult.errors)}`,
   );
-  assert.equal(record.profile, 'equator-cli-result/1');
+  assert.equal(record.profile, 'thoth-cli-result/1');
   assert.equal(record.command, command);
   assert.equal(record.status, 'success');
   assert.deepEqual(record.diagnostics, []);
   assert.equal(
     typeof record.result,
     'object',
-    `Equator ${command} did not include a result object`,
+    `Thoth ${command} did not include a result object`,
   );
   assert.notEqual(record.result, null);
   return Object.freeze({ source, record });
@@ -553,7 +553,7 @@ async function importPublicEntry(
   const loaded = (await import(
     pathToFileURL(outputPath).href
   )) as ModuleNamespace;
-  if (manifest.name === '@neolorn/equator') {
+  if (manifest.name === '@neolorn/thoth') {
     importedRuntimeEntrypoints.push(subpath);
   }
   return loaded;
@@ -572,7 +572,7 @@ function assertFunction(
 }
 
 /**
- * What Equator actually renders on this Node runtime.
+ * What Thoth actually renders on this Node runtime.
  *
  * Rendered rather than type-checked. Asserting that five exports are functions and invoking none
  * of them says nothing about the three Node majors `engines.node` advertises. ICU data differs
@@ -599,7 +599,7 @@ function localizedOutputEvidence(runtime: RuntimeSurface) {
   };
 
   return Object.freeze({
-    profile: 'equator-node-localized-output/1',
+    profile: 'thoth-node-localized-output/1',
     numberArabic: text(
       runtime.formatNumber(runtime.decimal('1234567.89'), arabic, {}),
     ),
@@ -664,23 +664,18 @@ async function main() {
   );
 
   const harnessRoot = await realpath(options.harnessRoot);
-  const runtimeRoot = resolve(
-    harnessRoot,
-    'node_modules',
-    '@neolorn',
-    'equator',
-  );
+  const runtimeRoot = resolve(harnessRoot, 'node_modules', '@neolorn', 'thoth');
   const toolkitRoot = resolve(
     harnessRoot,
     'node_modules',
     '@neolorn',
-    'equator-toolkit',
+    'thoth-toolkit',
   );
   const runtimeManifest = await readJson(resolve(runtimeRoot, 'package.json'));
   const toolkitManifest = await readJson(resolve(toolkitRoot, 'package.json'));
 
-  assert.equal(runtimeManifest.name, '@neolorn/equator');
-  assert.equal(toolkitManifest.name, '@neolorn/equator-toolkit');
+  assert.equal(runtimeManifest.name, '@neolorn/thoth');
+  assert.equal(toolkitManifest.name, '@neolorn/thoth-toolkit');
   // The installed copies against what the packages declare, with the range read from the source
   // manifests rather than written again here.
   assert.equal(runtimeManifest.engines?.node, nodeRange);
@@ -706,51 +701,51 @@ async function main() {
     assert.notEqual(
       loaded,
       undefined,
-      `@neolorn/equator does not publish ${subpath}`,
+      `@neolorn/thoth does not publish ${subpath}`,
     );
     return loaded as ModuleNamespace;
   };
   const runtime = runtimeEntry('.');
-  assertFunction(runtime, 'createLocalizationContext', '@neolorn/equator');
-  assertFunction(runtime, 'provideLocalizationSetup', '@neolorn/equator');
+  assertFunction(runtime, 'createLocalizationContext', '@neolorn/thoth');
+  assertFunction(runtime, 'provideLocalizationSetup', '@neolorn/thoth');
   assertFunction(
     runtimeEntry('./core'),
     'localeProfile',
-    '@neolorn/equator/core',
+    '@neolorn/thoth/core',
   );
   assertFunction(
     runtimeEntry('./forms'),
     'LocalizedInput',
-    '@neolorn/equator/forms',
+    '@neolorn/thoth/forms',
   );
-  // `./http` and `./ssr` have the most to prove here: they are the Equator code that runs under Node
+  // `./http` and `./ssr` have the most to prove here: they are the Thoth code that runs under Node
   // in production rather than in a test, and `./ssr` is the only entry point whose peer is optional
   // *and* server-only. An entry point that fails to load on a supported Node row fails at a
   // server's start or a consumer's prerender, the least recoverable places to find out.
   assertFunction(
     runtimeEntry('./http'),
     'createLocaleRequestHandler',
-    '@neolorn/equator/http',
+    '@neolorn/thoth/http',
   );
   assertFunction(
     runtimeEntry('./router'),
     'provideLocalizedRouter',
-    '@neolorn/equator/router',
+    '@neolorn/thoth/router',
   );
   assertFunction(
     runtimeEntry('./ssr'),
     'provideLocalizedServerRendering',
-    '@neolorn/equator/ssr',
+    '@neolorn/thoth/ssr',
   );
   assertFunction(
     runtimeEntry('./testing'),
     'provideLocalizationTesting',
-    '@neolorn/equator/testing',
+    '@neolorn/thoth/testing',
   );
 
   const toolkit = await importPublicEntry(toolkitRoot, toolkitManifest, '.');
-  assertFunction(toolkit, 'compileProject', '@neolorn/equator-toolkit');
-  assertFunction(toolkit, 'parseConfiguration', '@neolorn/equator-toolkit');
+  assertFunction(toolkit, 'compileProject', '@neolorn/thoth-toolkit');
+  assertFunction(toolkit, 'parseConfiguration', '@neolorn/thoth-toolkit');
   // Host admission is internal to the toolkit, so it comes from the module that declares it. The
   // public entry is still loaded above, because whether it loads at all on this row is half of what
   // this gate asks.
@@ -765,7 +760,7 @@ async function main() {
     true,
     `Host admission rejected ${JSON.stringify(hostVersions)}: ${JSON.stringify(admission.diagnostics)}`,
   );
-  assert.equal(admission.value.profile, 'equator-host-compatibility/1');
+  assert.equal(admission.value.profile, 'thoth-host-compatibility/1');
 
   const formatting = localizedOutputEvidence(runtime as RuntimeSurface);
 
@@ -782,12 +777,12 @@ async function main() {
     strict: true,
   }).compile(toolkit['CLI_RESULT_SCHEMA']);
 
-  const cliTarget = toolkitManifest.bin?.equator;
-  assert.equal(typeof cliTarget, 'string', 'Toolkit equator binary is missing');
+  const cliTarget = toolkitManifest.bin?.thoth;
+  assert.equal(typeof cliTarget, 'string', 'Toolkit thoth binary is missing');
   const cliPath = resolve(toolkitRoot, cliTarget as string);
   assert.ok(
     isWithin(cliPath, toolkitRoot),
-    'Toolkit equator binary escapes package',
+    'Toolkit thoth binary escapes package',
   );
   const help = spawnSync(process.execPath, [cliPath, '--help'], {
     cwd: harnessRoot,
@@ -806,10 +801,10 @@ async function main() {
   assert.equal(
     help.signal,
     null,
-    `Equator CLI help terminated by ${help.signal}`,
+    `Thoth CLI help terminated by ${help.signal}`,
   );
   assert.equal(help.status, 0, help.stderr || help.stdout);
-  assert.match(help.stdout, /Usage: equator <command> \[options\]/u);
+  assert.match(help.stdout, /Usage: thoth <command> \[options\]/u);
   assert.match(help.stdout, /migrate\s+Preview or apply/u);
   assert.match(help.stdout, /Exit codes: 0 success/u);
 
@@ -891,11 +886,11 @@ async function main() {
     assert.deepEqual(
       await snapshotGeneratedOutput(generatedRoot),
       initialSnapshot,
-      'Equator check mutated generated bytes or mtimes',
+      'Thoth check mutated generated bytes or mtimes',
     );
 
     workflowEvidence = Object.freeze({
-      profile: 'equator-node-toolkit-workflow/1',
+      profile: 'thoth-node-toolkit-workflow/1',
       fixture: 'two-locale-typescript',
       generatedFiles: initialSnapshot.files.length,
       generatedBytes: initialSnapshot.bytes,
@@ -925,8 +920,8 @@ async function main() {
   assert.notEqual(workflowEvidence, undefined);
 
   process.stdout.write(
-    `EQUATOR_NODE_ROW ${JSON.stringify({
-      profile: 'equator-node-compatibility/1',
+    `THOTH_NODE_ROW ${JSON.stringify({
+      profile: 'thoth-node-compatibility/1',
       row: options.row,
       node: options.expectedVersion,
       architecture: process.arch,
@@ -945,7 +940,7 @@ async function main() {
 
 main().catch((error) => {
   process.stderr.write(
-    `Equator Node row verification failed: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
+    `Thoth Node row verification failed: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
   );
   process.exitCode = 1;
 });

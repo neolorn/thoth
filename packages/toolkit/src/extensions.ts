@@ -45,11 +45,10 @@ import { compareCodeUnit } from './sorted-records.js';
 import { constructJsonValue, jsonNestingExceeds } from './json-tree.js';
 
 /** The version stamp on an extension registry file, checked before one is read. */
-export const EXTENSION_REGISTRY_PROFILE =
-  'equator-extension-registry/1' as const;
+export const EXTENSION_REGISTRY_PROFILE = 'thoth-extension-registry/1' as const;
 /** The version stamp on a single extension descriptor. */
 export const EXTENSION_DESCRIPTOR_PROFILE =
-  'equator-extension-descriptor/1' as const;
+  'thoth-extension-descriptor/1' as const;
 
 /**
  * The five value types an extension may declare, matching what a message input can be.
@@ -102,7 +101,7 @@ export interface MessageFunctionDescriptorInput {
 }
 
 /**
- * Declares a kind of value a message family may vary over, beyond Equator's own message parts.
+ * Declares a kind of value a message family may vary over, beyond Thoth's own message parts.
  *
  * For a family keyed by something the application owns: a product line, a document type, a tier.
  */
@@ -117,7 +116,7 @@ export interface IdentifierSegmentDescriptorInput {
 }
 
 /**
- * Declares a kind of named region messages may place, beyond the ones Equator ships.
+ * Declares a kind of named region messages may place, beyond the ones Thoth ships.
  *
  * The catalog can then place it and name it; what it renders as is still decided in application
  * code, so a catalog gains a position in a sentence rather than a component.
@@ -147,7 +146,7 @@ export interface RichSlotKindDescriptorInput {
 }
 
 /**
- * Declares a way of writing a value type Equator does not know: a domain's own quantity, code or
+ * Declares a way of writing a value type Thoth does not know: a domain's own quantity, code or
  * identifier.
  *
  * The declaration only. The code that does the writing is registered at runtime.
@@ -165,7 +164,7 @@ export interface FormattingAdapterDescriptorInput {
 }
 
 /**
- * Declares a way of reading a value type Equator does not know back out of what a person typed.
+ * Declares a way of reading a value type Thoth does not know back out of what a person typed.
  *
  * The other half of a formatting adapter, for a field that has to round-trip.
  */
@@ -204,7 +203,7 @@ export type ExtensionDescriptor = ExtensionDescriptorInput & {
 };
 
 /**
- * Everything an application's messages may reach for beyond Equator's own vocabulary.
+ * Everything an application's messages may reach for beyond Thoth's own vocabulary.
  *
  * Inert throughout. Nothing in it is executed, nothing imports a consumer's module, and the whole
  * of it can be read from a file and compared between builds.
@@ -235,9 +234,7 @@ function portableSnapshot(
     budget.nodes > RESOURCE_LIMITS.jsonNodes ||
     depth > RESOURCE_LIMITS.jsonDepth
   ) {
-    throw new TypeError(
-      'Extension descriptor data exceeds Equator tree limits.',
-    );
+    throw new TypeError('Extension descriptor data exceeds Thoth tree limits.');
   }
   if (
     value === null ||
@@ -327,8 +324,8 @@ function descriptorError(
   }
   // The library names what is built in under this namespace, and a descriptor registered there
   // would be taken for the built-in it is named after.
-  if (descriptor.id.startsWith('equator:')) {
-    return 'Extension identities in the equator namespace are reserved for the library.';
+  if (descriptor.id.startsWith('thoth:')) {
+    return 'Extension identities in the thoth namespace are reserved for the library.';
   }
   switch (descriptor.kind) {
     case 'message-function': {
@@ -414,7 +411,7 @@ export function defineExtensionRegistry(
   } catch (error) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1805',
+        'TH1805',
         `Application-local extension registry is not bounded inert data: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
@@ -429,8 +426,8 @@ export function defineExtensionRegistry(
         .slice(0, RESOURCE_LIMITS.diagnostics)
         .map((error) =>
           toolkitDiagnostic(
-            'EQ1805',
-            schemaErrorSummary('Equator extension registry', error),
+            'TH1805',
+            schemaErrorSummary('Thoth extension registry', error),
             { path: schemaErrorPath(error) },
           ),
         ),
@@ -441,8 +438,8 @@ export function defineExtensionRegistry(
   if (normalizedInputs.length > RESOURCE_LIMITS.extensionDescriptors) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1805',
-        'Application-local extension registry exceeds the Equator descriptor ceiling.',
+        'TH1805',
+        'Application-local extension registry exceeds the Thoth descriptor ceiling.',
       ),
     ]);
   }
@@ -454,7 +451,7 @@ export function defineExtensionRegistry(
     if (error !== undefined || seen.has(key)) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1805',
+          'TH1805',
           error ?? 'Application-local extension descriptor is duplicated.',
           { path: ['extensions', input.kind, input.id] },
         ),
@@ -517,8 +514,8 @@ function duplicateKeys(
       if (seen.has(key.value)) {
         diagnostics.push(
           toolkitDiagnostic(
-            'EQ1805',
-            `Equator extension registry contains duplicate key ${JSON.stringify(key.value)}.`,
+            'TH1805',
+            `Thoth extension registry contains duplicate key ${JSON.stringify(key.value)}.`,
             {
               path: nextPath,
               span: spanAt(
@@ -553,16 +550,16 @@ export function parseExtensionRegistry(
   if (Buffer.byteLength(source, 'utf8') > RESOURCE_LIMITS.configurationBytes) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1805',
-        'Equator extension registry exceeds the 1 MiB authored-input ceiling.',
+        'TH1805',
+        'Thoth extension registry exceeds the 1 MiB authored-input ceiling.',
       ),
     ]);
   }
   if (jsonNestingExceeds(source, RESOURCE_LIMITS.jsonDepth)) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1805',
-        `Equator extension registry exceeds the JSON depth ceiling of ${RESOURCE_LIMITS.jsonDepth}.`,
+        'TH1805',
+        `Thoth extension registry exceeds the JSON depth ceiling of ${RESOURCE_LIMITS.jsonDepth}.`,
       ),
     ]);
   }
@@ -581,8 +578,8 @@ export function parseExtensionRegistry(
         .slice(0, RESOURCE_LIMITS.diagnostics)
         .map((error) =>
           toolkitDiagnostic(
-            'EQ1805',
-            `Equator extension registry contains invalid JSON: ${printParseErrorCode(error.error)}.`,
+            'TH1805',
+            `Thoth extension registry contains invalid JSON: ${printParseErrorCode(error.error)}.`,
             {
               span: spanAt(
                 source,
@@ -602,10 +599,10 @@ export function parseExtensionRegistry(
   if (tree.failure !== undefined) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1805',
+        'TH1805',
         tree.failure === 'depth'
-          ? `Equator extension registry exceeds the JSON depth ceiling of ${RESOURCE_LIMITS.jsonDepth}.`
-          : `Equator extension registry exceeds the JSON node ceiling of ${RESOURCE_LIMITS.jsonNodes}.`,
+          ? `Thoth extension registry exceeds the JSON depth ceiling of ${RESOURCE_LIMITS.jsonDepth}.`
+          : `Thoth extension registry exceeds the JSON node ceiling of ${RESOURCE_LIMITS.jsonNodes}.`,
       ),
     ]);
   }
@@ -618,8 +615,8 @@ export function parseExtensionRegistry(
         .slice(0, RESOURCE_LIMITS.diagnostics)
         .map((error) =>
           toolkitDiagnostic(
-            'EQ1805',
-            schemaErrorSummary('Equator extension registry', error),
+            'TH1805',
+            schemaErrorSummary('Thoth extension registry', error),
             { path: schemaErrorPath(error) },
           ),
         ),

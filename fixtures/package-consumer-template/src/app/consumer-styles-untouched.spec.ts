@@ -6,7 +6,7 @@
  * element, and what the page does with it is the stylesheet's business; a runtime that also wrote
  * a style, a class or a rule would be deciding the layout of an application it knows nothing about.
  *
- * The announcer region is the one element Equator creates and styles, and it is excluded.
+ * The announcer region is the one element Thoth creates and styles, and it is excluded.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -16,7 +16,7 @@ import {
   Localization,
   provideLocalizationSetup,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -24,7 +24,7 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 
 import { runtimeExtensions } from './runtime-extensions';
 
-const ANNOUNCER = '[data-equator-announcer]';
+const ANNOUNCER = '[data-thoth-announcer]';
 
 /** Every rule in every stylesheet, and every element's style and class, outside the announcer. */
 function styleCensus(): readonly string[] {

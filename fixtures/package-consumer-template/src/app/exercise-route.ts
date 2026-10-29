@@ -73,9 +73,9 @@ import {
   type PlainTimeValue,
   type RelativeTimeOutcome,
   type RelativeTimePolicy,
-} from '@neolorn/equator';
-import { directionForLocale, openGraphLocale } from '@neolorn/equator/core';
-import { LocalizedInput } from '@neolorn/equator/forms';
+} from '@neolorn/thoth';
+import { directionForLocale, openGraphLocale } from '@neolorn/thoth/core';
+import { LocalizedInput } from '@neolorn/thoth/forms';
 import { families, messages } from '#i18n/shell';
 import { personNames } from '#i18n/person-names';
 

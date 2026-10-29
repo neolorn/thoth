@@ -5,7 +5,7 @@ import {
   createIdentifierParameterCodec,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Where a response sends a reader comes from configuration, never from what the request says about
@@ -26,7 +26,7 @@ const HOSTED: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-ForgedHostTestIdentity0123456789abcdefghijk',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },

@@ -1,4 +1,4 @@
-import { type Localization } from '@neolorn/equator';
+import { type Localization } from '@neolorn/thoth';
 import { messages } from '#i18n/shell';
 
 declare const localization: Localization;

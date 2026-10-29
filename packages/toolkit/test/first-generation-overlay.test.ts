@@ -61,7 +61,7 @@ async function application(): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -73,16 +73,8 @@ async function application(): Promise<string> {
       2,
     )}\n`,
   );
-  await write(
-    root,
-    'i18n/shell/en-US.yaml',
-    'messages:\n  app-title: Equator\n',
-  );
-  await write(
-    root,
-    'i18n/shell/ar-EG.yaml',
-    'messages:\n  app-title: Equator\n',
-  );
+  await write(root, 'i18n/shell/en-US.yaml', 'messages:\n  app-title: Thoth\n');
+  await write(root, 'i18n/shell/ar-EG.yaml', 'messages:\n  app-title: Thoth\n');
   await write(
     root,
     'tsconfig.app.json',
@@ -105,7 +97,7 @@ async function application(): Promise<string> {
   // name the overlay starts to import from it fails this test until it is declared here too.
   await write(
     root,
-    'node_modules/@neolorn/equator/index.d.ts',
+    'node_modules/@neolorn/thoth/index.d.ts',
     [
       'export interface CatalogLoaders {}',
       'export interface CatalogSetDescriptor {}',
@@ -117,9 +109,9 @@ async function application(): Promise<string> {
   );
   await write(
     root,
-    'node_modules/@neolorn/equator/package.json',
+    'node_modules/@neolorn/thoth/package.json',
     `${JSON.stringify(
-      { name: '@neolorn/equator', version: '0.0.0', types: './index.d.ts' },
+      { name: '@neolorn/thoth', version: '0.0.0', types: './index.d.ts' },
       null,
       2,
     )}\n`,
@@ -227,7 +219,7 @@ describe('generated files already on disk', () => {
     entry.bytes = Buffer.byteLength(edited, 'utf8');
     entry.digest = digestBytes(edited);
     manifest.planDigest = digestCanonicalJson(
-      'equator-output-plan/1',
+      'thoth-output-plan/1',
       manifest.files.map(({ path, bytes, digest }) => ({
         path,
         bytes,
@@ -239,7 +231,7 @@ describe('generated files already on disk', () => {
       `${JSON.stringify(manifest, null, 2)}\n`,
       'utf8',
     );
-    await rm(resolve(root, '.equator'), { recursive: true, force: true });
+    await rm(resolve(root, '.thoth'), { recursive: true, force: true });
 
     const clean = await generateProject({ project: root });
     expect(clean.ok, JSON.stringify(clean.diagnostics)).toBe(true);

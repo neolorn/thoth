@@ -4,7 +4,7 @@ import {
   type CanonicalJsonValue,
 } from '../../toolkit/src/canonical-json.js';
 import { LocalCatalogStore } from '../src/catalog-runtime.js';
-import type { LocalizationDiagnostic } from '@neolorn/equator/core';
+import type { LocalizationDiagnostic } from '@neolorn/thoth/core';
 
 import {
   catalogKey,
@@ -186,7 +186,7 @@ export function sealed(
     );
   }
   const contentDigest = digestCanonicalJson(
-    'equator-compiled-catalog/1',
+    'thoth-compiled-catalog/1',
     canonical(catalog),
   );
   const set = editedSet(richSet(), ({ descriptor }) => {

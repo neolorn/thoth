@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canonicalizeLanguageTag } from '@neolorn/equator/core';
+import { canonicalizeLanguageTag } from '@neolorn/thoth/core';
 import {
   dynamicAssetParticipantReport,
   fixedLanguageAsset,

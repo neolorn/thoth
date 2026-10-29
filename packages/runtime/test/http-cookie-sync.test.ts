@@ -4,7 +4,7 @@ import { createLocaleRequestHandler } from '../http/src/handler.js';
 import {
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Two requirements on the handler that owns the response.
@@ -33,7 +33,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -49,7 +49,7 @@ const handler = createLocaleRequestHandler({
   policy: POLICY,
   projection: PROJECTION,
   cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
-  cookie: { name: 'equator-locale' },
+  cookie: { name: 'thoth-locale' },
   render: ({ locale }) =>
     new Response(`<!doctype html><html lang="${locale}"></html>`, {
       headers: { 'content-type': 'text/html' },
@@ -64,7 +64,7 @@ describe('the cookie the handler writes', () => {
     // The visitor is on `/ar-eg` with `ar-EG` remembered. There is nothing to remember that is not
     // already remembered, and a `Set-Cookie` here is a header on a response that did not need one.
     const unchanged = await get('/ar-eg/second', {
-      cookie: 'equator-locale=ar-EG',
+      cookie: 'thoth-locale=ar-EG',
     });
 
     expect(unchanged.headers.get('set-cookie')).toBeNull();
@@ -74,11 +74,11 @@ describe('the cookie the handler writes', () => {
     // The control for the case above, so "writes nothing" is not passing for a handler that never
     // writes at all.
     const changed = await get('/en-us/second', {
-      cookie: 'equator-locale=ar-EG',
+      cookie: 'thoth-locale=ar-EG',
     });
 
     expect(changed.headers.get('set-cookie')).toMatch(
-      /(^|;\s*)equator-locale=en-US(;|$)/u,
+      /(^|;\s*)thoth-locale=en-US(;|$)/u,
     );
   });
 
@@ -86,14 +86,14 @@ describe('the cookie the handler writes', () => {
     const first = await get('/ar-eg/second');
 
     expect(first.headers.get('set-cookie')).toMatch(
-      /(^|;\s*)equator-locale=ar-EG(;|$)/u,
+      /(^|;\s*)thoth-locale=ar-EG(;|$)/u,
     );
   });
 
   it('writes nothing at an address naming a locale the site does not serve', async () => {
     // Section 15: the locale was asked for and not activated, so there is no choice to remember,
     // and the locale the page is presented in was never the visitor's either.
-    for (const cookie of ['equator-locale=ar-EG', undefined]) {
+    for (const cookie of ['thoth-locale=ar-EG', undefined]) {
       const unsupported = await get(
         '/fr-fr/second',
         cookie === undefined ? {} : { cookie },
@@ -117,7 +117,7 @@ describe('what a background request may change', () => {
    */
   it('does not let a prefetch change the stored preference', async () => {
     const prefetched = await get('/en-us/second', {
-      cookie: 'equator-locale=ar-EG',
+      cookie: 'thoth-locale=ar-EG',
       'sec-fetch-dest': 'empty',
     });
 
@@ -127,7 +127,7 @@ describe('what a background request may change', () => {
   it('does not let a prerender or a subresource change it either', async () => {
     for (const destination of ['document', 'iframe', 'empty', 'script']) {
       const response = await get('/en-us/second', {
-        cookie: 'equator-locale=ar-EG',
+        cookie: 'thoth-locale=ar-EG',
         'sec-fetch-dest': destination,
         'sec-purpose': 'prefetch;prerender',
       });
@@ -140,13 +140,13 @@ describe('what a background request may change', () => {
   it('still writes for a real navigation, which is the control', async () => {
     // Without this the guard above passes for a handler that stopped writing cookies entirely.
     const navigation = await get('/en-us/second', {
-      cookie: 'equator-locale=ar-EG',
+      cookie: 'thoth-locale=ar-EG',
       'sec-fetch-dest': 'document',
       'sec-fetch-mode': 'navigate',
     });
 
     expect(navigation.headers.get('set-cookie')).toMatch(
-      /(^|;\s*)equator-locale=en-US(;|$)/u,
+      /(^|;\s*)thoth-locale=en-US(;|$)/u,
     );
   });
 });

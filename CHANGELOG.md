@@ -1,7 +1,7 @@
 # Changelog
 
-All notable changes to Equator are recorded here, for `@neolorn/equator` and
-`@neolorn/equator-toolkit`, which share a version.
+All notable changes to Thoth are recorded here, for `@neolorn/thoth` and
+`@neolorn/thoth-toolkit`, which share a version.
 
 `1.0.0-rc.1` is the first release under this name, and a release candidate for `1.0.0`. Everything
 below it is how the library got there: the 0.x line, which was never published, and nine
@@ -16,7 +16,7 @@ then the betas, then the release candidates and the milestones that followed the
 
 ## [1.0.0-rc.1] - 2026-10-26
 
-The first release candidate of Equator, a localization framework for Angular applications.
+The first release candidate of Thoth, a localization framework for Angular applications.
 
 It installs on Node `^22.22.3 || ^24.15.0 || ^26.0.0`. The runtime takes `@angular/core` and
 `@angular/common` at `>=22.0.0 <23.0.0` and `rxjs` at `>=7.4.0 <8.0.0` as peers, with
@@ -24,7 +24,7 @@ It installs on Node `^22.22.3 || ^24.15.0 || ^26.0.0`. The runtime takes `@angul
 the entry points that use them. The toolkit takes `@angular/compiler` at `>=22.0.0 <23.0.0` and
 `typescript` at `>=6.0.2 <6.1.0`.
 
-The standards profile is `equator-1`: Unicode 17.0.0, CLDR and LDML 48.2, MessageFormat as LDML 48.2
+The standards profile is `thoth-1`: Unicode 17.0.0, CLDR and LDML 48.2, MessageFormat as LDML 48.2
 defines it, the ECMA-402 13th edition for the options of a numeric function, XLIFF 2.2 Committee
 Specification 01, the sitemaps.org 0.9 protocol, the IANA Language Subtag Registry dated 2026-09-17,
 and the IANA Time Zone Database 2026e. The runtime depends on `tslib` and nothing else. The toolkit
@@ -36,17 +36,17 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 
 ### Added
 
-- `@neolorn/equator`, the runtime, with seven entry points: the primary, `/core`, `/http`,
+- `@neolorn/thoth`, the runtime, with seven entry points: the primary, `/core`, `/http`,
   `/router`, `/forms`, `/ssr` and `/testing`. An entry point you do not import adds no code and no
   peer.
-- `@neolorn/equator/core` and `@neolorn/equator/http` import no Angular, so a worker or a server
+- `@neolorn/thoth/core` and `@neolorn/thoth/http` import no Angular, so a worker or a server
   that is not the Angular one can load them.
-- `@neolorn/equator-toolkit`, the compiler and the `equator` command line, with the same operations
+- `@neolorn/thoth-toolkit`, the compiler and the `thoth` command line, with the same operations
   as a library and the JSON Schemas of its file formats as exports.
-- `equator init` writes `equator.config.json` from the source locale, the default locale and the
+- `thoth init` writes `thoth.config.json` from the source locale, the default locale and the
   locales the project supports. `aliases`, `parentLocales`, `formatting`, `inProgress`,
   `personNameLocales` and `pseudoLocales` are the optional fields.
-- `equator generate` compiles the catalogs into typed modules under `#i18n`, with a
+- `thoth generate` compiles the catalogs into typed modules under `#i18n`, with a
   `provideLocalization` that has the project's setup already bound.
 - `createLocalizationContext` builds a localization context where there is no application to
   inject from: a server handler, a script or a test. `injectLocalization` reaches `Localization` in
@@ -84,7 +84,7 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - `withRecoveryMessage` and the `localization-recovery` component, for the case where no catalog
   loads.
 - A translation whose source wording changed since it was written is reported as stale, and one
-  that omits a plural category its locale needs is reported with `EQ1308`.
+  that omits a plural category its locale needs is reported with `TH1308`.
 - Locale identifiers are canonical BCP 47 tags, checked against the pinned CLDR release and
   language subtag registry. `canonicalizeLanguageTag` is the same check as a function.
 - The locale is resolved from the address, a stored choice, the browser's languages, then the
@@ -96,7 +96,7 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   a locale the visitor chose is written.
 - `Localization.forgetRememberedLocale` removes the stored choice, and
   `changeLocale(locale, { remember: false })` moves the page without storing one.
-- `formatting` in `equator.config.json` declares the numbering system, calendar or hour cycle a
+- `formatting` in `thoth.config.json` declares the numbering system, calendar or hour cycle a
   locale is written with.
 - `Localization.changeLocale` changes the locale as one transaction, in `coordinated` or
   `progressive` mode, and ends as committed, cancelled, superseded, failed or redirected. A change
@@ -143,7 +143,7 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   `routeHttpDescriptor` and `routeCacheHeaders` return the headers they produce.
 - `LocalizedPageOutcome`, with `pageAbsent`, `pageGone` and `pageOperationalFailure`: a page states
   that its address is not there, is gone, or failed, and the response carries it.
-- `declarePageOutcome` and `declareOperationalFailure` in `@neolorn/equator/http` state the same
+- `declarePageOutcome` and `declareOperationalFailure` in `@neolorn/thoth/http` state the same
   from a renderer. A document sent with a declaration is sent as given, with the declared status
   and the caching and indexing of the declared outcome.
 - `provideLocalizedServerRendering` and `localizedServerRoutes` build the server route table from
@@ -203,7 +203,7 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   profile requires it, a measurement field reads the unit in every plural spelling the locale
   writes, and a value is written with every fraction digit it has unless the profile sets a
   maximum.
-- `[localizedInput]` in `@neolorn/equator/forms` binds that parsing to an `input` or a `textarea`
+- `[localizedInput]` in `@neolorn/thoth/forms` binds that parsing to an `input` or a `textarea`
   in Angular Forms.
 - `presentIssue`, `issueMessage` and `issueMessageId` pair a failure code from a validator or a
   backend to a message by name, with a generic presentation for a code nothing matches.
@@ -223,18 +223,18 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - Five extension contracts: message functions, identifier segments, rich slot kinds, formatting
   adapters and parsing adapters. `defineExtensionRegistry` and `extensionDescriptor` declare them
   to the toolkit, and `defineRuntimeExtensions` and `withExtensions` bind the handlers.
-- The `equator` commands `init`, `generate`, `check`, `format`, `clean`, `uninstall`, `watch` and
+- The `thoth` commands `init`, `generate`, `check`, `format`, `clean`, `uninstall`, `watch` and
   `migrate`, with `--project`, `--json` and `--dry-run`. Exit codes are 0, 1 for diagnostics, 2 for
   the invocation or the configuration, 3 for the environment, and 130 when interrupted.
-- `equator check` is read-only. `--fix` applies canonical formatting, `--require-complete` fails on
+- `thoth check` is read-only. `--fix` applies canonical formatting, `--require-complete` fails on
   a locale that omits a source message, and `--require-fresh` fails on generated output that is out
   of date.
-- `inProgress` in `equator.config.json` names the locales still being translated, whose
+- `inProgress` in `thoth.config.json` names the locales still being translated, whose
   completeness findings do not block.
-- `equator format` formats the configuration and the catalogs, and keeps the comments in a catalog.
-- `equator clean` removes generated output. `equator uninstall` removes Equator from a project and
+- `thoth format` formats the configuration and the catalogs, and keeps the comments in a catalog.
+- `thoth clean` removes generated output. `thoth uninstall` removes Thoth from a project and
   keeps the authored catalogs unless `--catalogs` is given.
-- `equator watch` regenerates in one foreground process as the inputs change, and starts no work
+- `thoth watch` regenerates in one foreground process as the inputs change, and starts no work
   for a cycle whose inputs did not change. A stopped watch delivers no further cycle and holds
   nothing that keeps the process alive.
 - `initializeProject`, `generateProject`, `checkProject`, `formatProject`, `cleanProject`,
@@ -242,18 +242,18 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   operations for a build script. Importing the toolkit starts none of them.
 - `exportXliff22` and `importXliff22` exchange translations as XLIFF 2.2, with notes, context and
   translation state kept across the round trip.
-- `pseudoLocales` in `equator.config.json`, generated only by `--pseudo`, with length change and
+- `pseudoLocales` in `thoth.config.json`, generated only by `--pseudo`, with length change and
   boundary markers set independently. `PSEUDO_LOCALE_ACCENTED` and `PSEUDO_LOCALE_BIDI`
   name the two tags UTS #35 defines.
 - `diffCatalogSets` classifies what changed between two catalog sets, and `planMessageRefactor`
   plans a rename or a move of a message across its catalogs and usages.
-- `equator migrate --plan` previews or applies one authored change plan. `createMigrationPlan` and
+- `thoth migrate --plan` previews or applies one authored change plan. `createMigrationPlan` and
   `applyAuthoredChangePlan` are the same for a build script.
 - `parseCatalog` and `parseConfiguration` read the authored files, `formatCatalogSource` rewrites
   a catalog and keeps its comments, and `formatCatalog` writes the text of a new one.
-- Diagnostics carry stable `EQ` codes, listed in the
+- Diagnostics carry stable `TH` codes, listed in the
   [diagnostics reference](docs/reference/diagnostics.md) and in `DIAGNOSTICS.md` inside the
-  toolkit. `EQ1806` reports an Angular or TypeScript version outside the supported range before the
+  toolkit. `TH1806` reports an Angular or TypeScript version outside the supported range before the
   compiler runs.
 - `withObservability` sends runtime outcomes to a sink the application supplies, including how a
   restore from the back-forward cache or from a server render ended. The event codes are
@@ -261,10 +261,10 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   carries no message content.
 - The [cost reference](docs/reference/cost.md) states what each entry point adds to a build, in
   bytes.
-- `@neolorn/equator/testing`: `provideLocalizationTesting`, `LocalizationTestingController`,
+- `@neolorn/thoth/testing`: `provideLocalizationTesting`, `LocalizationTestingController`,
   `ControllableLocalizationParticipant`, `createInMemoryCatalogLoaders`, `renderedText` and
   `resetLocalizationTestEnvironment`.
-- `createLocalizedServerSeat` and `answeredHead` in `@neolorn/equator/testing` answer an address
+- `createLocalizedServerSeat` and `answeredHead` in `@neolorn/thoth/testing` answer an address
   through the request handler and read back the status, the headers and the head, with no socket
   and no browser.
 
@@ -272,17 +272,17 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 
 ### Added
 
-- `LocalizedPageOutcome` in `@neolorn/equator/router`, with `pageAbsent`, `pageGone` and
-  `pageOperationalFailure` in `@neolorn/equator/core`. A page states that its address is not there, that it is gone, or that it
+- `LocalizedPageOutcome` in `@neolorn/thoth/router`, with `pageAbsent`, `pageGone` and
+  `pageOperationalFailure` in `@neolorn/thoth/core`. A page states that its address is not there, that it is gone, or that it
   failed, and the response carries what it said.
-- `declarePageOutcome` in `@neolorn/equator/http`, which states the same three from a renderer.
+- `declarePageOutcome` in `@neolorn/thoth/http`, which states the same three from a renderer.
 - `RouteLocalizationContext.pageOutcome`, so the `document` callback writes a head for the state the
   page is in rather than for the route that matched.
 - `outcomeDocuments` on `provideLocalizedRouter`, which titles the three responses that have no
   route identity: not found, gone, and an unsupported locale.
 - `documentMessage(handle, inputs)`, so a document title or description carries the values its
   sentence takes. A handle that takes values with none bound is refused before any provider is built.
-- `createLocalizedServerSeat` in `@neolorn/equator/testing`, which answers an address through the
+- `createLocalizedServerSeat` in `@neolorn/thoth/testing`, which answers an address through the
   request handler and reads back the status, the headers, the resolution and the head, with no
   socket, no built bundle and no browser.
 - `localizedInput` binds to `textarea` as well as to `input`.
@@ -329,10 +329,10 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 
 ### Added
 
-- `declareOperationalFailure` in `@neolorn/equator/http`, with `DeclaredOperationalFailure` and
+- `declareOperationalFailure` in `@neolorn/thoth/http`, with `DeclaredOperationalFailure` and
   `LocalizedRenderResult`. A renderer returns a `Response` as it always could, or a declaration
   wrapping one.
-- A declared status travels at an address Equator serves. At an address Equator answered from its
+- A declared status travels at an address Thoth serves. At an address Thoth answered from its
   own status table that classification stands, and the declaration is reported once in development.
 - A response carrying a declaration is classified private and not stored.
 
@@ -375,7 +375,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Removed
 
-- `EQUATOR_XLIFF_EXTENSION_NAMESPACE`.
+- `THOTH_XLIFF_EXTENSION_NAMESPACE`.
 
 ## Milestone 1.0.0-rc.1
 
@@ -388,10 +388,10 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Changed
 
-- Every template selector drops the product prefix. `equator-localized-message` is
-  `localized-message`, `[equatorLabel]` is `[localizedLabel]`, `[equatorLocaleChoice]` is
-  `[localeChoice]`, `equator-localization-recovery` is `localization-recovery`, and
-  `input[equatorLocalizedInput]` is `input[localizedInput]`.
+- Every template selector drops the product prefix. `thoth-localized-message` is
+  `localized-message`, `[thothLabel]` is `[localizedLabel]`, `[thothLocaleChoice]` is
+  `[localeChoice]`, `thoth-localization-recovery` is `localization-recovery`, and
+  `input[thothLocalizedInput]` is `input[localizedInput]`.
 - `withRecoveryMessage` takes an options object rather than a bare message.
 
 ### Fixed
@@ -414,35 +414,35 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 ### Added
 
 - A locale falls back to the locale it inherits from before falling back to the source, walked to
-  the end of the chain. `parentLocales` in `equator.config.json` replaces one hop, and `und` as the
+  the end of the chain. `parentLocales` in `thoth.config.json` replaces one hop, and `und` as the
   value says a locale has no parent.
 - `projectSitemap` returns the sitemap files, built from the page projection the head is built
   from. Past the protocol's limits the set splits into an index and numbered siblings, and the name
   given stays the address a crawler was given.
 - A route states its own `changefreq`, `priority` and `lastmod` through `withRouting`, read from a
-  field on the route's own data. `EQ1412` refuses a value the protocol would reject.
+  field on the route's own data. `TH1412` refuses a value the protocol would reject.
 - `resetLocalizationTestEnvironment` puts the shared test environment back between spec files.
 
 ### Changed
 
-- `equator check --require-complete` counts a locale complete once its whole inheritance chain is
+- `thoth check --require-complete` counts a locale complete once its whole inheritance chain is
   counted.
 - Angular tooling 22.1.7 is supported.
-- A route projection is checked and arranged once when Equator is handed it, rather than validated
+- A route projection is checked and arranged once when Thoth is handed it, rather than validated
   and walked again for every address built or resolved.
 
 ## [0.23.0]
 
 ### Added
 
-- `formatting` in `equator.config.json`: each locale declares the numbering system, calendar or hour
+- `formatting` in `thoth.config.json`: each locale declares the numbering system, calendar or hour
   cycle it is written with.
 - `DIAGNOSTICS.md` inside the toolkit, derived from the codes the toolkit can report.
 
 ### Changed
 
-- `equator check --require-complete` blocks on every finding that says a locale is unfinished,
-  including `EQ1306`, a scope with no catalog for that locale at all.
+- `thoth check --require-complete` blocks on every finding that says a locale is unfinished,
+  including `TH1306`, a scope with no catalog for that locale at all.
 - A stricter run reports every finding it can still observe.
 - The switcher label for a locale is decided in the build, and reads the same on every browser.
 - Message codes are divided by what a message is wrong about rather than by which stage refused it.
@@ -465,8 +465,8 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 - A switcher option points inside the deployment it is rendered in.
 - The address bar spells the current route in the committed locale after a history move, not only
   after a locale change.
-- Adding a scope to a working project no longer fails the next `equator generate`.
-- `equator init` run below a configured project no longer initializes the parent. Discovery stops at
+- Adding a scope to a working project no longer fails the next `thoth generate`.
+- `thoth init` run below a configured project no longer initializes the parent. Discovery stops at
   the package it is standing in.
 - A browser asking for a language written under another subtag is matched, so `no` reaches `nb-NO`
   without an alias written by hand.
@@ -489,7 +489,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- `EQ1411` refuses a `routerLink` whose leading segment the project claims for a locale, at build
+- `TH1411` refuses a `routerLink` whose leading segment the project claims for a locale, at build
   rather than as a console warning after the click.
 
 ## [0.21.1]
@@ -521,7 +521,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Fixed
 
-- `equator generate` succeeds on a project with no messages yet.
+- `thoth generate` succeeds on a project with no messages yet.
 - A `.match` over a function that formats but does not select is refused.
 
 ## [0.20.0]
@@ -530,7 +530,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 - `localeChoices`: the configured locales as switchable options in one signal, each choice carrying
   the address of the current route in that locale.
-- `equator init` sets every field the configuration accepts, including `personNameLocales` and
+- `thoth init` sets every field the configuration accepts, including `personNameLocales` and
   `pseudoLocales`.
 
 ### Removed
@@ -589,15 +589,15 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 ### Added
 
 - A flat translation that drops a value the source renders is refused on import.
-- `EQ1409` reports a route whose leading segment the project has already claimed for a locale.
+- `TH1409` reports a route whose leading segment the project has already claimed for a locale.
 
 ## [0.17.0]
 
 ### Added
 
-- `@neolorn/equator/core`: the classification, the vocabulary and the locale profiles, importing no
+- `@neolorn/thoth/core`: the classification, the vocabulary and the locale profiles, importing no
   Angular.
-- `@neolorn/equator/http`: a handler that takes a request and returns a response with the redirect,
+- `@neolorn/thoth/http`: a handler that takes a request and returns a response with the redirect,
   the status, the language header, the indexing header, the cacheability and the preference cookie
   already decided.
 - A route publishes its own metadata: an Open Graph block when the deployment supplies an image, a
@@ -615,7 +615,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- Equator emits the cache directives its own routing determines, and takes from the application only
+- Thoth emits the cache directives its own routing determines, and takes from the application only
   the lifetime it has no basis to guess.
 
 ### Changed
@@ -642,7 +642,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Fixed
 
-- `equator generate --pseudo` works for an application that registers a message extension.
+- `thoth generate --pseudo` works for an application that registers a message extension.
 - An address is published only for a locale the build actually has.
 - A page renders in a locale the application has no content of its own in.
 
@@ -650,7 +650,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- `pseudoLocales` in `equator.config.json`, with `equator generate --pseudo` deciding whether a
+- `pseudoLocales` in `thoth.config.json`, with `thoth generate --pseudo` deciding whether a
   build contains them.
 
 ### Changed
@@ -665,13 +665,13 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 - `provideLocalizedRouter` replaces the four routing calls with one. It wraps `provideRouter`,
   derives the locale branches from the route projection, installs the localized location strategy
   and keeps the address in step.
-- `provideLocalizedServerRendering`, on `@neolorn/equator/ssr`, installs server rendering from the
+- `provideLocalizedServerRendering`, on `@neolorn/thoth/ssr`, installs server rendering from the
   projection the client already has.
 - Each locale's spelling of an address appears in the route table, and a localized address can be
   prerendered.
-- `EQ1405` reports a route that renders nothing, carrying none of `component`, `loadComponent`,
+- `TH1405` reports a route that renders nothing, carrying none of `component`, `loadComponent`,
   `redirectTo`, `children` or `loadChildren`.
-- `EQ1406` reports a route that hides addresses from the projection, by computing its own path or
+- `TH1406` reports a route that hides addresses from the projection, by computing its own path or
   by loading its children from a file it only references.
 - A warning when the application replaces the router configuration or the location strategy that
   the localized router provides.
@@ -679,9 +679,9 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 ### Changed
 
 - A route parameter codec is required to read back the spelling it writes.
-- The address that carries no locale is suppressed by Equator rather than by a fallback route in the
+- The address that carries no locale is suppressed by Thoth rather than by a fallback route in the
   application.
-- An application no longer restates Equator's own defaults in its composition. The default order of
+- An application no longer restates Thoth's own defaults in its composition. The default order of
   locale sources is the default.
 
 ### Fixed
@@ -692,7 +692,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- `personNameLocales` in `equator.config.json`: an application declares the languages the names it
+- `personNameLocales` in `thoth.config.json`: an application declares the languages the names it
   renders are written in.
 
 ### Changed
@@ -713,7 +713,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- Exported XLIFF is validated against the schema it claims, and the identifiers Equator writes into
+- Exported XLIFF is validated against the schema it claims, and the identifiers Thoth writes into
   it are legal for that schema.
 
 ### Changed
@@ -740,7 +740,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- `equator check --require-fresh` fails on generated output that is out of date.
+- `thoth check --require-fresh` fails on generated output that is out of date.
 
 ## [0.9.3]
 
@@ -795,11 +795,11 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 - `withRouting`: routing declared in one place. Routes default to indexable, and the application
   names the route-data field that marks the exceptions.
-- `[equatorLabel]`: a message in attribute position, for `aria-label`, `title`, `placeholder` and
+- `[thothLabel]`: a message in attribute position, for `aria-label`, `title`, `placeholder` and
   `alt`.
 - `presentIssue` pairs a backend failure code to a message by name.
 - `localizedServerRoutes` derives the prerender table from the routes and the locales.
-- `equator uninstall` removes Equator from a project. `clean` keeps its usual meaning of removing
+- `thoth uninstall` removes Thoth from a project. `clean` keeps its usual meaning of removing
   build output, and authored catalogs survive both.
 
 ### Changed
@@ -807,7 +807,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 - Published names say what a thing does rather than carrying the product name.
 - A route identity survives edits that keep the address. Renaming a parameter no longer orphans the
   messages keyed on that route.
-- `equator.config.json` carries one version marker.
+- `thoth.config.json` carries one version marker.
 
 ### Removed
 
@@ -816,7 +816,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Fixed
 
-- `equator format` keeps the comments in an authored catalog.
+- `thoth format` keeps the comments in an authored catalog.
 - A block deferred until interaction hydrates in the locale that is committed.
 
 ## [0.8.0]
@@ -824,7 +824,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 ### Added
 
 - `provideLocalization` is generated into the application's own `#i18n` with the configuration,
-  catalog set, loaders, recovery payload and startup scopes already closed over. Setting Equator up
+  catalog set, loaders, recovery payload and startup scopes already closed over. Setting Thoth up
   is one import and one call.
 - A report when an application runtime selects no recovery message.
 - An advisory listing source messages nothing in the application uses.
@@ -842,7 +842,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
   value, or a value of the wrong type fails at build.
 - `defineRouteProjection` keeps the route identities and parameter names the generated projection
   knows. An unknown identity, a missing parameter or a misspelled parameter name fails at build.
-- `equator init` creates a package manifest for an application that has none. A workspace with more
+- `thoth init` creates a package manifest for an application that has none. A workspace with more
   than one application is a supported layout.
 
 ### Changed
@@ -886,9 +886,9 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- `EQ1307` reports a target locale that omits a message, and names the locale that stands in for
+- `TH1307` reports a target locale that omits a message, and names the locale that stands in for
   it.
-- `EQ1308` reports the plural categories a target locale leaves out, and says those counts fall
+- `TH1308` reports the plural categories a target locale leaves out, and says those counts fall
   through to the catch-all.
 - A translation whose source has changed since it was written is reported, and stays reported until
   the translation is updated.
@@ -913,7 +913,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 - A finding in a catalog reports the line and column it sits on.
 - A date formatted with a textual month renders the month.
-- A project carrying more of its own type errors than Equator reports at once can still generate.
+- A project carrying more of its own type errors than Thoth reports at once can still generate.
 - A catalog is admitted once per process rather than once per server request.
 - A catalog that fails at startup shows the recovery surface instead of an empty page.
 
@@ -982,6 +982,6 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 - The toolkit reads the application's own source and generates typed contracts for the messages it
   uses.
 - Catalogs compile to artifacts that are identical for identical input.
-- The `equator` command line drives a project.
+- The `thoth` command line drives a project.
 
-[1.0.0-rc.1]: https://github.com/neolorn/equator/releases/tag/v1.0.0-rc.1
+[1.0.0-rc.1]: https://github.com/neolorn/thoth/releases/tag/v1.0.0-rc.1

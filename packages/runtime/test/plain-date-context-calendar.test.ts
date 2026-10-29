@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type FormattingContext,
   type FormattingResult,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import {
   formatPlainDate,

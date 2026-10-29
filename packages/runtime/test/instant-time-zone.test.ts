@@ -5,7 +5,7 @@ import {
   formatInstantRange,
   instant,
 } from '../src/formatting.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 

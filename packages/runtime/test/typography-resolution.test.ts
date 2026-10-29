@@ -4,7 +4,7 @@ import { resolveTypography } from '../src/locale-presentation.js';
 import {
   type LocaleTypographyRegistry,
   type TypographyProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Which typography profile a registry gives a locale.

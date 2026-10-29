@@ -1,4 +1,4 @@
-import type { RouteIdOf } from '@neolorn/equator';
+import type { RouteIdOf } from '@neolorn/thoth';
 import { routeProjection } from '#i18n/routes';
 
 import { appRouteProjection } from './localization.routes';
@@ -14,7 +14,7 @@ import { appRouteProjection } from './localization.routes';
  *
  * It belongs in application source rather than in a spec because analysis compiles the program the
  * application's own configuration describes, and that configuration excludes specs. A spec reading
- * this table is never in the program Equator checks.
+ * this table is never in the program Thoth checks.
  */
 type AppRouteId = RouteIdOf<typeof appRouteProjection>;
 

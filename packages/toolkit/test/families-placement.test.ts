@@ -65,6 +65,6 @@ describe('a families mapping', () => {
     );
 
     expect(parsed.ok).toBe(false);
-    expect(parsed.diagnostics.map(({ code }) => code)).toContain('EQ1102');
+    expect(parsed.diagnostics.map(({ code }) => code)).toContain('TH1102');
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { formatDisplayName } from '../src/formatting.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 /**
  * What asking for the name of a code hands back when there is no name to give.

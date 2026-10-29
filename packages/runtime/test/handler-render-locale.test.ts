@@ -10,7 +10,7 @@ import {
   createPathPrefixLocalePolicy,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The locale a renderer is told to draw in, beside the language the response says it is in.
@@ -24,7 +24,7 @@ const CACHE = { successMaxAge: 600, permanentRedirectMaxAge: 86_400 } as const;
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-HandlerRenderLocaleTestIdentity012345678901',
     routes: [
       { id: 'home', path: '', parameterNames: [] },

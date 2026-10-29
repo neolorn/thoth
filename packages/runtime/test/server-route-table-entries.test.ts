@@ -12,7 +12,7 @@ import {
   type RouteParameterCodec,
   type RouteParameterContext,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The entries `localizedServerRoutes` writes for a build, one declaration at a time.
@@ -46,7 +46,7 @@ const TEXT: RouteParameterCodec<string> = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: IDENTITY,
     routes: [
       { id: 'home', path: '', parameterNames: [] },
@@ -76,7 +76,7 @@ function configurationFor(
   pseudoLocales?: readonly string[],
 ): GeneratedConfiguration {
   return {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
     locales,
@@ -260,7 +260,7 @@ describe('a spelling whose first segment the policy has claimed', () => {
     localized: Readonly<Record<string, string>>,
   ): RouteRuntimeProjection => ({
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: IDENTITY,
       routes: [{ id: 'guide', path: 'guide', parameterNames: [] }],
     },
@@ -496,7 +496,7 @@ describe('a codec the projection no longer holds when the values are asked for',
       ]: RouteRuntimeProjection[Key];
     } = {
       generated: {
-        profile: 'equator-route-projection/1',
+        profile: 'thoth-route-projection/1',
         identity: IDENTITY,
         routes: [
           { id: 'article', path: 'articles/:slug', parameterNames: ['slug'] },

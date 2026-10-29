@@ -30,7 +30,7 @@ describe('the byte ceiling of a message', () => {
     );
 
     expect(result.ok).toBe(false);
-    expect(result.diagnostics.map(({ code }) => code)).toEqual(['EQ1201']);
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(['TH1201']);
   });
 
   it('refuses a message under the ceiling in characters and over it in bytes', () => {
@@ -43,13 +43,13 @@ describe('the byte ceiling of a message', () => {
     expect(result.ok).toBe(false);
     expect(
       result.diagnostics.map(({ code, path: at }) => ({ code, path: at })),
-    ).toEqual([{ code: 'EQ1201', path }]);
+    ).toEqual([{ code: 'TH1201', path }]);
   });
 
   it('refuses a source that is not text', () => {
     const result = parseMessageSemanticModel(42, { path });
 
     expect(result.ok).toBe(false);
-    expect(result.diagnostics.map(({ code }) => code)).toEqual(['EQ1201']);
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(['TH1201']);
   });
 });

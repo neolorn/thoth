@@ -5,12 +5,12 @@ import {
   createLocalizationContext,
   provideLocalizationSetup,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   createInMemoryCatalogLoaders,
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { localizationSetup } from '#i18n';
@@ -22,7 +22,7 @@ import { runtimeExtensions } from './runtime-extensions';
 import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 
 /**
- * The `@neolorn/equator/testing` entry point, used the way a consumer would.
+ * The `@neolorn/thoth/testing` entry point, used the way a consumer would.
  *
  * `createInMemoryCatalogLoaders` is unusable if its loader resolves the wrapper object it was
  * handed rather than the compiled catalog inside it, because catalog admission refuses that, and
@@ -82,11 +82,11 @@ describe('createInMemoryCatalogLoaders', () => {
     });
 
     await localization.initialize();
-    expect(localization.text(messages.appTitle)).toBe('Equator feature lab');
+    expect(localization.text(messages.appTitle)).toBe('Thoth feature lab');
     localization.dispose();
     claimCapability('testing:createInMemoryCatalogLoaders');
-    claimCapability('entry:@neolorn/equator/testing');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth/testing');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -115,13 +115,13 @@ describe('provideLocalizationTesting', () => {
     const localization = TestBed.inject(Localization);
     await localization.initialize();
 
-    expect(localization.text(messages.appTitle)).toBe('Equator feature lab');
+    expect(localization.text(messages.appTitle)).toBe('Thoth feature lab');
     await localization.changeLocale('ar-EG');
-    expect(localization.text(messages.appTitle)).toBe('مختبر ميزات Equator');
+    expect(localization.text(messages.appTitle)).toBe('مختبر ميزات Thoth');
     const platform = TestBed.inject(PLATFORM_ID) as string;
     claimCapability('testing:provideLocalizationTesting', { platform });
-    claimCapability('entry:@neolorn/equator/testing', { platform });
-    claimCapability('entry:@neolorn/equator', { platform });
+    claimCapability('entry:@neolorn/thoth/testing', { platform });
+    claimCapability('entry:@neolorn/thoth', { platform });
   });
 
   it('is a different entry point from the application provider, not a different runtime', () => {
@@ -135,17 +135,17 @@ describe('resetLocalizationTestEnvironment', () => {
     // What a spec that switches locale leaves behind: an address in another locale, the cookie a
     // persisted choice writes, and both web storages.
     history.pushState(null, '', '/ar-eg/second');
-    document.cookie = 'equator-locale=ar-EG; Path=/';
-    localStorage.setItem('equator-locale', 'ar-EG');
-    sessionStorage.setItem('equator-locale', 'ar-EG');
+    document.cookie = 'thoth-locale=ar-EG; Path=/';
+    localStorage.setItem('thoth-locale', 'ar-EG');
+    sessionStorage.setItem('thoth-locale', 'ar-EG');
 
     resetLocalizationTestEnvironment();
 
     expect(location.pathname).toBe('/');
-    expect(document.cookie).not.toContain('equator-locale');
-    expect(localStorage.getItem('equator-locale')).toBeNull();
-    expect(sessionStorage.getItem('equator-locale')).toBeNull();
+    expect(document.cookie).not.toContain('thoth-locale');
+    expect(localStorage.getItem('thoth-locale')).toBeNull();
+    expect(sessionStorage.getItem('thoth-locale')).toBeNull();
     claimCapability('testing:resetLocalizationTestEnvironment');
-    claimCapability('entry:@neolorn/equator/testing');
+    claimCapability('entry:@neolorn/thoth/testing');
   });
 });

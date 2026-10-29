@@ -18,12 +18,12 @@ import {
   Localization,
   withRouting,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   RouteLocalization,
   provideLocalizedRouter,
-} from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -80,7 +80,7 @@ const constructedWith: string[] = [];
  * `text()` evaluates once, when the component is constructed, and never again: it is the
  * snapshot read. `textSignal()` is the live one. On a page that offers a locale control, a
  * `text()` binding is still showing the outgoing language after the switch commits, and no
- * amount of correct ordering inside Equator changes that. The tests below read both, so which
+ * amount of correct ordering inside Thoth changes that. The tests below read both, so which
  * one moves is stated rather than assumed.
  */
 @Component({
@@ -108,7 +108,7 @@ class LocaleRecordingRoute {
 })
 class RootHost {}
 
-// The application's own routes, canonical. Equator does not wrap them in locale parents; it derives
+// The application's own routes, canonical. Thoth does not wrap them in locale parents; it derives
 // the locale branches from the route projection and supplies them separately, so this is exactly
 // what a consumer writes.
 const routes: Routes = [
@@ -222,11 +222,11 @@ describe('switching locale, and navigating after one', () => {
       //
       // Asserted as the whole string rather than as a `toContain`, because the half that did *not*
       // move is the more useful half of this reading. `heading` is a `text()` call evaluated in the
-      // constructor: it is a snapshot, it is still English, and Equator cannot make it otherwise. An
+      // constructor: it is a snapshot, it is still English, and Thoth cannot make it otherwise. An
       // application whose visible strings are bound that way has F1's symptom back, the page
       // showing the outgoing language after the commit landed, from its own code rather than from
       // the adapter's ordering. Which binding an application reaches for is the part of this that
-      // is not Equator's to decide, so the test states the consequence instead of hiding it.
+      // is not Thoth's to decide, so the test states the consequence instead of hiding it.
       expect(fixture.nativeElement.textContent).toBe(
         'Home route|الصفحة الرئيسية',
       );
@@ -313,7 +313,7 @@ describe('a Router configuration the adapter cannot make coherent', () => {
             origin: localeOrigin('en-US'),
           },
           // Passed as a router feature, which is also the shape 5.1a warns about: Angular provides
-          // ROUTER_CONFIGURATION non-multi, so this replaces Equator's own configuration entirely.
+          // ROUTER_CONFIGURATION non-multi, so this replaces Thoth's own configuration entirely.
           // That is the mechanism the refusal below has to survive.
           withRouterConfig({ urlUpdateStrategy: 'eager' }),
         ),
@@ -341,7 +341,7 @@ describe('a Router configuration the adapter cannot make coherent', () => {
 
     expect(() => TestBed.inject(RouteLocalization)).toThrow(/deferred/u);
     claimCapability('feature:provideLocalizedRouter', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth/router', { policy: routePolicy });
   });
 });
 
@@ -441,7 +441,7 @@ describe.runIf(localeInPath)(
         document.querySelector('link[rel="canonical"]')?.getAttribute('href') ??
         null;
       const announced = (): string | null =>
-        document.querySelector('[data-equator-announcer]')?.textContent ?? null;
+        document.querySelector('[data-thoth-announcer]')?.textContent ?? null;
 
       const atTheAddressWrite: unknown[] = [];
       const stopWatching = TestBed.inject(Location).onUrlChange((url) => {
@@ -481,11 +481,11 @@ describe.runIf(localeInPath)(
         policy: routePolicy,
         platform,
       });
-      claimCapability('entry:@neolorn/equator/router', {
+      claimCapability('entry:@neolorn/thoth/router', {
         policy: routePolicy,
         platform,
       });
-      claimCapability('entry:@neolorn/equator', {
+      claimCapability('entry:@neolorn/thoth', {
         policy: routePolicy,
         platform,
       });

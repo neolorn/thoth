@@ -3,7 +3,7 @@ import { PLATFORM_ID, REQUEST, inject } from '@angular/core';
 import {
   profileStore,
   type LocalizationPersistenceStoreFactory,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 /** Where this deployment keeps a signed-in reader's preferences. */
 export const PROFILE_PATH = '/account/locale';

@@ -56,7 +56,7 @@ export class LocalizedAddressSync {
       }
       // One skip code, named. The other, `IgnoredByUrlHandlingStrategy`, is a deliberate statement
       // that an address is not the Router's to answer for, and rewriting it would be taking an
-      // address its owner asked to keep. Equator's own strategy processes every URL, so it cannot
+      // address its owner asked to keep. Thoth's own strategy processes every URL, so it cannot
       // arise from here, which is why this is written as the code it accepts rather than as the
       // absence of a case.
       if (

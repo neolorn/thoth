@@ -9,7 +9,7 @@ import {
   builtLocalePolicy,
   pageGone,
   projectSitemap,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   createLocaleRequestHandler,
   declareOperationalFailure,
@@ -17,7 +17,7 @@ import {
   type LocaleRequestHandlerOptions,
   toWebRequest,
   writeNodeResponse,
-} from '@neolorn/equator/http';
+} from '@neolorn/thoth/http';
 import { configuration } from '#i18n';
 
 import { DossierStore, DossierStoreUnavailable } from './app/dossier-store';
@@ -49,7 +49,7 @@ const servedPolicy = builtLocalePolicy(routePolicy, configuration);
  * `@angular/ssr` answers `400` before the application runs for any `Host` header it does not
  * recognise, and by default it recognises loopback and nothing else. Under a `locale-host` policy
  * that is every one of the application's own domains, so the site would answer nothing anywhere.
- * Equator cannot check this, a build cannot reach the server configuration, so what it does
+ * Thoth cannot check this, a build cannot reach the server configuration, so what it does
  * instead is derive the list, and this is the line a consumer writes.
  *
  * `servedPolicy` rather than `routePolicy`, for the same reason as everywhere else here: a build
@@ -64,7 +64,7 @@ const engine = new AngularNodeAppEngine({
 });
 
 /**
- * An address Equator declined to localize, handed back to the server that owns it.
+ * An address Thoth declined to localize, handed back to the server that owns it.
  *
  * `passthrough` has to answer with a `Response` because the handler is written against Fetch and
  * knows nothing about Express. This deployment's answer is "not mine, keep going", which is
@@ -77,7 +77,7 @@ const PASS_THROUGH = 'x-consumer-passthrough';
  * What this deployment owns, and nothing else: how long a response is kept, which
  * `app/response-caching.ts` states, and where it reads a preference.
  *
- * `cookie` names the cookie this deployment remembers a choice in. Naming it is what tells Equator
+ * `cookie` names the cookie this deployment remembers a choice in. Naming it is what tells Thoth
  * that answers here vary by something a shared cache must not key on, and that is a fact stated
  * once rather than a directive string retyped per classification. A chain of conditionals mapping
  * classifications to directive text by hand works, and goes on working, wrongly and silently, the
@@ -216,7 +216,7 @@ function createProbeContext(request: Request) {
 /**
  * The sitemap, which this deployment owns the delivery of.
  *
- * Equator produces the files: their names, their contents, the split when there is one. Where they
+ * Thoth produces the files: their names, their contents, the split when there is one. Where they
  * are served from, and the `Sitemap:` line in `robots.txt` beside them, are this application's,
  * under section 10 of the routing specification. Serving them from the same handler is what this
  * deployment does; writing them into the built output beside `index.html` would do as well.

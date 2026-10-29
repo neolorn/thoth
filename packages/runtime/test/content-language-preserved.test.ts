@@ -7,7 +7,7 @@ import { contentPresentation } from '../src/locale-presentation.js';
  *
  * Each tag here is already canonical and carries something likely-subtag data would add or take
  * away: an explicit script, a region whose script is implied, a variant, an extension. Maximizing
- * or minimizing any of them would be Equator deciding what the content's language is.
+ * or minimizing any of them would be Thoth deciding what the content's language is.
  */
 
 const DECLARED = [

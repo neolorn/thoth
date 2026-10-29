@@ -20,9 +20,9 @@ import {
   withRouting,
   type LocaleSelectorChoice,
   withFormattingContext,
-} from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth';
+import { provideLocalizedRouter } from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -41,7 +41,7 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
  * `https://example.com`.
  *
  * The browser puts that sub-path in front of every address it hands the application, and it is in
- * none of the addresses Equator builds: a locale URL policy addresses routes from the application's
+ * none of the addresses Thoth builds: a locale URL policy addresses routes from the application's
  * own root, and knows nothing about where that root is mounted. So every surface that reads an
  * address has to take the base off first, and every surface that writes one has to put it back.
  *
@@ -89,7 +89,7 @@ interface Deployment {
  * A browser-supplied arrival at an application mounted under `base`.
  *
  * Both halves of the address are set, and the pair is load-bearing: `MockPlatformLocation` is what
- * the `LocationStrategy` reads, and jsdom's `history` is what Equator's `url` locale source reads.
+ * the `LocationStrategy` reads, and jsdom's `history` is what Thoth's `url` locale source reads.
  * Setting one and not the other leaves the Router and the committed locale disagreeing for a reason
  * that has nothing to do with what is under test.
  */
@@ -371,7 +371,7 @@ describe.runIf(localeInPath)('an application deployed under a sub-path', () => {
     );
     expect(arrival.locale).toBe('ar-EG');
     expect(canonical()).toBe(urlUnderApp('second', 'ar-EG'));
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('writes the base back on an ordinary in-app navigation', async () => {

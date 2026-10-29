@@ -20,7 +20,7 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
  * A multi-application workspace: four `projectType: application` entries and two libraries in one
  * `angular.json`.
  *
- * A multi-application workspace can run Equator.
+ * A multi-application workspace can run Thoth.
  * The accurate statement is narrower and worse: it works only under a layout `ng generate
  * application` does not produce, and an application sitting at the workspace root beside a second
  * application can never be selected.
@@ -105,7 +105,7 @@ async function multiApplicationWorkspace(
 
     await write(
       root,
-      `${base}equator.config.json`,
+      `${base}thoth.config.json`,
       `${JSON.stringify(
         {
           schemaVersion: 1,
@@ -201,7 +201,7 @@ describe('a multi-application workspace with one manifest', () => {
         project: resolve(root, 'apps', application),
       });
       expect(generated.ok).toBe(false);
-      expect(generated.diagnostics.map((d) => d.code)).toContain('EQ1702');
+      expect(generated.diagnostics.map((d) => d.code)).toContain('TH1702');
     }
     claimCapability('cli:generate');
   });
@@ -270,7 +270,7 @@ describe('a multi-application workspace with one manifest', () => {
 });
 
 describe('onboarding an application that has no manifest', () => {
-  it('creates the manifest from equator init and then generates', async () => {
+  it('creates the manifest from thoth init and then generates', async () => {
     // The whole of what the three blocked applications need. Authoring files belongs to init and
     // nowhere else, so the command a developer runs deliberately is the one that writes them.
     const root = await multiApplicationWorkspace({
@@ -309,7 +309,7 @@ describe('onboarding an application that has no manifest', () => {
     // Naming the command is the entire remedy. A diagnostic that says the owner "requires an
     // ordinary package.json" and stops there leaves the reader to guess it.
     expect(
-      summaries.some((summary) => summary.includes('Run equator init')),
+      summaries.some((summary) => summary.includes('Run thoth init')),
     ).toBe(true);
     expect(
       summaries.some((summary) => summary.includes('never author files')),
@@ -334,7 +334,7 @@ describe('onboarding an application that has no manifest', () => {
   });
 
   it('refuses to name a package after a directory that is not a package name', async () => {
-    // The provider identity is durable and reaches every compiled artifact, so a name Equator had
+    // The provider identity is durable and reaches every compiled artifact, so a name Thoth had
     // to repair would be the wrong identity forever.
     const root = await multiApplicationWorkspace({
       ownersWithManifest: ['home'],
@@ -342,7 +342,7 @@ describe('onboarding an application that has no manifest', () => {
     const awkward = resolve(root, 'apps', 'Identity Portal');
     await mkdir(resolve(awkward, 'src'), { recursive: true });
     await writeFile(
-      resolve(awkward, 'equator.config.json'),
+      resolve(awkward, 'thoth.config.json'),
       `${JSON.stringify(
         {
           schemaVersion: 1,
@@ -370,10 +370,10 @@ describe('onboarding an application that has no manifest', () => {
 
 describe('an owner with no TypeScript graph', () => {
   it('says so instead of succeeding with nothing analyzed', async () => {
-    // Silence was the worst available answer: with no graph Equator sees no template and no call
+    // Silence was the worst available answer: with no graph Thoth sees no template and no call
     // site, so every message looks unused, reachability is empty, and it all reports success
     // at all. Every new owner meets first-time configuration exactly once, so this is
-    // where a workspace adopting Equator is most likely to hit it.
+    // where a workspace adopting Thoth is most likely to hit it.
     const root = await multiApplicationWorkspace({
       ownersWithManifest: ['home'],
     });
@@ -428,7 +428,7 @@ describe('an owner at the workspace root whose application is nested', () => {
     );
     await write(
       root,
-      'equator.config.json',
+      'thoth.config.json',
       `${JSON.stringify(
         {
           schemaVersion: 1,

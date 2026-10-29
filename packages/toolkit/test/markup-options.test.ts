@@ -86,6 +86,6 @@ describe('a markup option', () => {
       '{#badge tone=info style=|color: red|}New{/badge}',
     ],
   ])('is refused as %s', (_label, message) => {
-    expect(refusalCodes(message)).toContain('EQ1805');
+    expect(refusalCodes(message)).toContain('TH1805');
   });
 });

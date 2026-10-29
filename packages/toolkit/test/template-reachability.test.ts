@@ -89,7 +89,7 @@ async function project(): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -209,7 +209,7 @@ afterEach(async () => {
 
 describe('a route behind a lazy boundary', () => {
   it('carries the scopes it has to have ready before it renders', async () => {
-    // Deferring a scope is only safe if something loads it at the right time. Equator already knows
+    // Deferring a scope is only safe if something loads it at the right time. Thoth already knows
     // which scopes a lazily loaded page uses, so the route table says so and the router adapter
     // loads them on activation: no application lists scopes per route.
     //

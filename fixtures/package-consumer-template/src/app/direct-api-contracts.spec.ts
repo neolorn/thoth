@@ -48,7 +48,7 @@ import {
   zonedDateTime,
   type FormattingContext,
   type FormattingResult,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
@@ -93,7 +93,7 @@ function expectExplicitCapability(result: FormattingResult): void {
  * The locale set a production build of this fixture generates.
  *
  * Stated rather than read off `configuration`, because `configuration` carries a third locale when
- * the suite's `equator generate` was given `--pseudo` and these assertions are about the
+ * the suite's `thoth generate` was given `--pseudo` and these assertions are about the
  * projection, not about which command ran. The pseudo-locale's own case is asserted directly,
  * below.
  */
@@ -102,7 +102,7 @@ const shippedLocales = Object.freeze(['en-US', 'ar-EG']);
 describe('route and SEO contracts, called directly', () => {
   it('uses the generated Angular route projection as the single route authority', () => {
     expect(appRouteProjection.generated).toMatchObject({
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: expect.stringMatching(/^sha256-[A-Za-z0-9_-]{43}$/u),
     });
     expect(
@@ -198,7 +198,7 @@ describe('route and SEO contracts, called directly', () => {
         ),
       ).cache,
     ).toBe('private-no-cache');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   /**
@@ -385,7 +385,7 @@ describe('route and SEO contracts, called directly', () => {
     claimCapability('declaration:route-parameter-codec', {
       policy: routePolicy,
     });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   // Plain path-prefix behavior: locale entry, prefix aliases and prefix corrections exist only where
@@ -504,7 +504,7 @@ describe('route and SEO contracts, called directly', () => {
         /ordered safe range/u,
       );
       claimCapability('policy:path-prefix', { policy: routePolicy });
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
       claimCapability('declaration:route-parameter-codec', {
         policy: routePolicy,
       });
@@ -619,7 +619,7 @@ describe('route and SEO contracts, called directly', () => {
       alternates: [],
       robots: 'noindex',
     });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 });
 
@@ -644,7 +644,7 @@ describe('native formatting and localized input contracts', () => {
       { dateStyle: 'medium', timeZone: 'UTC' },
     );
     const nativeDuration = formatDuration(duration({ minutes: 5 }), english);
-    const list = formatList(['Equator', 'Angular', 'Intl'], english);
+    const list = formatList(['Thoth', 'Angular', 'Intl'], english);
     const relative = formatRelativeTime(decimal('-1'), 'day', english, {
       numeric: 'auto',
     });
@@ -688,7 +688,7 @@ describe('native formatting and localized input contracts', () => {
     // `{surname} {surname2} {title} {given} {given2} {credentials}`. A space between them,
     // because root has no reason to know that Chinese joins them without one. An application that
     // configures a Chinese locale gets the compact form from the zh profile; this one asserts what
-    // root says, which is what Equator answers when it was given nothing else.
+    // root says, which is what Thoth answers when it was given nothing else.
     expect(
       formatPersonName(
         personName('zh', { given: '明', surname: '王' }),
@@ -717,7 +717,7 @@ describe('native formatting and localized input contracts', () => {
     expect([undefined, 'en']).toContain(order.ok ? order.language : null);
     expect(order.ok && 'fallback' in order).toBe(false);
     expect(
-      segmentText('Equator works', english, { granularity: 'word' }),
+      segmentText('Thoth works', english, { granularity: 'word' }),
     ).toMatchObject({
       ok: true,
     });
@@ -732,7 +732,7 @@ describe('native formatting and localized input contracts', () => {
     claimCapability('format:selectPlural');
     claimCapability('format:compareLocalized');
     claimCapability('format:segmentText');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('round-trips declared input profiles and rejects ambiguous or hidden repair', () => {
@@ -1095,15 +1095,15 @@ describe('native formatting and localized input contracts', () => {
     claimCapability('control:time-zone');
     claimCapability('control:duration');
     claimCapability('control:instant');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
 describe('rich-content, bidi, typography, and icon policy', () => {
   it('requires application-owned destinations and preserves direction semantics', () => {
-    expect(internalDestination('/help?from=equator')).toEqual({
+    expect(internalDestination('/help?from=thoth')).toEqual({
       kind: 'internal',
-      href: '/help?from=equator',
+      href: '/help?from=thoth',
     });
     expect(
       externalDestination('https://support.example/guide', [
@@ -1133,6 +1133,6 @@ describe('rich-content, bidi, typography, and icon policy', () => {
         scripts: { Arab: { id: 'arabic', lineHeight: 1.7 } },
       }),
     ).toEqual({ id: 'arabic', lineHeight: 1.7 });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

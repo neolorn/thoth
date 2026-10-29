@@ -4,7 +4,7 @@ import { parseLocalizedInput } from '../src/localized-input.js';
 import {
   type FormattingContext,
   type LocalizedInputProfile,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Text is measured before it is read. The bound is the smaller of what the profile declares and

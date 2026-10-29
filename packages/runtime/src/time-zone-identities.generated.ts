@@ -1,6 +1,6 @@
 /** Generated from the IANA Time Zone Database 2026e by tools/generate-locale-profile.ts. */
 export const TIME_ZONE_IDENTITIES_VERSION =
-  'tzdata-2026e/equator-time-zone-1' as const;
+  'tzdata-2026e/thoth-time-zone-1' as const;
 
 /**
  * Every name the release gives a time zone, separated by spaces. A name that is not its own

@@ -9,13 +9,13 @@ import {
   buildLocalizedRoute,
   withRouting,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   LocalizedTitleStrategy,
   RouteLocalization,
   provideLocalizedRouter,
-} from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -42,9 +42,9 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
  *
  * `RouteParameterCodec.serialize` is synchronous, so it can answer for a slug that is a function of
  * its value and cannot answer for one held in a database. `dossiers/:slug` is the second kind: its
- * codec is identity, so left alone Equator advertises the English slug under the Arabic prefix. An
+ * codec is identity, so left alone Thoth advertises the English slug under the Arabic prefix. An
  * address that resolves and is not Arabic. The route's component loads the record and declares the
- * per-locale spellings, and Equator uses them for the canonical URL, the alternates and the address
+ * per-locale spellings, and Thoth uses them for the canonical URL, the alternates and the address
  * a locale switch moves to.
  *
  * **Two parameterised routes sharing a parameter name, deliberately.** `articles/:slug` is answered
@@ -57,8 +57,8 @@ const ARABIC = 'ar-EG';
 /**
  * A host with an outlet, because this file needs the page's own code to run.
  *
- * The other document specs never render anything: they assert what Equator writes to the head, and
- * Equator writes it from the resolver. Here the declaration comes from the route's component, and a
+ * The other document specs never render anything: they assert what Thoth writes to the head, and
+ * Thoth writes it from the resolver. Here the declaration comes from the route's component, and a
  * component is constructed by change detection rather than by navigation. Without a rendered
  * outlet nothing declares and every assertion below reads the codec's answer.
  */
@@ -106,7 +106,7 @@ async function configure(): Promise<Router> {
  *
  * Microtasks and ticks only, no timers and no wall-clock, so this waits for work that is
  * already queued rather than for an amount of time. The counts are loose on purpose: pinning the
- * exact number of hops would make this file a measurement of the harness rather than of Equator.
+ * exact number of hops would make this file a measurement of the harness rather than of Thoth.
  */
 async function settle(): Promise<void> {
   for (let round = 0; round < 3; round += 1) {
@@ -129,7 +129,7 @@ describe.runIf(localeInAddress)(
   'a route parameter whose spelling only the page knows',
   () => {
     it('advertises the declared spelling, which the codec could not have produced', async () => {
-      // The control, measured rather than argued. This is what Equator emits for the Arabic address
+      // The control, measured rather than argued. This is what Thoth emits for the Arabic address
       // of this route with nothing declared: the English slug, because identity is all the codec has.
       expect(
         buildLocalizedRoute(
@@ -150,7 +150,7 @@ describe.runIf(localeInAddress)(
       expect(alternate(ARABIC)).toBe(pageUrl('declared dossier', ARABIC));
       expect(alternate('en-US')).toBe(pageUrl('declared dossier', 'en-US'));
       expect(canonical()).toBe(pageUrl('declared dossier', 'en-US'));
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
     });
 
     it('does not carry one page’s declaration onto the next', async () => {
@@ -194,7 +194,7 @@ describe.runIf(localeInAddress)(
           TestBed.inject(LocationStrategy).prepareExternalUrl(router.url),
         ).toBe(pagePath('unlisted dossier', ARABIC));
       }
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
     });
 
     // Where the switch stays in this document. Under locale-host it loads the other origin instead.
@@ -203,7 +203,7 @@ describe.runIf(localeInAddress)(
       async () => {
         // The reason a sitemap is not an answer. A crawler can be told about the Arabic address in a
         // file; a reader pressing العربية has to arrive at it, and a locale switch is not a navigation:
-        // Equator rebuilds the address for the target locale, and that rebuild is where the
+        // Thoth rebuilds the address for the target locale, and that rebuild is where the
         // declaration has to be read.
         const router = await configure();
         await router.navigateByUrl('/dossiers/dossier');
@@ -225,8 +225,8 @@ describe.runIf(localeInAddress)(
         expect(
           TestBed.inject(RouteLocalization).context()?.resolution.parameters,
         ).toEqual({ slug: 'ملف' });
-        claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-        claimCapability('entry:@neolorn/equator/router', {
+        claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
+        claimCapability('entry:@neolorn/thoth/router', {
           policy: routePolicy,
         });
       },
@@ -248,7 +248,7 @@ describe('an internal address spelled with another locale’s parameter', () => 
       TestBed.inject(RouteLocalization).context()?.resolution.parameters,
     ).toEqual({ sheet: 'live' });
     const platform = TestBed.inject(PLATFORM_ID) as string;
-    claimCapability('entry:@neolorn/equator/router', {
+    claimCapability('entry:@neolorn/thoth/router', {
       policy: routePolicy,
       platform,
     });

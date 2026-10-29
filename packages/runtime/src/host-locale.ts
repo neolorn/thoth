@@ -27,7 +27,7 @@
 import {
   canonicalizeLanguageTag,
   ɵisGeneratedPseudoLocales,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { LIKELY_SCRIPTS } from './likely-scripts.generated';
 import {

@@ -5,11 +5,11 @@ that does not exist is a compile error at the line that uses it.
 
 ## Before you begin
 
-You need a project that `equator init` has set up.
+You need a project that `thoth init` has set up.
 
 ## Write the catalog
 
-A catalog lives at `i18n/<scope>/<locale>.yaml`. The scope is a name you choose, and `equator init`
+A catalog lives at `i18n/<scope>/<locale>.yaml`. The scope is a name you choose, and `thoth init`
 suggests `shell` for the messages that surround everything else:
 
 ```yaml excerpt i18n/shell/en-US.yaml
@@ -23,7 +23,7 @@ messages:
 A scope is a directory. Write its catalogs, compile, and import the module. Nothing else declares
 it, because the directory is the declaration.
 
-Two kinds of name are taken, and `generate` reports `EQ1503` for a scope that uses one: the name of
+Two kinds of name are taken, and `generate` reports `TH1503` for a scope that uses one: the name of
 a module it writes for every project, such as `routes` or `recovery`, and a name Windows gives to a
 device, such as `con`.
 
@@ -42,7 +42,7 @@ messages:
 ```
 
 ```sh run
-npx equator generate
+npx thoth generate
 ```
 
 A message is a plain string or a record. The record form carries `description` and `context` for
@@ -70,11 +70,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Localization, withRecoveryMessage } from '@neolorn/equator';
+import { Localization, withRecoveryMessage } from '@neolorn/thoth';
 import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
 import { messages as shell } from '#i18n/shell';
 import { messages } from '#i18n/greeting';
@@ -130,7 +130,7 @@ application says what it is made of, so a translator can move it without touchin
 Rendering one is [How to render a message](render-messages.md).
 
 Plural and gender selection, number and date formatting, and each locale's plural categories come
-from the locale data Equator compiles its profile from, so a translator writing Arabic gets Arabic's
+from the locale data Thoth compiles its profile from, so a translator writing Arabic gets Arabic's
 six plural categories rather than English's two.
 
 ## Write a message that counts
@@ -160,14 +160,14 @@ messages:
     * {{لديك {$count} رسالة غير مقروءة.}}
 ```
 
-`{$count}` inside a variant is formatted as a number in the locale being rendered. `equator check`
+`{$count}` inside a variant is formatted as a number in the locale being rendered. `thoth check`
 reports a translation that leaves out a category its language has.
 
 The inputs are the pipe's argument:
 
 ```ts src/app/inbox.ts
 import { Component } from '@angular/core';
-import { LocalizePipe } from '@neolorn/equator';
+import { LocalizePipe } from '@neolorn/thoth';
 import { messages } from '#i18n/inbox';
 
 @Component({
@@ -182,7 +182,7 @@ export class Inbox {
 ```
 
 ```sh run
-npx equator generate
+npx thoth generate
 ```
 
 A date or a time is formatted in a time zone, which [How to format values](format-values.md)

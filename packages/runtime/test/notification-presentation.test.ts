@@ -5,7 +5,7 @@ import {
   GENERATED_ABI,
   type MessageHandle,
   type PlainMessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { PROVIDER, compileSet, scope } from './catalog-store-harness.js';
 import {

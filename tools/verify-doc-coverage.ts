@@ -79,8 +79,8 @@ const entryPoints = [
 // A renamed or empty output directory makes every check below pass on nothing, and a discovered
 // list is exactly the shape that fails that way silently.
 assert.ok(
-  entryPoints.some(({ label }) => label === 'neolorn-equator'),
-  `No neolorn-equator.d.ts under ${runtimeTypesRoot}. Every count below would be taken over nothing. Run pnpm run build first.`,
+  entryPoints.some(({ label }) => label === 'neolorn-thoth'),
+  `No neolorn-thoth.d.ts under ${runtimeTypesRoot}. Every count below would be taken over nothing. Run pnpm run build first.`,
 );
 
 /**
@@ -99,8 +99,8 @@ const publishedSubpaths = openSubpaths(runtimeManifest)
   .filter(({ json }) => !json)
   .map(({ subpath }) =>
     subpath === '.'
-      ? 'neolorn-equator'
-      : `neolorn-equator-${subpath.replace(/^\.\//u, '')}`,
+      ? 'neolorn-thoth'
+      : `neolorn-thoth-${subpath.replace(/^\.\//u, '')}`,
   )
   .sort();
 assert.deepEqual(
@@ -283,7 +283,7 @@ const failures = undocumented.map(
 
 if (failures.length > 0) {
   console.error(
-    `Equator documentation coverage: ${covered} of ${all.length} items documented (${percent}%).\n`,
+    `Thoth documentation coverage: ${covered} of ${all.length} items documented (${percent}%).\n`,
   );
   for (const failure of failures) console.error(`  - ${failure}`);
   console.error(
@@ -299,6 +299,6 @@ if (failures.length > 0) {
     })
     .join(', ');
   console.log(
-    `Equator documentation coverage verified: ${covered} of ${all.length} items documented (${percent}%), across ${entryPoints.length} published entry points, with nothing undocumented. By entry point: ${perEntryPoint}.`,
+    `Thoth documentation coverage verified: ${covered} of ${all.length} items documented (${percent}%), across ${entryPoints.length} published entry points, with nothing undocumented. By entry point: ${perEntryPoint}.`,
   );
 }

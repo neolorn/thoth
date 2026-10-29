@@ -5,7 +5,7 @@ import {
   resolveLocalizedRoute,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What a request spelling outside Unicode Normalization Form C is read as.
@@ -28,7 +28,7 @@ const TEXT: RouteParameterCodec<string> = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-RequestNormalFormTestIdentity01234567890123',
     routes: [
       { id: 'home', path: '', parameterNames: [] },

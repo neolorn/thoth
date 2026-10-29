@@ -17,7 +17,7 @@ import {
 import type {
   LocalizationDiagnostic,
   LocalizationParticipantReport,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { diagnosticOf, rejectionOf } from './catalog-store-harness.js';
 import {
@@ -241,7 +241,7 @@ describe('what a participant is told of a server-rendered region', () => {
   it('is nothing, for a record that shows nothing', async () => {
     const coordinator = new ParticipantCoordinator([
       {
-        profile: 'equator-participant-state/1',
+        profile: 'thoth-participant-state/1',
         participantId: 'region',
         coordination: 'required',
         attempt: {
@@ -389,7 +389,7 @@ describe('a coordinator that is disposed', () => {
 });
 
 describe('the records a server-rendered page hands on', () => {
-  const PROFILE = 'equator-participant-state/1';
+  const PROFILE = 'thoth-participant-state/1';
   const progressive = { coordination: 'progressive' } as const;
 
   /** Runs every progressive region once, each under the next transition identity. */

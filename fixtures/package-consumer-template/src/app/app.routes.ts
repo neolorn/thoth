@@ -6,11 +6,11 @@ import {
   pageAbsent,
   pageGone,
   pageOperationalFailure,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   LocalizedPageOutcome,
   LocalizedRouteParameters,
-} from '@neolorn/equator/router';
+} from '@neolorn/thoth/router';
 import { messages } from '#i18n/shell';
 
 import { DossierStore } from './dossier-store';
@@ -145,10 +145,10 @@ class FeatureLabTopicRoute {
    * What the address could not say, said by the page that looked it up.
    *
    * `topics/:topic` accepts any identifier, so every spelling of it resolves to this route and the
-   * status Equator can derive from the address alone is 200. Whether a topic is filed under the
+   * status Thoth can derive from the address alone is 200. Whether a topic is filed under the
    * identifier, whether it was retired, and whether the lookup itself failed are three answers only
    * this component has. The declaration lands after a microtask, which is where a real lookup lands
-   * it, so the head Equator built for this navigation is corrected rather than built twice.
+   * it, so the head Thoth built for this navigation is corrected rather than built twice.
    */
   constructor() {
     const topic = this.route.snapshot.paramMap.get('topic') ?? '';
@@ -167,15 +167,15 @@ class FeatureLabTopicRoute {
 const FILED_TOPICS: readonly string[] = ['handbook', 'a.b_c~d-e'];
 
 /**
- * A route that tells Equator how its address is spelled elsewhere.
+ * A route that tells Thoth how its address is spelled elsewhere.
  *
  * Three lines of application code, and they are the three that matter: load the record, read the
- * per-locale slugs it carries, declare them. From there Equator writes the canonical URL, the
+ * per-locale slugs it carries, declare them. From there Thoth writes the canonical URL, the
  * `hreflang` alternates, the Open Graph alternates and the address a locale switch moves to:
  * none of which this component mentions.
  *
  * The declaration lands after `NavigationEnd`, because the load is a promise. That is the ordinary
- * position rather than a late one, and it is why Equator re-projects the head when a declaration
+ * position rather than a late one, and it is why Thoth re-projects the head when a declaration
  * arrives instead of only building it once.
  */
 @Component({
@@ -226,7 +226,7 @@ class FeatureLabNotFoundRoute {
 /**
  * Routes as an application writes them.
  *
- * Most declare no identity: Equator derives one from the address, so adding, renaming or removing a
+ * Most declare no identity: Thoth derives one from the address, so adding, renaming or removing a
  * route needs no localization change. The four parameterised routes declare one, which is the case
  * decision section 5 keeps pinning available for: a derived `route:items._` is stable and unique
  * but is not a name anyone would want to write in a cross-application link.
@@ -237,18 +237,18 @@ export const routes = [
     pathMatch: 'full',
     component: FeatureLabHomeRoute,
     // `section` is this application's own word for its own reasons, and `withRouting` is where it
-    // is mapped to what a sitemap says. Equator reads the field it was pointed at rather than one
+    // is mapped to what a sitemap says. Thoth reads the field it was pointed at rather than one
     // of its own, so a project that already groups its routes does not annotate them twice.
-    data: { equatorIndexing: 'indexable', section: 'landing' },
+    data: { thothIndexing: 'indexable', section: 'landing' },
   },
   {
     path: 'second',
     component: FeatureLabSecondRoute,
-    // `updated` is a date this page changed on, which nothing but the application knows. Equator
+    // `updated` is a date this page changed on, which nothing but the application knows. Thoth
     // never invents one: a build time is a date the page did not change on, and the one element a
     // crawler actually reads is worth less than nothing when it is wrong.
     data: {
-      equatorIndexing: 'indexable',
+      thothIndexing: 'indexable',
       section: 'reference',
       updated: '2026-09-01',
     },
@@ -256,15 +256,15 @@ export const routes = [
     //
     // This is what a consumer following Angular's documented route-title API writes, and it is the
     // trap it walks into: Angular calls `TitleStrategy.updateTitle` after `NavigationEnd`,
-    // which is after Equator has already written the localized title, so without Equator's strategy
+    // which is after Thoth has already written the localized title, so without Thoth's strategy
     // installed this string replaces the Arabic title on the Arabic page. Nothing throws and
-    // nothing warns: the page just reads as if Equator failed to translate.
+    // nothing warns: the page just reads as if Thoth failed to translate.
     title: 'Second route, declared in English',
   },
   {
     path: 'items/:id',
     component: FeatureLabItemRoute,
-    data: { equatorRouteId: 'item', equatorIndexing: 'non-indexable' },
+    data: { thothRouteId: 'item', thothIndexing: 'non-indexable' },
   },
   {
     // A lazy boundary with a scope of its own, which is the reason a scope of this application is
@@ -274,7 +274,7 @@ export const routes = [
       import('./lazy-route').then((module) => module.FeatureLabLazyRoute),
     // Declared per visitor so the served application answers one page from a route declaration
     // that the toolkit read out of this file.
-    data: { equatorIndexing: 'non-indexable', equatorCaching: 'per-visitor' },
+    data: { thothIndexing: 'non-indexable', thothCaching: 'per-visitor' },
   },
   {
     // The same page at a route every visitor may be given, so a build can write it. A per-visitor
@@ -283,14 +283,14 @@ export const routes = [
     path: 'deferred',
     loadComponent: () =>
       import('./lazy-route').then((module) => module.FeatureLabLazyRoute),
-    data: { equatorIndexing: 'non-indexable' },
+    data: { thothIndexing: 'non-indexable' },
   },
   {
     path: 'articles/:slug',
     component: FeatureLabArticleRoute,
     // No `section`. A route whose class the table does not list claims nothing, and an entry with
     // its address and its alternates and nothing else is a complete entry.
-    data: { equatorRouteId: 'article', equatorIndexing: 'indexable' },
+    data: { thothRouteId: 'article', thothIndexing: 'indexable' },
   },
   {
     // The counterpart to `articles/:slug`: the same parameter name, and a slug no codec can
@@ -299,12 +299,12 @@ export const routes = [
     // check cannot pass by reading the wrong one.
     path: 'dossiers/:slug',
     component: FeatureLabDossierRoute,
-    data: { equatorRouteId: 'dossier', equatorIndexing: 'indexable' },
+    data: { thothRouteId: 'dossier', thothIndexing: 'indexable' },
   },
   {
     path: 'topics/:topic',
     component: FeatureLabTopicRoute,
-    data: { equatorRouteId: 'topic', equatorIndexing: 'indexable' },
+    data: { thothRouteId: 'topic', thothIndexing: 'indexable' },
   },
   {
     // Every pipe and formatting function on one page, which the gate reads in every way a page
@@ -315,7 +315,7 @@ export const routes = [
       import('./exercise-route').then(
         (module) => module.FeatureLabExerciseRoute,
       ),
-    data: { equatorRouteId: 'exercise', equatorIndexing: 'non-indexable' },
+    data: { thothRouteId: 'exercise', thothIndexing: 'non-indexable' },
   },
   {
     // The same sheet at a route the render table leaves to the browser, so the gate reads every
@@ -326,7 +326,7 @@ export const routes = [
       import('./exercise-route').then(
         (module) => module.FeatureLabExerciseRoute,
       ),
-    data: { equatorIndexing: 'non-indexable', equatorCaching: 'per-visitor' },
+    data: { thothIndexing: 'non-indexable', thothCaching: 'per-visitor' },
   },
   {
     // The address this application does not serve. No fixture had one, which is why an
@@ -335,6 +335,6 @@ export const routes = [
     // a failure rather than as an answer.
     path: '**',
     component: FeatureLabNotFoundRoute,
-    data: { equatorIndexing: 'non-indexable' },
+    data: { thothIndexing: 'non-indexable' },
   },
 ] satisfies Routes;

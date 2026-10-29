@@ -6,7 +6,7 @@ import {
   resolveLocalizedRoute,
   type GeneratedRouteProjectionEntry,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Two routes that both fit one address.
@@ -42,7 +42,7 @@ const table = (
   identity: string,
   routes: readonly GeneratedRouteProjectionEntry[],
 ): RouteRuntimeProjection => ({
-  generated: { profile: 'equator-route-projection/1', identity, routes },
+  generated: { profile: 'thoth-route-projection/1', identity, routes },
   parameters: {
     article: { slug: createIdentifierParameterCodec() },
     archive: { slug: createIdentifierParameterCodec() },

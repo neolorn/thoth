@@ -14,7 +14,7 @@ import { createLocalizationRuntime } from '../src/localization.js';
 import type {
   LocalizationRouteSnapshot,
   LocalizationSetup,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import {
   PROVIDER,

@@ -46,7 +46,7 @@ describe('the function profile of LDML 48.2', () => {
     (name) => {
       const result = parse(`{$value :${name}}`);
       expect(result.ok).toBe(false);
-      expect(result.diagnostics.map(({ code }) => code)).toContain('EQ1203');
+      expect(result.diagnostics.map(({ code }) => code)).toContain('TH1203');
     },
   );
 });

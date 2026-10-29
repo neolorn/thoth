@@ -9,7 +9,7 @@ import {
   type RouteParameterCodec,
   type RouteParameterContext,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What a path-prefix policy answers for each kind of address, with every field of the answer.
@@ -33,7 +33,7 @@ const SLUG: RouteParameterCodec<string> = Object.freeze({
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-PathPrefixResolutionTestIdentity01234567890',
     routes: [
       { id: 'home', path: '', parameterNames: [] },

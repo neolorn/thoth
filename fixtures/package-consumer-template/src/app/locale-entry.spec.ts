@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveLocalizedRoute, routeHttpDescriptor } from '@neolorn/equator';
+import { resolveLocalizedRoute, routeHttpDescriptor } from '@neolorn/thoth';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
 import { entryRedirects } from './addresses';
@@ -10,7 +10,7 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 /**
  * The one place a path-prefix policy has to decide a locale for itself.
  *
- * Under `/en-us` and `/ar-eg` prefixes the URL says which locale it wants, and Equator obeys it.
+ * Under `/en-us` and `/ar-eg` prefixes the URL says which locale it wants, and Thoth obeys it.
  * The exception is a URL with no prefix: `/`, or a link someone typed without one. That request
  * states no locale, so something has to choose, and `resolveLocalizedRoute` already accepted a
  * resolution context for exactly that purpose.
@@ -41,7 +41,7 @@ describe.runIf(entryRedirects)('a URL that states no locale', () => {
       location: '/ar-eg',
     });
     claimCapability('policy:path-prefix', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('builds the destination in that locale, not merely under its prefix', () => {
@@ -67,7 +67,7 @@ describe.runIf(entryRedirects)('a URL that states no locale', () => {
       `/ar-eg/articles/${encodeURIComponent('دليل')}`,
     );
     claimCapability('policy:path-prefix', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('keeps query and fragment across the redirect', () => {
@@ -82,7 +82,7 @@ describe.runIf(entryRedirects)('a URL that states no locale', () => {
       throw new Error('expected a redirect');
     expect(resolution.location).toBe('/ar-eg/second?tab=one#details');
     claimCapability('policy:path-prefix', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('falls back to the default locale when the preference is not supported', () => {
@@ -104,7 +104,7 @@ describe.runIf(entryRedirects)('a URL that states no locale', () => {
       location: '/en-us',
     });
     claimCapability('policy:path-prefix', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 });
 
@@ -122,7 +122,7 @@ describe.runIf(entryRedirects)('a URL that states its locale', () => {
       routeId: 'route:second',
     });
     claimCapability('policy:path-prefix', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 });
 
@@ -137,8 +137,8 @@ describe.runIf(entryRedirects)('what the redirect may be cached as', () => {
    * language to the next; marking only the other one private prevents nothing, because that request
    * is answered from the cache and never reaches this function.
    *
-   * `Vary` is not the way out. Equator is never given the request, the host reads the preference
-   * and passes a locale in, so Equator cannot name the header that varied. For a cookie-borne
+   * `Vary` is not the way out. Thoth is never given the request, the host reads the preference
+   * and passes a locale in, so Thoth cannot name the header that varied. For a cookie-borne
    * preference `private` is the right answer regardless.
    *
    * `no-cache` rather than `no-store`: nothing in a locale redirect is sensitive, and a browser
@@ -161,7 +161,7 @@ describe.runIf(entryRedirects)('what the redirect may be cached as', () => {
       }),
     ).toMatchObject({ cache: 'private-no-cache', locale: 'en-US' });
     claimCapability('policy:path-prefix', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('carries the directive through to the HTTP descriptor', () => {
@@ -198,7 +198,7 @@ describe.runIf(entryRedirects)('what the redirect may be cached as', () => {
       ),
     ).toMatchObject({ status: 308, cache: 'consumer-defined-permanent' });
     claimCapability('policy:path-prefix', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   /**
@@ -207,7 +207,7 @@ describe.runIf(entryRedirects)('what the redirect may be cached as', () => {
    *
    * An address that no locale serves has no page to send the visitor to, and spec 07 section 15
    * answers it with a 404 where it stands, in the default locale, whatever the request prefers.
-   * The application's own `**` route renders it, because an address Equator cannot place is handed
+   * The application's own `**` route renders it, because an address Thoth cannot place is handed
    * to the router unchanged.
    */
   it('answers an address with no page where it stands, in the default locale', () => {
@@ -226,7 +226,7 @@ describe.runIf(entryRedirects)('what the redirect may be cached as', () => {
       });
     }
     claimCapability('policy:path-prefix', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('leaves a prefixed address that has no page to answer as a not-found', () => {
@@ -243,6 +243,6 @@ describe.runIf(entryRedirects)('what the redirect may be cached as', () => {
       presentationLocale: 'ar-EG',
     });
     claimCapability('policy:path-prefix', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 });

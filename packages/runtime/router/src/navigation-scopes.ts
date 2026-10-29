@@ -16,7 +16,7 @@ import {
   type RouteRuntimeProjection,
   ɵlistOption,
   ɵrecordOption,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Refuses a mode the Router integration is configured with that is neither declared value.

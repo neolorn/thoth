@@ -26,7 +26,7 @@
     },
     {
       "id": "toolkit-outside-pages",
-      "rows": ["entry:@neolorn/equator-toolkit"],
+      "rows": ["entry:@neolorn/thoth-toolkit"],
       "columns": ["render:*", "engine:*"],
       "reason": "The toolkit runs at build time in Node and is kept out of every browser graph; the focused consumer proves that absence."
     },
@@ -40,7 +40,7 @@
     {
       "id": "http-server-only",
       "rows": [
-        "entry:@neolorn/equator/http",
+        "entry:@neolorn/thoth/http",
         "outcome:declarePageOutcome",
         "outcome:declareOperationalFailure"
       ],
@@ -54,7 +54,7 @@
     {
       "id": "ssr-server-only",
       "rows": [
-        "entry:@neolorn/equator/ssr",
+        "entry:@neolorn/thoth/ssr",
         "feature:provideLocalizedServerRendering"
       ],
       "columns": ["render:client-navigation", "render:hydration", "engine:*"],
@@ -90,7 +90,7 @@
     },
     {
       "id": "testing-entry-without-a-client",
-      "rows": ["entry:@neolorn/equator/testing"],
+      "rows": ["entry:@neolorn/thoth/testing"],
       "columns": ["render:client-navigation", "render:hydration"],
       "reason": "The entry point's helpers run in a test host or, in the server seat, answer one response and read it; nothing boots on a client after either, and nothing adopts markup a server drew."
     },
@@ -118,7 +118,7 @@
       "id": "sitemap-for-crawlers",
       "rows": ["capability:sitemap"],
       "columns": ["render:*", "engine:*"],
-      "reason": "Equator produces the sitemap files as data, and the deployment writes or serves them to crawlers as they are (spec 07 section 11); no render of the application produces them and no page boots from them."
+      "reason": "Thoth produces the sitemap files as data, and the deployment writes or serves them to crawlers as they are (spec 07 section 11); no render of the application produces them and no page boots from them."
     },
     {
       "id": "caching-is-a-response-header",
@@ -182,7 +182,7 @@
       "id": "no-duration-formatter-on-node-22",
       "rows": ["format:formatDuration", "pipe:localizedDuration"],
       "columns": ["node:22"],
-      "reason": "Node 22 has no Intl.DurationFormat, so no duration can be formatted there; the exercise sheet holds Equator to the typed result spec 08 section 3 requires instead."
+      "reason": "Node 22 has no Intl.DurationFormat, so no duration can be formatted there; the exercise sheet holds Thoth to the typed result spec 08 section 3 requires instead."
     },
     {
       "id": "no-page-for-an-outcome-to-prerender",
@@ -205,7 +205,7 @@
       "id": "locale-neutral-roots-left-to-their-owner",
       "rows": ["declaration:locale-neutral-roots"],
       "columns": ["render:*", "engine:*"],
-      "reason": "An address under a locale-neutral root is left to whatever serves it (spec 07 sections 3 and 4): Equator renders no page there, writes none, and has none for a browser to adopt or its router to draw, so what can be observed is the server declining it."
+      "reason": "An address under a locale-neutral root is left to whatever serves it (spec 07 sections 3 and 4): Thoth renders no page there, writes none, and has none for a browser to adopt or its router to draw, so what can be observed is the server declining it."
     },
     {
       "id": "browser-source-absent-at-build",

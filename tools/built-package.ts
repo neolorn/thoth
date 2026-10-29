@@ -1,5 +1,5 @@
 /**
- * The `file:` locator a consumer's manifest names a built Equator package by.
+ * The `file:` locator a consumer's manifest names a built Thoth package by.
  *
  * The package's manifest is read here before the locator is handed out, for two reasons. A package
  * that was never built is then refused by the stage that needs it, by name, instead of by the
@@ -26,8 +26,8 @@ export function builtPackageLocator(
     readonly name?: unknown;
   };
   assert.ok(
-    typeof name === 'string' && name.startsWith('@neolorn/equator'),
-    `${outputRoot}/package.json names ${String(name)}, which is not an Equator package.`,
+    typeof name === 'string' && name.startsWith('@neolorn/thoth'),
+    `${outputRoot}/package.json names ${String(name)}, which is not a Thoth package.`,
   );
   return `file:${relative(consumerRoot, packageRoot).replaceAll('\\', '/')}`;
 }

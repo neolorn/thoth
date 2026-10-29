@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { APP_BASE_HREF, PlatformLocation } from '@angular/common';
 import { Injector, runInInjectionContext } from '@angular/core';
-import { applicationBaseHref } from '@neolorn/equator';
+import { applicationBaseHref } from '@neolorn/thoth';
 
 /**
  * The sub-path an application is deployed under, where nothing declares one.

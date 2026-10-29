@@ -19,8 +19,8 @@ import {
   timeZone,
   type LocalizedInputProfile,
   withFormattingContext,
-} from '@neolorn/equator';
-import { LocalizedInput } from '@neolorn/equator/forms';
+} from '@neolorn/thoth';
+import { LocalizedInput } from '@neolorn/thoth/forms';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -65,9 +65,7 @@ interface ProfileCase {
   readonly value: unknown;
 }
 
-const PROFILE_CASE = new InjectionToken<ProfileCase>(
-  'equator.test.profile-case',
-);
+const PROFILE_CASE = new InjectionToken<ProfileCase>('thoth.test.profile-case');
 
 /**
  * The profile and the value arrive through the injector rather than through inputs set after
@@ -257,7 +255,7 @@ describe('every LocalizedInputProfile kind round-trips through the published dir
       // never parsed anything at all.
       retype(REJECTED);
       expect(control.errors?.['localizedInput']).toMatchObject({
-        code: expect.stringMatching(/^equator\.input\./u),
+        code: expect.stringMatching(/^thoth\.input\./u),
       });
       expect(control.value).toEqual(profileCase.value);
       retype(englishText);

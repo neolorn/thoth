@@ -5,7 +5,7 @@ import {
   LocalizationError,
   type LocaleChangeMode,
   type LocalizationSetup,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { compileSet, loadersFor, scope } from './catalog-store-harness.js';
 

@@ -114,7 +114,7 @@ export interface RouteProjection {
    * `:id` to `:orderId` leaves the URL, the page, and its indexed copy untouched, so it must leave
    * the key those messages are authored under untouched too. Every parameter therefore collapses
    * to one mark and only literal segments contribute names. A consumer that wants a different
-   * name declares `data.equatorRouteId`.
+   * name declares `data.thothRouteId`.
    */
   readonly id: string;
   /** The route's full path as authored, with its parameters still in it. */
@@ -150,7 +150,7 @@ export interface RouteProjection {
    * The files this route brings in that the first render does not.
    *
    * A route behind `loadComponent` or `loadChildren` downloads its code when it activates, and the
-   * messages that code uses have to arrive with it. Deriving the set here is what lets Equator load
+   * messages that code uses have to arrive with it. Deriving the set here is what lets Thoth load
    * them without any application listing scopes per route: the same analysis already decided
    * which scopes are not startup scopes, and this says which route is responsible for each.
    */
@@ -196,7 +196,7 @@ export interface TemplateLocaleMention {
  * segment this owner's policy claims. The layer that holds the policy decides.
  *
  * `routerLink` alone, and that is the scope rather than an omission. It is the one attribute whose
- * value Equator resolves on the way out: the click hands the Router the address as written, and
+ * value Thoth resolves on the way out: the click hands the Router the address as written, and
  * `UrlHandlingStrategy.extract` rewrites it to its canonical form before anything matches it. An
  * `href` is a full-page address the browser supplies and `LocationStrategy.path()` delocalizes on
  * arrival, so a locale in one is a working link to that locale's page and legitimate content.
@@ -231,7 +231,7 @@ export interface ComponentTemplateAnalysis {
 /**
  * What reading the application's own source found out about how it uses localization.
  *
- * Everything Equator knows that a catalog cannot say. Reported rather than judged: this layer knows
+ * Everything Thoth knows that a catalog cannot say. Reported rather than judged: this layer knows
  * what the source says and not what the configuration says, and comparing the two belongs to the
  * layer holding both.
  */
@@ -252,7 +252,7 @@ export interface ApplicationAnalysis {
    * that an owner had. So the error could
    * never fire: an owner authoring recovery copy and never selecting it passed generate and check
    * with no diagnostics at all. Detected the same way recovery selection itself
-   * is: by resolving the symbol and requiring its declaration to come from the Equator package,
+   * is: by resolving the symbol and requiring its declaration to come from the Thoth package,
    * rather than by matching a name any consumer could shadow.
    */
   readonly selectsApplicationRuntime?: boolean;
@@ -277,8 +277,8 @@ export interface ApplicationAnalysis {
    *
    * Angular splits an application at `loadComponent` and `loadChildren`, and the code behind those
    * boundaries is not downloaded until the route activates. The messages used there should not be
-   * either. Deriving the set is what lets Equator load only what the first render needs without any
-   * application listing scopes by hand: the list was a workaround for analysis Equator can do.
+   * either. Deriving the set is what lets Thoth load only what the first render needs without any
+   * application listing scopes by hand: the list was a workaround for analysis Thoth can do.
    */
   readonly deferredSourcePaths: readonly string[];
 }
@@ -311,14 +311,14 @@ function typeScriptDiagnostic(
     diagnostic.length === undefined
   ) {
     return toolkitDiagnostic(
-      'EQ1401',
+      'TH1401',
       `TypeScript: ${diagnosticMessage(diagnostic)}`,
       { severity },
     );
   }
   const path = portablePath(projectRoot, diagnostic.file.fileName);
   return toolkitDiagnostic(
-    'EQ1401',
+    'TH1401',
     `TypeScript: ${diagnosticMessage(diagnostic)}`,
     {
       severity,
@@ -424,7 +424,7 @@ function typeMessageIdentity(
 /**
  * The symbol an expression names, with import aliases followed to what they alias.
  *
- * Every Equator call is recognized this way rather than by name: a consumer function called
+ * Every Thoth call is recognized this way rather than by name: a consumer function called
  * `withRouting` configures nothing, and one called `provideLocalization` composes nothing.
  */
 function resolvedSymbol(
@@ -449,7 +449,7 @@ function declaredIn(symbol: ts.Symbol, fragment: string): boolean {
 }
 
 /**
- * A call that composes this owner's Equator application runtime.
+ * A call that composes this owner's Thoth application runtime.
  *
  * Two spellings reach the same place. An application ordinarily calls the generated
  * `provideLocalization()`, whose declaration is in this owner's generated `#i18n`: that is the
@@ -468,7 +468,7 @@ function isLocalizationProviderCall(
   if (resolved === undefined) return false;
   if (
     resolved.name === 'provideLocalizationSetup' &&
-    declaredIn(resolved, '/@neolorn/equator/')
+    declaredIn(resolved, '/@neolorn/thoth/')
   ) {
     return true;
   }
@@ -485,7 +485,7 @@ const MESSAGE_GROUP_MEMBERS = 4096;
  * Every message inside an expression that is a group of them.
  *
  * A message selected by a value only the running program has, a failure code from a service, cannot
- * be named in source, so the code that selects it hands Equator the group instead and Equator
+ * be named in source, so the code that selects it hands Thoth the group instead and Thoth
  * counts every member as used. Anything less would report those messages unused and eventually drop
  * them, and the first sign of it would be a customer reading a generic apology in place of what
  * actually went wrong.
@@ -528,8 +528,8 @@ function groupMessageIdentities(
  *
  * Read out of the `withRouting()` call's source text rather than by running it: `field` and the
  * values beside it are string literals precisely so that they can be. A consumer that classifies
- * its routes already points Equator at the field it already has; one that does not gets
- * `equatorIndexing`.
+ * its routes already points Thoth at the field it already has; one that does not gets
+ * `thothIndexing`.
  */
 interface RouteIndexingPolicy {
   readonly field: string;
@@ -544,14 +544,14 @@ interface RouteIndexingPolicy {
   readonly readable: boolean;
 }
 
-const DEFAULT_ROUTE_INDEXING_FIELD = 'equatorIndexing';
+const DEFAULT_ROUTE_INDEXING_FIELD = 'thothIndexing';
 
 /**
  * What a class of routes claims in a sitemap, read out of `withRouting()` the same way.
  *
  * The seven `changefreq` values are the protocol's own enumeration and `priority` is bounded at 0
  * and 1, so a declaration outside either is refused here rather than written into a document a
- * validator then rejects. Refused, not dropped: a value somebody typed and Equator silently ignored
+ * validator then rejects. Refused, not dropped: a value somebody typed and Thoth silently ignored
  * is the failure this whole declaration exists to avoid.
  *
  * `lastmodField` names a second route-data field carrying a date. It is separate because a date
@@ -616,7 +616,7 @@ interface RouteCachingPolicy {
   readonly readable: boolean;
 }
 
-const DEFAULT_ROUTE_CACHING_FIELD = 'equatorCaching';
+const DEFAULT_ROUTE_CACHING_FIELD = 'thothCaching';
 
 const DEFAULT_ROUTE_CACHING_VALUES = new Map<string, RouteCachingClass>([
   ['per-visitor', 'per-visitor'],
@@ -624,7 +624,7 @@ const DEFAULT_ROUTE_CACHING_VALUES = new Map<string, RouteCachingClass>([
 ]);
 
 /**
- * One option of Equator's `withRouting()`, as far as its source says, or nothing where the call is
+ * One option of Thoth's `withRouting()`, as far as its source says, or nothing where the call is
  * not that one.
  */
 function routingOption(
@@ -636,7 +636,7 @@ function routingOption(
   if (
     resolved === undefined ||
     resolved.name !== 'withRouting' ||
-    !declaredIn(resolved, '/@neolorn/equator/')
+    !declaredIn(resolved, '/@neolorn/thoth/')
   ) {
     return undefined;
   }
@@ -703,7 +703,7 @@ function routeCachingPolicy(
     return {
       policy: undefined,
       refusals: [
-        'the build cannot read its `field` as a string literal or a `const` bound to one, so it cannot tell which field its routes use, and they are read from `equatorCaching`',
+        'the build cannot read its `field` as a string literal or a `const` bound to one, so it cannot tell which field its routes use, and they are read from `thothCaching`',
       ],
     };
   }
@@ -860,7 +860,7 @@ function routeIndexingPolicy(
     return {
       policy: undefined,
       refusals: [
-        'the build cannot read its `field` as a string literal or a `const` bound to one, so it cannot tell which field its routes use, and they are read from `equatorIndexing`',
+        'the build cannot read its `field` as a string literal or a `const` bound to one, so it cannot tell which field its routes use, and they are read from `thothIndexing`',
       ],
     };
   }
@@ -897,7 +897,7 @@ function routeIndexingPolicy(
 /**
  * What a route policy declares, read out of the call that builds it.
  *
- * An application states its locales twice and always has: once in `equator.config.json`, which is
+ * An application states its locales twice and always has: once in `thoth.config.json`, which is
  * what generates the catalogs, and once in the call that builds its locale URL policy, which is
  * what turns a locale into an address. The two have to agree, and reading the policy is what lets
  * the toolkit compare them. Adding a locale to one and not the other is silent in both directions:
@@ -1058,7 +1058,7 @@ function routePolicyDeclaration(
   node: ts.CallExpression,
 ): RoutePolicyDeclaration | undefined {
   const resolved = resolvedSymbol(checker, node.expression);
-  if (resolved === undefined || !declaredIn(resolved, '/@neolorn/equator/')) {
+  if (resolved === undefined || !declaredIn(resolved, '/@neolorn/thoth/')) {
     return undefined;
   }
   const factory = ROUTE_POLICY_FACTORIES.get(resolved.name);
@@ -1809,7 +1809,7 @@ function metadataString(
  */
 const LANGUAGE_TAG_SHAPE = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{2,8}){0,3}$/;
 
-/** The attribute whose value Equator resolves, and the only one this reports. */
+/** The attribute whose value Thoth resolves, and the only one this reports. */
 const ROUTER_LINK = 'routerLink';
 
 /**
@@ -2111,7 +2111,7 @@ interface RouteChild {
   /**
    * What matches an address with nothing left in it. An empty path does, and so does a wildcard
    * (`defaultUrlMatcher`). A `matcher` is a function the build cannot run, and a `path`
-   * that is not a string literal is one Equator does not name.
+   * that is not a string literal is one Thoth does not name.
    */
   readonly matches:
     'empty' | 'wildcard' | 'nothing' | 'matcher' | 'computed' | 'unreadable';
@@ -2225,7 +2225,7 @@ function resolveRouteIdentities(
   /**
    * A route's caching class, or nothing, which leaves routing's own.
    *
-   * Under Equator's own field every value is meant for Equator, so one that names no class is a
+   * Under Thoth's own field every value is meant for Thoth, so one that names no class is a
    * mistake and is refused. Under a consumer's field an unlisted value is not, for the reason the
    * indexing field gives. A value the build cannot read is refused under either.
    */
@@ -2236,7 +2236,7 @@ function resolveRouteIdentities(
       if (firstReport(found.node, cachingField)) {
         diagnostics.push(
           toolkitDiagnostic(
-            'EQ1413',
+            'TH1413',
             `Route ${address(found.node, draft)} ${reason}. It and every route that inherits its data are answered as not-stored until the value is corrected.`,
             { path: ['routes', draft.sourcePath], severity: 'warning' },
           ),
@@ -2263,7 +2263,7 @@ function resolveRouteIdentities(
   /**
    * A route's sitemap claim, or nothing.
    *
-   * There is no Equator default field here, unlike indexing. A route with no claim is published
+   * There is no Thoth default field here, unlike indexing. A route with no claim is published
    * with its address and its alternates and says nothing more, which is a complete entry; a route
    * with no indexing class has to be sorted into one, because whether a crawler may see it is not a
    * question a document can decline to answer.
@@ -2277,7 +2277,7 @@ function resolveRouteIdentities(
     ) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1412',
+          'TH1412',
           `Route ${address(classed.node, draft)} ${classed.reading.cause}, so the build cannot read which sitemap class it names. It and every route that inherits its data claim nothing in the sitemap until the value is corrected.`,
           { path: ['routes', draft.sourcePath], severity: 'warning' },
         ),
@@ -2300,7 +2300,7 @@ function resolveRouteIdentities(
     ) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1412',
+          'TH1412',
           dated.reading.kind === 'unreadable'
             ? `Route ${address(dated.node, draft)} ${dated.reading.cause}, so the build cannot read the date it names. It is left out of the sitemap, for this route and every route that inherits its data, until the value is corrected.`
             : `Route ${address(dated.node, draft)} declares ${JSON.stringify(lastmodField)} as ${JSON.stringify(lastmod)}, which is not a W3C date such as 2026-09-08 or 2026-09-08T17:33:30+03:00. It is left out of the sitemap, for this route and every route that inherits its data, rather than written into a document a validator refuses.`,
@@ -2334,7 +2334,7 @@ function resolveRouteIdentities(
       if (firstReport(found.node, field)) {
         diagnostics.push(
           toolkitDiagnostic(
-            'EQ1414',
+            'TH1414',
             `Route ${address(found.node, draft)} ${found.reading.cause}, so the build cannot read which indexing class it names. It and every route that inherits its data are answered as private until the value is corrected.`,
             { path: ['routes', draft.sourcePath], severity: 'warning' },
           ),
@@ -2457,7 +2457,7 @@ function resolveRouteIdentities(
           ) {
             diagnostics.push(
               toolkitDiagnostic(
-                'EQ1405',
+                'TH1405',
                 `Route ${address} has a wildcard child written before an empty-path one, and Angular tries them in that order, so the wildcard renders at every address the empty-path child could and the empty-path child never renders. Write the empty-path child before the wildcard.`,
                 { path: ['routes', child.sourcePath], severity: 'warning' },
               ),
@@ -2508,12 +2508,12 @@ function resolveRouteIdentities(
       decided.add(page);
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1414',
+          'TH1414',
           `Which route renders ${address} depends on ${decidedBy}, so the build cannot read which indexing class the page has. The address is answered as private.`,
           { path: ['routes', page.sourcePath], severity: 'warning' },
         ),
         toolkitDiagnostic(
-          'EQ1413',
+          'TH1413',
           `Which route renders ${address} depends on ${decidedBy}, so the build cannot read which caching class the page has. The address is answered as not-stored.`,
           { path: ['routes', page.sourcePath], severity: 'warning' },
         ),
@@ -2529,7 +2529,7 @@ function resolveRouteIdentities(
     let node: RouteNode | undefined = draft.node;
     while (node !== undefined && node.path !== draft.path) node = node.parent;
     for (; node !== undefined && node.path === draft.path; node = node.parent) {
-      const reading = node.read('equatorRouteId');
+      const reading = node.read('thothRouteId');
       if (reading.kind !== 'absent') return reading;
     }
     return ABSENT_DATA;
@@ -2541,7 +2541,7 @@ function resolveRouteIdentities(
     if (declared.kind === 'unreadable') {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1404',
+          'TH1404',
           `Route ${JSON.stringify(`/${draft.path}`)} ${declared.cause}, so the build cannot read the identity it declares, and it is not indexed until the value is corrected.`,
           { path: ['routes', draft.sourcePath], severity: 'warning' },
         ),
@@ -2553,7 +2553,7 @@ function resolveRouteIdentities(
       if (!ROUTE_IDENTITY_PATTERN.test(declaredId)) {
         diagnostics.push(
           toolkitDiagnostic(
-            'EQ1404',
+            'TH1404',
             `Route ${JSON.stringify(`/${draft.path}`)} declares the identity ${JSON.stringify(declaredId)}, which the localization runtime will refuse. An identity begins with a letter or digit and continues with letters, digits, and ".", "_", ":", or "-", up to 128 characters.`,
             { path: ['routes', draft.sourcePath], severity: 'warning' },
           ),
@@ -2567,8 +2567,8 @@ function resolveRouteIdentities(
     if (identity === undefined) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1404',
-          `Equator could not derive a stable identity for route ${JSON.stringify(`/${draft.path}`)}. Declare one as \`data.equatorRouteId\` to index it.`,
+          'TH1404',
+          `Thoth could not derive a stable identity for route ${JSON.stringify(`/${draft.path}`)}. Declare one as \`data.thothRouteId\` to index it.`,
           { path: ['routes', draft.sourcePath], severity: 'warning' },
         ),
       );
@@ -2591,8 +2591,8 @@ function resolveRouteIdentities(
       if (group[0] === entry.draft) {
         diagnostics.push(
           toolkitDiagnostic(
-            'EQ1404',
-            `Routes ${group.map(({ path }) => JSON.stringify(`/${path}`)).join(', ')} all resolve to the identity ${JSON.stringify(entry.id)}. Declare \`data.equatorRouteId\` on each to separate them; none is indexed until they differ.`,
+            'TH1404',
+            `Routes ${group.map(({ path }) => JSON.stringify(`/${path}`)).join(', ')} all resolve to the identity ${JSON.stringify(entry.id)}. Declare \`data.thothRouteId\` on each to separate them; none is indexed until they differ.`,
             { path: ['routes', entry.draft.sourcePath], severity: 'warning' },
           ),
         );
@@ -2744,7 +2744,7 @@ function analyzeRoutes(
       : { kind: 'literal', path: literalPath };
   };
   // Only an empty path and a bare wildcard match an address with nothing left in it
-  // (`defaultUrlMatcher`, `@angular/router` 22.2.1), so a `path` Equator
+  // (`defaultUrlMatcher`, `@angular/router` 22.2.1), so a `path` Thoth
   // does not name is still known to match nothing there when the `const` it names says so.
   const matchesNothingLeft = (
     object: ts.ObjectLiteralExpression,
@@ -2804,7 +2804,7 @@ function analyzeRoutes(
       guards.elements.length === 0
     );
   };
-  // Reported once for the whole of a subtree Equator does not name because of its outlet.
+  // Reported once for the whole of a subtree Thoth does not name because of its outlet.
   const outletReported = new Set<RouteNode>();
   const join = (parent: string, child: string): string =>
     [parent, child].filter((segment) => segment.length > 0).join('/');
@@ -2844,13 +2844,13 @@ function analyzeRoutes(
   };
   const outside = (message: string): void => {
     diagnostics.push(
-      toolkitDiagnostic('EQ1406', message, {
+      toolkitDiagnostic('TH1406', message, {
         path: ['routes', portableSourcePath],
         severity: 'warning',
       }),
     );
   };
-  // `parentPath` has no default on purpose: `undefined` means "an address Equator cannot know", and
+  // `parentPath` has no default on purpose: `undefined` means "an address Thoth cannot know", and
   // a default would quietly turn that into the root, naming a whole subtree as if it sat at the
   // top of the application.
   //
@@ -2884,7 +2884,7 @@ function analyzeRoutes(
           (target === undefined || parent !== undefined)
         ) {
           outside(
-            `A spread of ${named(element.expression)} in ${where} brings in routes Equator does not follow, so their addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare those routes inline to localize them.`,
+            `A spread of ${named(element.expression)} in ${where} brings in routes Thoth does not follow, so their addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare those routes inline to localize them.`,
           );
         }
         continue;
@@ -2893,14 +2893,14 @@ function analyzeRoutes(
       if (!ts.isObjectLiteralExpression(unwrapped)) {
         if (parentPath !== undefined) {
           outside(
-            `An entry of ${where} is written as ${named(element)}, which Equator does not follow, so its address stays outside the localized route table and is served at its canonical spelling, in the default locale. Declare the route inline to localize it.`,
+            `An entry of ${where} is written as ${named(element)}, which Thoth does not follow, so its address stays outside the localized route table and is served at its canonical spelling, in the default locale. Declare the route inline to localize it.`,
           );
         }
         continue;
       }
       const declared = routeAddress(unwrapped);
       // An empty `path` renders without contributing a URL segment, so the route has its parent's
-      // address rather than none. An address Equator cannot read leaves the subtree below it
+      // address rather than none. An address Thoth cannot read leaves the subtree below it
       // unnameable rather than invisible. Ending the visit at either hides every route beneath
       // it, and with them every lazy boundary beneath it: those messages then load eagerly,
       // forever, with nothing to say so.
@@ -2995,7 +2995,7 @@ function analyzeRoutes(
               )
             : parentPath !== undefined
               ? `A route under ${JSON.stringify(`/${parentPath}`)}`
-              : 'A route below an address Equator cannot read';
+              : 'A route below an address Thoth cannot read';
 
       // Angular's own rule, restated where it runs.
       //
@@ -3003,7 +3003,7 @@ function analyzeRoutes(
       // every throw in it sits inside `if (typeof ngDevMode === 'undefined' || ngDevMode)`, the
       // condition both calls of `validateConfig` carry too. A production build validates no route
       // config at all: a route nothing can render ships, and surfaces only for whoever next runs a
-      // development build. Equator reads the same table at generate time, before either build, and
+      // development build. Thoth reads the same table at generate time, before either build, and
       // is the only thing standing between such a route and the projection, which would otherwise
       // give it an identity, a localized spelling per locale, and a place in the catalog.
       //
@@ -3019,7 +3019,7 @@ function analyzeRoutes(
       ) {
         diagnostics.push(
           toolkitDiagnostic(
-            'EQ1405',
+            'TH1405',
             `${address} carries none of \`component\`, \`loadComponent\`, \`redirectTo\`, \`children\` or \`loadChildren\`, so nothing renders it. Angular refuses this route too, but only in a development build.`,
             { path: ['routes', portableSourcePath] },
           ),
@@ -3031,7 +3031,7 @@ function analyzeRoutes(
       if (declared.kind === 'refused') {
         diagnostics.push(
           toolkitDiagnostic(
-            'EQ1415',
+            'TH1415',
             declared.reason === 'neither'
               ? `${address} has neither a \`path\` nor a \`matcher\`, so no address matches it. Angular refuses this route too, but only in a development build.`
               : `${address} has both a non-empty \`path\` and a \`matcher\`. Angular refuses that in a development build, and a production build matches the route with the \`matcher\`, so the \`path\` names an address the route does not serve.`,
@@ -3042,7 +3042,7 @@ function analyzeRoutes(
 
       // What the projection cannot reach, said out loud.
       //
-      // Equator localizes the routes its analysis can name, and a route it was never shown is not
+      // Thoth localizes the routes its analysis can name, and a route it was never shown is not
       // one of them. Two kinds of construct hide addresses and neither is exotic. A route whose
       // source does not spell its address, through a `path` that is not a string literal, a
       // `matcher`, or a spread or computed key that may set either, makes the route and everything
@@ -3054,7 +3054,7 @@ function analyzeRoutes(
       // Diagnosed rather than covered, deliberately. Following the `loadChildren` target would
       // close this instance and none of the class: a table assembled at runtime, spread in from a
       // helper, or returned by a function hides routes in exactly the same way and would each need
-      // their own reader. What Equator owes is to know which routes it covers and to be loud about
+      // their own reader. What Thoth owes is to know which routes it covers and to be loud about
       // the rest.
       //
       // A warning rather than a refusal, and the deciding reason is what a check can be made to
@@ -3070,15 +3070,15 @@ function analyzeRoutes(
       //
       // The check and the thing it checks share a source here, in a shape that is not a test:
       // this function's own failure path, so the check agrees by construction and stays green
-      // either way. With `EQ1406` at error severity, disabling the drop entirely changes no test
+      // either way. With `TH1406` at error severity, disabling the drop entirely changes no test
       // in the suite. At warning severity the same mutation fails, reporting `route:detail` beside
       // `route:section`. A severity that makes its own neighbours unfalsifiable is the wrong
       // severity whatever else recommends it.
       //
       // The rest of the case, which would not have been enough on its own: `loadChildren` is
       // ordinary, supported Angular, and refusing to generate on it would mean no application
-      // containing one anywhere can adopt Equator at all, with "restructure your routing" as the
-      // only remedy. That is a wall rather than a limit, and Equator is meant to sit in
+      // containing one anywhere can adopt Thoth at all, with "restructure your routing" as the
+      // only remedy. That is a wall rather than a limit, and Thoth is meant to sit in
       // applications it did not design. What is required is that this not be silent, and a named
       // warning carrying the route, the consequence and the remedy is not silence.
       if (parentPath !== undefined && declared.kind === 'hidden') {
@@ -3098,8 +3098,8 @@ function analyzeRoutes(
         }[declared.reason];
         diagnostics.push(
           toolkitDiagnostic(
-            'EQ1406',
-            `${address} ${cause}, so Equator can name neither it nor anything below it. Those addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. ${remedy}, or keep the subtree out of the localized table on purpose.`,
+            'TH1406',
+            `${address} ${cause}, so Thoth can name neither it nor anything below it. Those addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. ${remedy}, or keep the subtree out of the localized table on purpose.`,
             { path: ['routes', portableSourcePath], severity: 'warning' },
           ),
         );
@@ -3120,7 +3120,7 @@ function analyzeRoutes(
         if (outlet === undefined) {
           outletReported.add(node);
           outside(
-            `${address} may take its \`outlet\` from a spread, a computed key or a value the build cannot read, so Equator cannot tell whether it renders as a page or beside one, and names neither it nor anything below it. Write its \`outlet\` as a string literal, or leave it out for the primary outlet.`,
+            `${address} may take its \`outlet\` from a spread, a computed key or a value the build cannot read, so Thoth cannot tell whether it renders as a page or beside one, and names neither it nor anything below it. Write its \`outlet\` as a string literal, or leave it out for the primary outlet.`,
           );
         } else if (!node.inPrimaryOutlet && ownPath !== '') {
           let named: RouteNode = node;
@@ -3132,14 +3132,14 @@ function analyzeRoutes(
           }
           outletReported.add(node);
           outside(
-            `The route ${JSON.stringify(ownPath)} under ${JSON.stringify(`/${parentPath}`)} renders in the named outlet ${JSON.stringify(named.outlet)}, beside a page rather than as one, so Equator names neither it nor anything below it, and the addresses it takes in that outlet stay outside the localized route table.`,
+            `The route ${JSON.stringify(ownPath)} under ${JSON.stringify(`/${parentPath}`)} renders in the named outlet ${JSON.stringify(named.outlet)}, beside a page rather than as one, so Thoth names neither it nor anything below it, and the addresses it takes in that outlet stay outside the localized route table.`,
           );
         }
       }
       if (defersChildRoutes) {
         diagnostics.push(
           toolkitDiagnostic(
-            'EQ1406',
+            'TH1406',
             `${address} loads its children through \`loadChildren\`, so their addresses live in a file this route only references and stay outside the localized route table. They are served at their canonical spelling, in the default locale, including under a locale prefix, where the address looks localized and the page is not. Declare those children inline to localize them.`,
             { path: ['routes', portableSourcePath], severity: 'warning' },
           ),
@@ -3173,7 +3173,7 @@ function analyzeRoutes(
       if (children === 'unreadable') {
         if (fullPath !== undefined) {
           outside(
-            `${address} may take its \`children\` from a spread or a computed key, which Equator does not follow, so the addresses below it stay outside the localized route table and are served at their canonical spelling, in the default locale. Write the route its own \`children\` array to localize them.`,
+            `${address} may take its \`children\` from a spread or a computed key, which Thoth does not follow, so the addresses below it stay outside the localized route table and are served at their canonical spelling, in the default locale. Write the route its own \`children\` array to localize them.`,
           );
         }
       } else if (children !== 'absent') {
@@ -3205,7 +3205,7 @@ function analyzeRoutes(
           }
           if (fullPath !== undefined) {
             outside(
-              `${address} takes its children from ${list !== undefined ? named(list) : ts.isShorthandPropertyAssignment(children) ? named(children.name) : 'an expression'}, which Equator does not follow, so their addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare those children inline to localize them.`,
+              `${address} takes its children from ${list !== undefined ? named(list) : ts.isShorthandPropertyAssignment(children) ? named(children.name) : 'an expression'}, which Thoth does not follow, so their addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare those children inline to localize them.`,
             );
           }
         }
@@ -3237,7 +3237,7 @@ function analyzeRoutes(
         continue;
       }
       outside(
-        `The route table ${name} is written as ${named(list)}, which Equator does not follow, so its addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare its routes as an array literal to localize them.`,
+        `The route table ${name} is written as ${named(list)}, which Thoth does not follow, so its addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare its routes as an array literal to localize them.`,
       );
     }
   }
@@ -3259,14 +3259,14 @@ export function analyzeApplication(
   const projectRoot = resolve(request.projectRoot);
   const diagnostics: ToolkitDiagnostic[] = [];
   const suppliedSources = sourceMap(request.sources ?? []);
-  const virtualRoot = resolve(projectRoot, '.equator-virtual');
+  const virtualRoot = resolve(projectRoot, '.thoth-virtual');
   const virtualPaths = new Map<string, string>();
   const virtualSources = new Map<string, string>();
   for (const module of request.virtualModules ?? []) {
     if (!module.specifier.startsWith('#i18n')) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1403',
+          'TH1403',
           `Virtual analysis module ${JSON.stringify(module.specifier)} is outside the generated #i18n namespace.`,
         ),
       );
@@ -3365,7 +3365,7 @@ export function analyzeApplication(
     host,
   });
   const maximum = Math.max(1, Math.min(request.maxDiagnostics ?? 100, 1000));
-  // A defect inside a generated #i18n module is Equator's own and must block.
+  // A defect inside a generated #i18n module is Thoth's own and must block.
   // A finding in consumer source is reported for visibility but never blocks:
   // the consumer's build is the authority on whether their application
   // compiles, and generation must stay reachable so a missing #i18n contract
@@ -3376,7 +3376,7 @@ export function analyzeApplication(
     virtualModulePaths.has(normalizePath(diagnostic.file.fileName));
 
   // The cap is a bound on reporting volume, and volume comes from consumer source. Partitioning
-  // before truncating keeps it from doing two things it was never meant to do: discarding Equator's
+  // before truncating keeps it from doing two things it was never meant to do: discarding Thoth's
   // own errors because enough consumer findings sorted ahead of them, and turning a pile of
   // individually non-blocking findings into one blocking result.
   const preEmit = ts.getPreEmitDiagnostics(program);
@@ -3397,7 +3397,7 @@ export function analyzeApplication(
   if (consumerOwned.length > maximum) {
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1401',
+        'TH1401',
         `TypeScript analysis reported the first ${maximum} of ${consumerOwned.length} findings in consumer source.`,
         // A truncation notice inherits the severity of what it truncated. These are the consumer's
         // own findings, which do not block, so neither does the notice that there were more of
@@ -3443,7 +3443,7 @@ export function analyzeApplication(
     if (knownIdentities.size > 0 && !knownIdentities.has(identity)) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1403',
+          'TH1403',
           `Static analysis resolved unknown generated message identity ${JSON.stringify(identity)}.`,
           { path: ['message', identity] },
         ),
@@ -3500,13 +3500,13 @@ export function analyzeApplication(
             declaredRoutePolicy = policy;
           } else {
             // Two policies in one owner is not automatically wrong, a test fixture builds extra
-            // ones, but only one can be the application's, and Equator cannot tell which. Reported
+            // ones, but only one can be the application's, and Thoth cannot tell which. Reported
             // rather than guessed at, and the first is the one carried forward, matching what the
             // indexing field above does when it meets the same situation.
             diagnostics.push(
               toolkitDiagnostic(
-                'EQ1408',
-                `This owner builds more than one locale URL policy, so Equator cannot tell which one states the application's locales. The first is the one it checked. Build the application's policy once and pass that object where it is needed.`,
+                'TH1408',
+                `This owner builds more than one locale URL policy, so Thoth cannot tell which one states the application's locales. The first is the one it checked. Build the application's policy once and pass that object where it is needed.`,
                 { path: ['routes', portableSourcePath], severity: 'warning' },
               ),
             );
@@ -3517,7 +3517,7 @@ export function analyzeApplication(
           for (const refusal of declaredSitemap.refusals) {
             diagnostics.push(
               toolkitDiagnostic(
-                'EQ1412',
+                'TH1412',
                 `This owner's sitemap declaration cannot be used as written: ${refusal}.`,
                 { path: ['routes', portableSourcePath], severity: 'warning' },
               ),
@@ -3530,8 +3530,8 @@ export function analyzeApplication(
             } else if (declaredRouteSitemap.field !== policy.field) {
               diagnostics.push(
                 toolkitDiagnostic(
-                  'EQ1412',
-                  `This owner declares two route sitemap fields, ${JSON.stringify(declaredRouteSitemap.field)} and ${JSON.stringify(policy.field)}. One owner classifies its routes one way; the first declaration is the one Equator used.`,
+                  'TH1412',
+                  `This owner declares two route sitemap fields, ${JSON.stringify(declaredRouteSitemap.field)} and ${JSON.stringify(policy.field)}. One owner classifies its routes one way; the first declaration is the one Thoth used.`,
                   { path: ['routes', portableSourcePath], severity: 'warning' },
                 ),
               );
@@ -3543,7 +3543,7 @@ export function analyzeApplication(
           for (const refusal of declaredCaching.refusals) {
             diagnostics.push(
               toolkitDiagnostic(
-                'EQ1413',
+                'TH1413',
                 `This owner's caching declaration cannot be used as written: ${refusal}.`,
                 { path: ['routes', portableSourcePath], severity: 'warning' },
               ),
@@ -3556,8 +3556,8 @@ export function analyzeApplication(
             } else if (declaredRouteCaching.field !== policy.field) {
               diagnostics.push(
                 toolkitDiagnostic(
-                  'EQ1413',
-                  `This owner declares two route caching fields, ${JSON.stringify(declaredRouteCaching.field)} and ${JSON.stringify(policy.field)}. One owner classifies its routes one way; the first declaration is the one Equator used.`,
+                  'TH1413',
+                  `This owner declares two route caching fields, ${JSON.stringify(declaredRouteCaching.field)} and ${JSON.stringify(policy.field)}. One owner classifies its routes one way; the first declaration is the one Thoth used.`,
                   { path: ['routes', portableSourcePath], severity: 'warning' },
                 ),
               );
@@ -3569,7 +3569,7 @@ export function analyzeApplication(
           for (const refusal of declaredIndexing.refusals) {
             diagnostics.push(
               toolkitDiagnostic(
-                'EQ1414',
+                'TH1414',
                 `This owner's indexing declaration cannot be used as written: ${refusal}.`,
                 { path: ['routes', portableSourcePath], severity: 'warning' },
               ),
@@ -3582,8 +3582,8 @@ export function analyzeApplication(
             } else if (declaredRouteIndexing.field !== policy.field) {
               diagnostics.push(
                 toolkitDiagnostic(
-                  'EQ1404',
-                  `This owner declares two route indexing fields, ${JSON.stringify(declaredRouteIndexing.field)} and ${JSON.stringify(policy.field)}. One owner classifies its routes one way; the first declaration is the one Equator used.`,
+                  'TH1404',
+                  `This owner declares two route indexing fields, ${JSON.stringify(declaredRouteIndexing.field)} and ${JSON.stringify(policy.field)}. One owner classifies its routes one way; the first declaration is the one Thoth used.`,
                   { path: ['routes', portableSourcePath], severity: 'warning' },
                 ),
               );
@@ -3702,12 +3702,12 @@ export function analyzeApplication(
         } else if (!containedPath(absoluteTemplatePath, projectRoot)) {
           // B2. The project host already filtered escaping paths out of suppliedSources by
           // containment, and this fallback then read them from disk anyway, so a templateUrl of
-          // '../../secret/leak.html' was opened and parsed. Equator analyses the selected owner and
+          // '../../secret/leak.html' was opened and parsed. Thoth analyses the selected owner and
           // nothing else; a path outside it is refused rather than read.
           diagnostics.push(
             toolkitDiagnostic(
-              'EQ1402',
-              `Angular component template ${JSON.stringify(templatePath)} resolves outside the selected Equator owner and was not read.`,
+              'TH1402',
+              `Angular component template ${JSON.stringify(templatePath)} resolves outside the selected Thoth owner and was not read.`,
               { path: ['components', portableSourcePath] },
             ),
           );
@@ -3718,7 +3718,7 @@ export function analyzeApplication(
           } catch {
             diagnostics.push(
               toolkitDiagnostic(
-                'EQ1402',
+                'TH1402',
                 `Angular component template ${JSON.stringify(templatePath)} could not be read.`,
                 {
                   span: sourceSpan(
@@ -3743,7 +3743,7 @@ export function analyzeApplication(
         const start = error.span.start.offset;
         const end = error.span.end.offset;
         diagnostics.push(
-          toolkitDiagnostic('EQ1402', `Angular template: ${error.msg}`, {
+          toolkitDiagnostic('TH1402', `Angular template: ${error.msg}`, {
             span: sourceSpan(
               templateSource,
               start,
@@ -3889,7 +3889,7 @@ export function analyzeApplication(
   // The pass above visits every `Routes` constant on its own, and a `loadChildren` target or a
   // table another route takes its children from is one of those. Visited on its own it has no
   // parent, so `detail` enters the projection at `detail` while the application serves it at
-  // `section/detail`. That is not a route Equator failed to cover; it is a route Equator invented,
+  // `section/detail`. That is not a route Thoth failed to cover; it is a route Thoth invented,
   // and a localized branch built from it addresses nothing. The diagnostic above has already said
   // the subtree is uncovered: this stops the projection from simultaneously claiming otherwise.
   //
@@ -3951,7 +3951,7 @@ export function analyzeApplication(
   // Writing `loadComponent: () => import('./page')` while anything in the initial bundle also
   // imports `./page` puts the component in that bundle and leaves every other signal intact: chunk
   // names, prerendered output and the route table all read exactly as they do when the split works.
-  // Equator notices because it has to, it decides which messages ship with the first render out of
+  // Thoth notices because it has to, it decides which messages ship with the first render out of
   // this same closure, so the route's messages are correctly marked eager while whoever wrote the
   // loader believes they are deferred.
   //
@@ -3971,7 +3971,7 @@ export function analyzeApplication(
       reportedEagerEntries.add(entry);
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1407',
+          'TH1407',
           `Route ${JSON.stringify(`/${draft.path}`)} loads ${JSON.stringify(portablePath(projectRoot, entry))} through a lazy boundary, but something in the initial bundle imports it statically, so it ships with the first render and the boundary defers nothing.`,
           { path: ['routes', draft.sourcePath], severity: 'warning' },
         ),
@@ -4006,8 +4006,8 @@ export function analyzeApplication(
     if (strategyDeclared) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1416',
-          `This owner configures the router in ${routerConfigurations.length} places, in ${[...new Set(routerConfigurations.map(({ sourcePath }) => JSON.stringify(sourcePath)))].join(', ')}, and at least one sets \`paramsInheritanceStrategy\`. Angular uses one configuration whole, so Equator cannot tell which strategy the application runs with. It reads every child route as inheriting its parent's data, which is Angular's default. Configure the router once.`,
+          'TH1416',
+          `This owner configures the router in ${routerConfigurations.length} places, in ${[...new Set(routerConfigurations.map(({ sourcePath }) => JSON.stringify(sourcePath)))].join(', ')}, and at least one sets \`paramsInheritanceStrategy\`. Angular uses one configuration whole, so Thoth cannot tell which strategy the application runs with. It reads every child route as inheriting its parent's data, which is Angular's default. Configure the router once.`,
           {
             path: ['routes', firstConfiguration.sourcePath],
             severity: 'warning',
@@ -4018,8 +4018,8 @@ export function analyzeApplication(
   } else if (firstConfiguration?.strategy === 'unreadable') {
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1416',
-        `The router configuration in ${JSON.stringify(firstConfiguration.sourcePath)} sets \`paramsInheritanceStrategy\` in a way the build cannot read, so Equator cannot tell which child routes inherit their parent's data. It reads every child route as inheriting, which is Angular's default. Write the strategy as the string literal 'always' or 'emptyOnly' in the object passed to the call.`,
+        'TH1416',
+        `The router configuration in ${JSON.stringify(firstConfiguration.sourcePath)} sets \`paramsInheritanceStrategy\` in a way the build cannot read, so Thoth cannot tell which child routes inherit their parent's data. It reads every child route as inheriting, which is Angular's default. Write the strategy as the string literal 'always' or 'emptyOnly' in the object passed to the call.`,
         {
           path: ['routes', firstConfiguration.sourcePath],
           severity: 'warning',

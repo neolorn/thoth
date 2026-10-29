@@ -25,7 +25,7 @@ import {
   selectPlural,
   zonedDateTime,
 } from '../src/formatting.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 import { runtime, type Runtime } from './transaction-runtime-harness.js';
 

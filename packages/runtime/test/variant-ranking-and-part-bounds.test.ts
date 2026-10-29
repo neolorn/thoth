@@ -4,7 +4,7 @@ import type {
   MessageFunctionResult,
   RuntimeMessageFunctionDescriptor,
   RuntimeRichSlotKindDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { defineExtensionRegistry } from '../../toolkit/src/extensions.js';
 import type {

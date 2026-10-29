@@ -4,7 +4,7 @@ import {
   createLocaleNeutralPolicy,
   resolveLocalizedRoute,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A case-folded address under a locale-neutral policy, where two locales read the corrected
@@ -17,7 +17,7 @@ import {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-NeutralCorrectionRouteTestIdentity012345678',
     routes: [
       { id: 'second', path: 'second', parameterNames: [] },

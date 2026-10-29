@@ -7,22 +7,22 @@ import {
   Localization,
   withRouting,
   withFormattingContext,
-} from '@neolorn/equator';
-import { pageGone } from '@neolorn/equator/core';
+} from '@neolorn/thoth';
+import { pageGone } from '@neolorn/thoth/core';
 import {
   declareOperationalFailure,
   declarePageOutcome,
   type LocaleRenderer,
   type LocaleRequestOutcome,
-} from '@neolorn/equator/http';
+} from '@neolorn/thoth/http';
 import {
   LocalizedTitleStrategy,
   provideLocalizedRouter,
-} from '@neolorn/equator/router';
+} from '@neolorn/thoth/router';
 import {
   createLocalizedServerSeat,
   provideLocalizationTesting,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -50,15 +50,15 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 /**
  * The seat a consumer asserts a response from, exercised against the built packages.
  *
- * Section 12 of `specs/06-runtime-and-angular.spec.md` puts it in `@neolorn/equator/testing` and
+ * Section 12 of `specs/06-runtime-and-angular.spec.md` puts it in `@neolorn/thoth/testing` and
  * requires it to answer through the request handler a deployment uses, with no socket, no built
  * bundle and no browser. This file is the half the package's own unit suite cannot reach: whether
- * `@neolorn/equator/testing` resolves `@neolorn/equator/http` once it is installed as a package,
- * and whether the head it reads is the head Equator actually writes rather than one written here.
+ * `@neolorn/thoth/testing` resolves `@neolorn/thoth/http` once it is installed as a package,
+ * and whether the head it reads is the head Thoth actually writes rather than one written here.
  *
  * The renderer below is the component seat: it commits the locale the handler resolved, navigates
  * to the address it resolved, and hands back the document. That is what makes the canonical link
- * and the `hreflang` cluster in the assertions Equator's own output.
+ * and the `hreflang` cluster in the assertions Thoth's own output.
  */
 
 const CACHE = { successMaxAge: 300, permanentRedirectMaxAge: 86_400 } as const;
@@ -169,7 +169,7 @@ describe('an address answered through the server seat', () => {
 
   // Where an address states its locale, so one can be asked for in Arabic.
   it.runIf(localeInAddress)(
-    'hands back the head Equator wrote, rather than one the test wrote',
+    'hands back the head Thoth wrote, rather than one the test wrote',
     async () => {
       const answered = await seat().request(pageUrl('second', 'ar-EG'));
 
@@ -245,11 +245,11 @@ describe('an address answered through the server seat', () => {
       policy: routePolicy,
       document: answered.body,
     });
-    claimCapability('entry:@neolorn/equator/http', {
+    claimCapability('entry:@neolorn/thoth/http', {
       policy: routePolicy,
       document: answered.body,
     });
-    claimCapability('entry:@neolorn/equator/core', {
+    claimCapability('entry:@neolorn/thoth/core', {
       policy: routePolicy,
       document: answered.body,
     });

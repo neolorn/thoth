@@ -5,7 +5,7 @@ import type {
   MessageFunctionInvocation,
   MessageFunctionResult,
   RuntimeMessageFunctionDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { defineExtensionRegistry } from '../../toolkit/src/extensions.js';
 import type {

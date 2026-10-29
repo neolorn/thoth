@@ -336,7 +336,7 @@
     {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
-      "original": "'Historical route outcomes exceed Equator bounds.'",
+      "original": "'Historical route outcomes exceed Thoth bounds.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The literal is the text of the refusal for a historical table past its bound, passed to routeError as the message and compared by nothing; the suites assert the refusal's code."
@@ -687,7 +687,7 @@
     {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
-      "original": "'Route query state exceeds Equator bounds.'",
+      "original": "'Route query state exceeds Thoth bounds.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The text of the refusal for a query past thirty-two entries; the case asserts its invalid-configuration code."
@@ -695,7 +695,7 @@
     {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
-      "original": "'Route fragment state exceeds Equator bounds.'",
+      "original": "'Route fragment state exceeds Thoth bounds.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The text of the refusal for a fragment past 512 characters; the case asserts its invalid-configuration code."
@@ -1678,7 +1678,7 @@
     {
       "file": "packages/runtime/src/evaluator.ts",
       "mutator": "StringLiteral",
-      "original": "`MessageFormat option ${name} on ${context} is outside the Equator 1 profile.`",
+      "original": "`MessageFormat option ${name} on ${context} is outside the Thoth 1 profile.`",
       "replacement": "``",
       "category": "message-wording",
       "reason": "The text of the refusal for a u: option outside the profile; its code is asserted."
@@ -2741,7 +2741,7 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'The list exceeds Equator formatting resource bounds.'",
+      "original": "'The list exceeds Thoth formatting resource bounds.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The literal is the message of the list bounds refusal; it is read by a person and nothing compares, parses or returns it as data apart from the diagnostic's message field."
@@ -2789,7 +2789,7 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "`Person-name data profile ${JSON.stringify(profiles.profile)} is not the one this runtime reads (${JSON.stringify(PERSON_NAME_ROOT.profile)}). Regenerate this application against a matching Equator.`",
+      "original": "`Person-name data profile ${JSON.stringify(profiles.profile)} is not the one this runtime reads (${JSON.stringify(PERSON_NAME_ROOT.profile)}). Regenerate this application against a matching Thoth.`",
       "replacement": "``",
       "category": "message-wording",
       "reason": "The literal is the message of the profile-version refusal; it is read by a person and nothing compares, parses or returns it as data apart from the diagnostic's message field."
@@ -3106,7 +3106,7 @@
     {
       "file": "packages/runtime/src/localization.ts",
       "mutator": "StringLiteral",
-      "original": "'equator-compiled-ir/1'",
+      "original": "'thoth-compiled-ir/1'",
       "replacement": "\"\"",
       "category": "equivalent",
       "reason": "The synthetic recovery catalog's profile is never read by evaluateCandidate or findEvaluationCandidate, which use only key, generatedAbi, messages and resources.maximumMessage.outputParts."
@@ -3114,7 +3114,7 @@
     {
       "file": "packages/runtime/src/localization.ts",
       "mutator": "StringLiteral",
-      "original": "'equator-1'",
+      "original": "'thoth-1'",
       "replacement": "\"\"",
       "category": "equivalent",
       "reason": "The synthetic recovery catalog's standardsProfile is never read by evaluateCandidate or findEvaluationCandidate, which use only key, generatedAbi, messages and resources.maximumMessage.outputParts."
@@ -3131,7 +3131,7 @@
     {
       "file": "packages/runtime/src/localization.ts",
       "mutator": "StringLiteral",
-      "original": "'equator-resource-summary/1'",
+      "original": "'thoth-resource-summary/1'",
       "replacement": "\"\"",
       "category": "equivalent",
       "reason": "The synthetic recovery catalog's resources.profile is never read by evaluateCandidate or findEvaluationCandidate, which use only key, generatedAbi, messages and resources.maximumMessage.outputParts."
@@ -3403,7 +3403,7 @@
     {
       "file": "packages/runtime/src/localization.ts",
       "mutator": "StringLiteral",
-      "original": "'Equator localization invariant failed.'",
+      "original": "'Thoth localization invariant failed.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The message of the error raised when a localization object has no internal state behind it, which no case compares."
@@ -5624,10 +5624,10 @@
     {
       "file": "packages/toolkit/src/compiler.ts",
       "mutator": "StringLiteral",
-      "original": "'This owner composes the Equator application runtime but selects no recovery message. Pass one to provideLocalization through withRecoveryMessage so a failed bootstrap can still say something.'",
+      "original": "'This owner composes the Thoth application runtime but selects no recovery message. Pass one to provideLocalization through withRecoveryMessage so a failed bootstrap can still say something.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The summary of EQ1310, the sentence telling an owner that composes the runtime to select a recovery message."
+      "reason": "The summary of TH1310, the sentence telling an owner that composes the runtime to select a recovery message."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5635,7 +5635,7 @@
       "original": "', '",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The separator between the quoted names listed inside a summary: the unreached message ids of EQ1311, the locales of the two EQ1408 sentences and the unread options of EQ1417.",
+      "reason": "The separator between the quoted names listed inside a summary: the unreached message ids of TH1311, the locales of the two TH1408 sentences and the unread options of TH1417.",
       "count": 4
     },
     {
@@ -5644,7 +5644,7 @@
       "original": "missingFromPolicy.length === 1",
       "replacement": "true",
       "category": "message-wording",
-      "reason": "Each of the five tests on line 718 chooses between the singular and the plural form of a phrase inside the EQ1408 summary for configured locales with no address.",
+      "reason": "Each of the five tests on line 718 chooses between the singular and the plural form of a phrase inside the TH1408 summary for configured locales with no address.",
       "count": 5
     },
     {
@@ -5653,7 +5653,7 @@
       "original": "missingFromPolicy.length === 1",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "Each of the five tests on line 718 chooses between the singular and the plural form of a phrase inside the EQ1408 summary for configured locales with no address.",
+      "reason": "Each of the five tests on line 718 chooses between the singular and the plural form of a phrase inside the TH1408 summary for configured locales with no address.",
       "count": 5
     },
     {
@@ -5662,7 +5662,7 @@
       "original": "missingFromPolicy.length === 1",
       "replacement": "missingFromPolicy.length !== 1",
       "category": "message-wording",
-      "reason": "Each of the five tests on line 718 chooses between the singular and the plural form of a phrase inside the EQ1408 summary for configured locales with no address.",
+      "reason": "Each of the five tests on line 718 chooses between the singular and the plural form of a phrase inside the TH1408 summary for configured locales with no address.",
       "count": 5
     },
     {
@@ -5671,7 +5671,7 @@
       "original": "'it'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The singular pronoun inside the summaries of EQ1408 (lines 718 and 727) and EQ1417 (line 762).",
+      "reason": "The singular pronoun inside the summaries of TH1408 (lines 718 and 727) and TH1417 (line 762).",
       "count": 7
     },
     {
@@ -5680,7 +5680,7 @@
       "original": "missingFromConfiguration.length === 1",
       "replacement": "true",
       "category": "message-wording",
-      "reason": "Each of the four tests on line 727 chooses between the singular and the plural form of a phrase inside the EQ1408 summary for policy locales with no catalogs.",
+      "reason": "Each of the four tests on line 727 chooses between the singular and the plural form of a phrase inside the TH1408 summary for policy locales with no catalogs.",
       "count": 4
     },
     {
@@ -5689,7 +5689,7 @@
       "original": "missingFromConfiguration.length === 1",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "Each of the four tests on line 727 chooses between the singular and the plural form of a phrase inside the EQ1408 summary for policy locales with no catalogs.",
+      "reason": "Each of the four tests on line 727 chooses between the singular and the plural form of a phrase inside the TH1408 summary for policy locales with no catalogs.",
       "count": 4
     },
     {
@@ -5698,7 +5698,7 @@
       "original": "missingFromConfiguration.length === 1",
       "replacement": "missingFromConfiguration.length !== 1",
       "category": "message-wording",
-      "reason": "Each of the four tests on line 727 chooses between the singular and the plural form of a phrase inside the EQ1408 summary for policy locales with no catalogs.",
+      "reason": "Each of the four tests on line 727 chooses between the singular and the plural form of a phrase inside the TH1408 summary for policy locales with no catalogs.",
       "count": 4
     },
     {
@@ -5707,7 +5707,7 @@
       "original": "'That address resolves'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The singular subject of the second sentence of the EQ1408 summary for policy locales with no catalogs."
+      "reason": "The singular subject of the second sentence of the TH1408 summary for policy locales with no catalogs."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5715,7 +5715,7 @@
       "original": "names.length === 1",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "The flag decides how the unread options are joined into the EQ1417 summary and which of two pronoun forms follows; with it false a single option is written after a stray \"and\", and nothing but the sentence changes."
+      "reason": "The flag decides how the unread options are joined into the TH1417 summary and which of two pronoun forms follows; with it false a single option is written after a stray \"and\", and nothing but the sentence changes."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5723,7 +5723,7 @@
       "original": "'it holds'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The singular verb phrase inside the EQ1417 summary."
+      "reason": "The singular verb phrase inside the TH1417 summary."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5731,7 +5731,7 @@
       "original": "'they hold'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The plural verb phrase inside the EQ1417 summary."
+      "reason": "The plural verb phrase inside the TH1417 summary."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5739,7 +5739,7 @@
       "original": "'them'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The plural pronoun inside a summary: four times in the EQ1408 sentence for configured locales with no address, twice in the EQ1408 sentence for policy locales with no catalogs, and once in EQ1417.",
+      "reason": "The plural pronoun inside a summary: four times in the TH1408 sentence for configured locales with no address, twice in the TH1408 sentence for policy locales with no catalogs, and once in TH1417.",
       "count": 7
     },
     {
@@ -5765,7 +5765,7 @@
       "original": "mention.kind === 'literal'",
       "replacement": "true",
       "category": "message-wording",
-      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the EQ1410 summary; the severity is decided separately on line 909."
+      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 909."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5773,7 +5773,7 @@
       "original": "mention.kind === 'literal'",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the EQ1410 summary; the severity is decided separately on line 909."
+      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 909."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5781,7 +5781,7 @@
       "original": "mention.kind === 'literal'",
       "replacement": "mention.kind !== 'literal'",
       "category": "message-wording",
-      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the EQ1410 summary; the severity is decided separately on line 909."
+      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 909."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5789,7 +5789,7 @@
       "original": "'literal'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the EQ1410 summary; the severity is decided separately on line 909."
+      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 909."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5797,7 +5797,7 @@
       "original": "`names the locale ${JSON.stringify(mention.text)} as a literal`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The phrase of the EQ1410 summary that describes a locale named as a literal."
+      "reason": "The phrase of the TH1410 summary that describes a locale named as a literal."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5805,7 +5805,7 @@
       "original": "mention.siblingDirection === undefined",
       "replacement": "true",
       "category": "message-wording",
-      "reason": "The test on line 906 chooses whether the EQ1410 summary mentions the dir attribute beside the lang attribute."
+      "reason": "The test on line 906 chooses whether the TH1410 summary mentions the dir attribute beside the lang attribute."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5813,7 +5813,7 @@
       "original": "mention.siblingDirection === undefined",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "The test on line 906 chooses whether the EQ1410 summary mentions the dir attribute beside the lang attribute."
+      "reason": "The test on line 906 chooses whether the TH1410 summary mentions the dir attribute beside the lang attribute."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5821,7 +5821,7 @@
       "original": "mention.siblingDirection === undefined",
       "replacement": "mention.siblingDirection !== undefined",
       "category": "message-wording",
-      "reason": "The test on line 906 chooses whether the EQ1410 summary mentions the dir attribute beside the lang attribute."
+      "reason": "The test on line 906 chooses whether the TH1410 summary mentions the dir attribute beside the lang attribute."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5829,15 +5829,15 @@
       "original": "`writes lang=${JSON.stringify(mention.text)} and dir=${JSON.stringify(mention.siblingDirection)} by hand`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The phrase of the EQ1410 summary that describes a lang and a dir written by hand."
+      "reason": "The phrase of the TH1410 summary that describes a lang and a dir written by hand."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
       "mutator": "StringLiteral",
-      "original": "`The template of ${JSON.stringify(mention.componentName)} ${what}. Equator already knows every configured locale, its language subtag, its direction and its name in its own language: read them from \"localization.localeChoices()\" and put \"[localeChoice]\" on the control, which writes lang, dir, aria-current and aria-busy and performs the switch. A switcher built that way gains a locale when the conf",
+      "original": "`The template of ${JSON.stringify(mention.componentName)} ${what}. Thoth already knows every configured locale, its language subtag, its direction and its name in its own language: read them from \"localization.localeChoices()\" and put \"[localeChoice]\" on the control, which writes lang, dir, aria-current and aria-busy and performs the switch. A switcher built that way gains a locale when the conf",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The literal is the whole summary of EQ1410, a sentence a person reads; the cases for that finding assert its code and where it is reported."
+      "reason": "The literal is the whole summary of TH1410, a sentence a person reads; the cases for that finding assert its code and where it is reported."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5845,7 +5845,7 @@
       "original": "''",
       "replacement": "\"Stryker was here!\"",
       "category": "message-wording",
-      "reason": "The empty tail of a summary sentence: after the listed ids of EQ1311 when none are left out, and of the EQ1410 summary for a literal mention; the change appends text to that sentence.",
+      "reason": "The empty tail of a summary sentence: after the listed ids of TH1311 when none are left out, and of the TH1410 summary for a literal mention; the change appends text to that sentence.",
       "count": 2
     },
     {
@@ -5854,7 +5854,7 @@
       "original": "' If this is a fixed passage in another language rather than a locale control, this is the right markup and the warning is expected.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The closing sentence of the EQ1410 summary for a static lang, which says when the warning is expected."
+      "reason": "The closing sentence of the TH1410 summary for a static lang, which says when the warning is expected."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5927,7 +5927,7 @@
       "original": "[...IMPLEMENTED_UNICODE_OPTIONS]",
       "replacement": "[]",
       "category": "message-wording",
-      "reason": "The list of implemented u: options quoted at the end of the EQ1204 summary for an option outside the profile."
+      "reason": "The list of implemented u: options quoted at the end of the TH1204 summary for an option outside the profile."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -5935,7 +5935,7 @@
       "original": "' and '",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The word joining the implemented u: options inside the EQ1204 summary for an option outside the profile."
+      "reason": "The word joining the implemented u: options inside the TH1204 summary for an option outside the profile."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -5943,7 +5943,7 @@
       "original": "[...UNICODE_DIRECTION_VALUES]",
       "replacement": "[]",
       "category": "message-wording",
-      "reason": "The list of allowed directions quoted at the end of the EQ1204 summary for a u:dir value that is not one of them."
+      "reason": "The list of allowed directions quoted at the end of the TH1204 summary for a u:dir value that is not one of them."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -5951,7 +5951,7 @@
       "original": "(allowed) => JSON.stringify(allowed)",
       "replacement": "() => undefined",
       "category": "message-wording",
-      "reason": "The quoting of each allowed direction inside the EQ1204 summary for a u:dir value that is not one of them."
+      "reason": "The quoting of each allowed direction inside the TH1204 summary for a u:dir value that is not one of them."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -5959,7 +5959,7 @@
       "original": "', '",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The separator between listed names inside a summary: the allowed directions of EQ1204 on line 853 and the selecting functions of EQ1206 on line 1161.",
+      "reason": "The separator between listed names inside a summary: the allowed directions of TH1204 on line 853 and the selecting functions of TH1206 on line 1161.",
       "count": 2
     },
     {
@@ -5968,7 +5968,7 @@
       "original": "'A literal operand of a number function must match the MessageFormat number-literal production.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The second sentence of the EQ1205 summary for a literal operand that is not a number."
+      "reason": "The second sentence of the TH1205 summary for a literal operand that is not a number."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -5985,7 +5985,7 @@
       "original": "'The option that decides how a number selects must be a literal on the expression that selects, so a translator can see it.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The second sentence of the EQ1204 summary for a select option that would be inherited."
+      "reason": "The second sentence of the TH1204 summary for a select option that would be inherited."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -5993,7 +5993,7 @@
       "original": "'Write the zone on this expression, or annotate the operand with a declaration that writes one.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The second sentence of the EQ1204 summary for timeZone=input with no zone on the operand."
+      "reason": "The second sentence of the TH1204 summary for timeZone=input with no zone on the operand."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -6001,7 +6001,7 @@
       "original": "' '",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The separator between the name=value pairs listed in the EQ1204 summary for options that cannot be used together."
+      "reason": "The separator between the name=value pairs listed in the TH1204 summary for options that cannot be used together."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -6041,7 +6041,7 @@
       "original": "value.kind !== 'literal'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "A markup option that is not a literal carries no `value` member, so `allowed.includes(value.value)` on line 325 is asked for undefined, which a declared list of strings never holds; the EQ1805 diagnostic is pushed with or without the kind test."
+      "reason": "A markup option that is not a literal carries no `value` member, so `allowed.includes(value.value)` on line 325 is asked for undefined, which a declared list of strings never holds; the TH1805 diagnostic is pushed with or without the kind test."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6049,7 +6049,7 @@
       "original": "`Rich slot ${JSON.stringify(slotName)} uses undeclared or nonportable option ${JSON.stringify(name)}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The text is the summary of the EQ1805 diagnostic for a markup option its slot kind does not admit; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
+      "reason": "The text is the summary of the TH1805 diagnostic for a markup option its slot kind does not admit; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6057,7 +6057,7 @@
       "original": "`Custom message function option ${JSON.stringify(authored)} is incompatible with its portable descriptor.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The text is the summary of the EQ1805 diagnostic for a function option literal its descriptor does not admit; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
+      "reason": "The text is the summary of the TH1805 diagnostic for a function option literal its descriptor does not admit; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6074,7 +6074,7 @@
       "original": "`Input ${JSON.stringify(inputName)} uses unknown portable type ${JSON.stringify(refinement.type)}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The text is the summary of the EQ1302 diagnostic for a refinement type outside the portable set; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
+      "reason": "The text is the summary of the TH1302 diagnostic for a refinement type outside the portable set; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6082,7 +6082,7 @@
       "original": "`Input refinement ${JSON.stringify(name)} does not match an inferred external input.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The text is the summary of the EQ1302 diagnostic for a refinement key that matches no inferred input; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
+      "reason": "The text is the summary of the TH1302 diagnostic for a refinement key that matches no inferred input; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6090,7 +6090,7 @@
       "original": "`Input ${JSON.stringify(name)} has an enum value incompatible with ${type}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The text is the summary of the EQ1302 diagnostic for an enum literal incompatible with the effective type; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
+      "reason": "The text is the summary of the TH1302 diagnostic for an enum literal incompatible with the effective type; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6107,7 +6107,7 @@
       "original": "`Interactive rich slot ${JSON.stringify(part.name)} cannot be nested inside another interactive slot.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The text is the summary of the EQ1303 diagnostic for an interactive slot nested inside another; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
+      "reason": "The text is the summary of the TH1303 diagnostic for an interactive slot nested inside another; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6124,7 +6124,7 @@
       "original": "`Unused declared rich slot ${JSON.stringify(name)} requires a determinable kind and shape.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The text is the summary of the EQ1303 diagnostic for an unused declared slot with no determinable shape; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
+      "reason": "The text is the summary of the TH1303 diagnostic for an unused declared slot with no determinable shape; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6148,7 +6148,7 @@
       "original": "`Rich slot ${JSON.stringify(name)} is authored outside its declared within constraint.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The text is the summary of the EQ1303 diagnostic for a slot authored outside its declared within; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
+      "reason": "The text is the summary of the TH1303 diagnostic for a slot authored outside its declared within; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6156,7 +6156,7 @@
       "original": "'code, which holds only text and values'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The text is only interpolated into the EQ1303 summary on line 1139; an empty string is still not undefined, so the test on line 1134 pushes the same diagnostic with the same code and path."
+      "reason": "The text is only interpolated into the TH1303 summary on line 1139; an empty string is still not undefined, so the test on line 1134 pushes the same diagnostic with the same code and path."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6164,7 +6164,7 @@
       "original": "'another interactive slot'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The text is only interpolated into the EQ1303 summary on line 1139; an empty string is still not undefined, so the test on line 1134 pushes the same diagnostic with the same code and path."
+      "reason": "The text is only interpolated into the TH1303 summary on line 1139; an empty string is still not undefined, so the test on line 1134 pushes the same diagnostic with the same code and path."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6172,7 +6172,7 @@
       "original": "`Rich slot ${JSON.stringify(name)} cannot be permitted within ${JSON.stringify(parent)}, because it cannot be nested inside ${forbidden}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The text is the summary of the EQ1303 diagnostic for a within refinement that names a forbidden parent; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
+      "reason": "The text is the summary of the TH1303 diagnostic for a within refinement that names a forbidden parent; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6196,7 +6196,7 @@
       "original": "'plural'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "On line 1287 the default is read only by the comparisons with 'exact' and 'ordinal' on lines 1288 and 1291, and on line 1291 the kind is read only by comparisons with 'ordinal' (lines 1195 and 1351). The empty string fails each of those comparisons exactly as 'plural' does, so the cardinal table is read either way. At another place: The word 'plural' inside the EQ1308 summary on line 1351, read by a person.",
+      "reason": "On line 1287 the default is read only by the comparisons with 'exact' and 'ordinal' on lines 1288 and 1291, and on line 1291 the kind is read only by comparisons with 'ordinal' (lines 1195 and 1351). The empty string fails each of those comparisons exactly as 'plural' does, so the cardinal table is read either way. At another place: The word 'plural' inside the TH1308 summary on line 1351, read by a person.",
       "count": 3
     },
     {
@@ -6221,7 +6221,7 @@
       "original": "kind === 'ordinal'",
       "replacement": "true",
       "category": "message-wording",
-      "reason": "Chooses between the words 'ordinal' and 'plural' inside the EQ1308 summary; the code, the path and the severity do not depend on it."
+      "reason": "Chooses between the words 'ordinal' and 'plural' inside the TH1308 summary; the code, the path and the severity do not depend on it."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6229,7 +6229,7 @@
       "original": "missing.length === 1",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "Chooses between 'category' and 'categories' inside the EQ1308 summary; nothing else reads the count here."
+      "reason": "Chooses between 'category' and 'categories' inside the TH1308 summary; nothing else reads the count here."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6237,7 +6237,7 @@
       "original": "missing.length === 1",
       "replacement": "true",
       "category": "message-wording",
-      "reason": "Chooses between 'category' and 'categories' inside the EQ1308 summary; nothing else reads the count here."
+      "reason": "Chooses between 'category' and 'categories' inside the TH1308 summary; nothing else reads the count here."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6245,7 +6245,7 @@
       "original": "missing.length === 1",
       "replacement": "missing.length !== 1",
       "category": "message-wording",
-      "reason": "Chooses between 'category' and 'categories' inside the EQ1308 summary; nothing else reads the count here."
+      "reason": "Chooses between 'category' and 'categories' inside the TH1308 summary; nothing else reads the count here."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6253,7 +6253,7 @@
       "original": "'category'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The word 'category' inside the EQ1308 summary."
+      "reason": "The word 'category' inside the TH1308 summary."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6261,7 +6261,7 @@
       "original": "'categories'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The word 'categories' inside the EQ1308 summary."
+      "reason": "The word 'categories' inside the TH1308 summary."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6269,7 +6269,7 @@
       "original": "', '",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The separator between the names a summary lists: the operand types inside the EQ1302 summary on line 796 and the missing categories inside the EQ1308 summary on line 1369.",
+      "reason": "The separator between the names a summary lists: the operand types inside the TH1302 summary on line 796 and the missing categories inside the TH1308 summary on line 1369.",
       "count": 2
     },
     {
@@ -6278,7 +6278,7 @@
       "original": "`Target message ${JSON.stringify(messageId)} changes or invents input ${JSON.stringify(input.name)}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The EQ1304 summary for a target input that differs from the source; the suites assert the code and the pointer."
+      "reason": "The TH1304 summary for a target input that differs from the source; the suites assert the code and the pointer."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6286,7 +6286,7 @@
       "original": "source.kind !== target.kind",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "A target entry cannot declare slots (parseCatalog refuses them with EQ1105, catalog.ts line 1118), so lines 1024 to 1027 give a target slot the kind of the source slot of the same name whenever there is one. Where there is none, the first clause on line 1457 has already decided."
+      "reason": "A target entry cannot declare slots (parseCatalog refuses them with TH1105, catalog.ts line 1118), so lines 1024 to 1027 give a target slot the kind of the source slot of the same name whenever there is one. Where there is none, the first clause on line 1457 has already decided."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6294,7 +6294,7 @@
       "original": "`Target message ${JSON.stringify(messageId)} changes or invents rich slot ${JSON.stringify(target.name)}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The EQ1304 summary for a target slot that differs from the source; the suites assert the code and the pointer."
+      "reason": "The TH1304 summary for a target slot that differs from the source; the suites assert the code and the pointer."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6302,7 +6302,7 @@
       "original": "`Open family ${JSON.stringify(familyName)} repeats placeholder ${JSON.stringify(name)}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The EQ1305 summary for a template that repeats a placeholder."
+      "reason": "The TH1305 summary for a template that repeats a placeholder."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6318,7 +6318,7 @@
       "original": "`Open family ${JSON.stringify(familyName)} has an invalid literal or placeholder part.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The EQ1305 summary for a template part that is neither a literal nor a placeholder."
+      "reason": "The TH1305 summary for a template part that is neither a literal nor a placeholder."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6326,7 +6326,7 @@
       "original": "`Open family ${JSON.stringify(familyName)} requires at least one fixed part and one placeholder.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The EQ1305 summary for a template without a fixed part or without a placeholder."
+      "reason": "The TH1305 summary for a template without a fixed part or without a placeholder."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6342,7 +6342,7 @@
       "original": "`Open family ${JSON.stringify(familyName)} declares a segment that is absent from its template.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The EQ1305 summary for a segments key that names no placeholder of the template."
+      "reason": "The TH1305 summary for a segments key that names no placeholder of the template."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6350,7 +6350,7 @@
       "original": "`Open family segment ${JSON.stringify(name)} references unregistered identifier type ${JSON.stringify(type)}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The EQ1805 summary for a segment whose identifier type is not registered."
+      "reason": "The TH1805 summary for a segment whose identifier type is not registered."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6367,7 +6367,7 @@
       "original": "`Open family ${JSON.stringify(name)} has no current source member.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The EQ1305 summary for a family no source message matches."
+      "reason": "The TH1305 summary for a family no source message matches."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6375,7 +6375,7 @@
       "original": "`Open family ${JSON.stringify(name)} has heterogeneous current message contracts.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The EQ1305 summary for a family whose members have different contracts."
+      "reason": "The TH1305 summary for a family whose members have different contracts."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6423,7 +6423,7 @@
       "original": "`Target catalog invents message ${JSON.stringify(messageId)}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The EQ1304 summary for a target message the source does not have; the suites assert the code and the pointer."
+      "reason": "The TH1304 summary for a target message the source does not have; the suites assert the code and the pointer."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6431,23 +6431,23 @@
       "original": "`Scope ${sourceCatalog.scopeId} has no ${locale} catalog; source-locale fallback remains available.${policy.suffix}`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The EQ1306 summary for a locale with no catalog in a scope; the suites assert the code, the pointer and the severity."
+      "reason": "The TH1306 summary for a locale with no catalog in a scope; the suites assert the code, the pointer and the severity."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "ConditionalExpression",
-      "original": "segment.type !== 'equator:native-message-part'",
+      "original": "segment.type !== 'thoth:native-message-part'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "the registry refuses a descriptor in the equator namespace (descriptorError in extensions.ts), so the key added for a built-in segment finds no descriptor in the lookup that follows and is dropped"
+      "reason": "the registry refuses a descriptor in the thoth namespace (descriptorError in extensions.ts), so the key added for a built-in segment finds no descriptor in the lookup that follows and is dropped"
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "StringLiteral",
-      "original": "'equator:native-message-part'",
+      "original": "'thoth:native-message-part'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "at the comparison in referencedExtensions: the registry refuses a descriptor in the equator namespace (descriptorError in extensions.ts), so the key added for a built-in segment finds no descriptor in the lookup that follows and is dropped"
+      "reason": "at the comparison in referencedExtensions: the registry refuses a descriptor in the thoth namespace (descriptorError in extensions.ts), so the key added for a built-in segment finds no descriptor in the lookup that follows and is dropped"
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6455,7 +6455,7 @@
       "original": "typeof literal === 'number' && Number.isFinite(literal)",
       "replacement": "typeof literal === 'number' || Number.isFinite(literal)",
       "category": "unreachable",
-      "reason": "the two differ only for a number that is not finite, and parseCatalog refuses an enum literal that is one with EQ1101 (the Number.isFinite test where catalog.ts reads enum members), so none reaches literalMatchesType"
+      "reason": "the two differ only for a number that is not finite, and parseCatalog refuses an enum literal that is one with TH1101 (the Number.isFinite test where catalog.ts reads enum members), so none reaches literalMatchesType"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6888,7 +6888,7 @@
       "original": "unused.length === 1",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "The condition chooses only between the nouns \"message\" and \"messages\" in the EQ1311 summary of unusedSourceMessages; the count, the listed ids, the code and the severity are the same either way."
+      "reason": "The condition chooses only between the nouns \"message\" and \"messages\" in the TH1311 summary of unusedSourceMessages; the count, the listed ids, the code and the severity are the same either way."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -6896,7 +6896,7 @@
       "original": "'message'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the singular noun in the EQ1311 summary of unusedSourceMessages, read by a person; the count and the listed ids beside it are unchanged."
+      "reason": "The literal is the singular noun in the TH1311 summary of unusedSourceMessages, read by a person; the count and the listed ids beside it are unchanged."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -6920,7 +6920,7 @@
       "original": "'have addresses'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The plural verb phrase inside the EQ1408 summary for policy locales that have no catalogs; the diagnostic's code and path are the same with or without it."
+      "reason": "The plural verb phrase inside the TH1408 summary for policy locales that have no catalogs; the diagnostic's code and path are the same with or without it."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -6928,7 +6928,7 @@
       "original": "'Those addresses resolve'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The plural opening of the second sentence of the EQ1408 summary for policy locales that have no catalogs."
+      "reason": "The plural opening of the second sentence of the TH1408 summary for policy locales that have no catalogs."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -6936,7 +6936,7 @@
       "original": "'are configured locales'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The plural verb phrase inside the EQ1408 summary for configured locales the policy gives no address."
+      "reason": "The plural verb phrase inside the TH1408 summary for configured locales the policy gives no address."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -6952,7 +6952,7 @@
       "original": "`writes lang=${JSON.stringify(mention.text)} by hand`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The clause of the EQ1410 summary that says a static lang was written without a dir beside it; the code, severity and path of the warning do not depend on it."
+      "reason": "The clause of the TH1410 summary that says a static lang was written without a dir beside it; the code, severity and path of the warning do not depend on it."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -6976,7 +6976,7 @@
       "original": "`Custom message function ${JSON.stringify(reference.name)} requires an operand.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1805 finding for a registered function called without an operand; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1805 finding for a registered function called without an operand; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6984,7 +6984,7 @@
       "original": "`Custom message function ${JSON.stringify(reference.name)} requires option ${JSON.stringify(name)}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1805 finding for a required option the call leaves out; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1805 finding for a required option the call leaves out; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6992,7 +6992,7 @@
       "original": "'An explicit-empty message cannot declare inputs because it has no inferred input set.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1302 finding for inputs declared on an explicitly empty message; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1302 finding for inputs declared on an explicitly empty message; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7000,7 +7000,7 @@
       "original": "`Input ${JSON.stringify(name)} has incompatible MessageFormat operand uses: ${explicitTypes.join(', ')}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1302 finding for an input used under two operand types; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1302 finding for an input used under two operand types; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7008,7 +7008,7 @@
       "original": "`Rich slot ${JSON.stringify(part.name)} cannot be nested inside code.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1303 finding for a slot nested inside code; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1303 finding for a slot nested inside code; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7016,7 +7016,7 @@
       "original": "`Built-in rich slot ${JSON.stringify(name)} must be paired.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1303 finding for a built-in slot that stands alone; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1303 finding for a built-in slot that stands alone; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7024,7 +7024,7 @@
       "original": "`Rich slot ${JSON.stringify(name)} must use the ${customKind.shape} shape declared by ${JSON.stringify(kind)}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1303 finding for a slot whose shape is not the one its registered kind declares; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1303 finding for a slot whose shape is not the one its registered kind declares; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7032,7 +7032,7 @@
       "original": "`Rich slot ${JSON.stringify(name)} is present in every source variant and cannot be made optional by refinement.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1303 finding for an optional refinement on a slot every variant uses; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1303 finding for an optional refinement on a slot every variant uses; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7040,7 +7040,7 @@
       "original": "`Rich slot ${JSON.stringify(name)} is not repeated by the source and cannot be made repeatable by refinement.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1303 finding for a repeatable refinement on a slot no variant repeats; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1303 finding for a repeatable refinement on a slot no variant repeats; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7048,7 +7048,7 @@
       "original": "existingTemplate !== undefined",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "The condition on line 1717 only chooses between two summaries of one EQ1305 finding with one path, the duplicate-template sentence and the generated-name sentence, so the change puts the second sentence on both."
+      "reason": "The condition on line 1717 only chooses between two summaries of one TH1305 finding with one path, the duplicate-template sentence and the generated-name sentence, so the change puts the second sentence on both."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7056,7 +7056,7 @@
       "original": "`Open families ${JSON.stringify(existingTemplate)} and ${JSON.stringify(name)} duplicate one template.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1305 finding for two families that share a template; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1305 finding for two families that share a template; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7064,7 +7064,7 @@
       "original": "`Message ${JSON.stringify(member.messageId)} ambiguously matches open families ${JSON.stringify(previous)} and ${JSON.stringify(name)}.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1305 finding for a message that matches two families; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1305 finding for a message that matches two families; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7072,7 +7072,7 @@
       "original": "`Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.selectorsPerMessage}-selector implementation ceiling.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1302 finding for a message past the selector ceiling; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1302 finding for a message past the selector ceiling; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7080,7 +7080,7 @@
       "original": "`Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.variantsPerMessage}-variant implementation ceiling.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1302 finding for a message past the variant ceiling; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1302 finding for a message past the variant ceiling; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7088,7 +7088,7 @@
       "original": "severity === 'error'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "Every finding analyzeCatalogSet collects is built by semanticDiagnostic, whose severity is error unless a completeness policy supplies it, and the three calls that pass one (lines 1372, 1413 and 2179) carry EQ1308, EQ1307 and EQ1306, all in COMPLETENESS_CODES. A finding that is not an error therefore already fails the second half of the conjunction."
+      "reason": "Every finding analyzeCatalogSet collects is built by semanticDiagnostic, whose severity is error unless a completeness policy supplies it, and the three calls that pass one (lines 1372, 1413 and 2179) carry TH1308, TH1307 and TH1306, all in COMPLETENESS_CODES. A finding that is not an error therefore already fails the second half of the conjunction."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7160,7 +7160,7 @@
       "original": "diagnostics.push(...provisionalContracts.diagnostics);",
       "replacement": ";",
       "category": "equivalent",
-      "reason": "The line is reached only when the provisional generateContracts succeeded, and every diagnostic that function raises is an error (EQ1305 at generated-contracts.ts lines 277 and 294, EQ1304 at line 764, none passing a severity) that makes it return a failure at line 819, so the list pushed here is always empty."
+      "reason": "The line is reached only when the provisional generateContracts succeeded, and every diagnostic that function raises is an error (TH1305 at generated-contracts.ts lines 277 and 294, TH1304 at line 764, none passing a severity) that makes it return a failure at line 819, so the list pushed here is always empty."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7184,7 +7184,7 @@
       "original": "/\\.ts$/u",
       "replacement": "/\\.ts/u",
       "category": "equivalent",
-      "reason": "The path is a generated file name built from a scope id, and a scope id a catalog can carry has no dot (parseCatalog refuses one with EQ1104), so the only \".ts\" in it is the ending the filter two lines above required."
+      "reason": "The path is a generated file name built from a scope id, and a scope id a catalog can carry has no dot (parseCatalog refuses one with TH1104), so the only \".ts\" in it is the ending the filter two lines above required."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7200,7 +7200,7 @@
       "original": "policyDeclaration.claimedSegments\n        .filter((claim) => claim.kind === 'locale-neutral root')",
       "replacement": "policyDeclaration.claimedSegments",
       "category": "message-wording",
-      "reason": "Every segment the unfiltered `exact` map gains is a prefix or alias whose lowercased form is a key of `folded`, so a route draws EQ1409 at the same path for exactly the same leading segments; only which claim the summary names can change, where two prefixes or aliases differ by case alone and the route is spelled as the earlier one."
+      "reason": "Every segment the unfiltered `exact` map gains is a prefix or alias whose lowercased form is a key of `folded`, so a route draws TH1409 at the same path for exactly the same leading segments; only which claim the summary names can change, where two prefixes or aliases differ by case alone and the route is spelled as the earlier one."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7208,7 +7208,7 @@
       "original": "claim.kind === 'locale-neutral root'",
       "replacement": "true",
       "category": "message-wording",
-      "reason": "A filter that keeps every claim puts prefixes and aliases into `exact` under their own spelling, and each of them is already a key of `folded` once lowercased, so EQ1409 is raised for the same routes at the same path; only the claim named in the summary can differ, where two prefixes or aliases differ by case alone."
+      "reason": "A filter that keeps every claim puts prefixes and aliases into `exact` under their own spelling, and each of them is already a key of `folded` once lowercased, so TH1409 is raised for the same routes at the same path; only the claim named in the summary can differ, where two prefixes or aliases differ by case alone."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7224,7 +7224,7 @@
       "original": "diagnostics.push(...contracts.diagnostics);",
       "replacement": ";",
       "category": "equivalent",
-      "reason": "`generateContracts` raises only EQ1304 and EQ1305, both at the default error severity (generated-contracts.ts lines 276, 293 and 763), and returns a failure when any error is present, so on the success path this line is reached with `contracts.diagnostics` always empty and the push adds nothing."
+      "reason": "`generateContracts` raises only TH1304 and TH1305, both at the default error severity (generated-contracts.ts lines 276, 293 and 763), and returns a failure when any error is present, so on the success path this line is reached with `contracts.diagnostics` always empty and the push adds nothing."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7298,7 +7298,7 @@
       "original": "'MessageFormat source'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the label untrustedText puts at the start of its two sentences, for a source that is not a string and for one over the ceiling; both keep the code EQ1201, which message-source-byte-ceiling.test.ts asserts."
+      "reason": "The literal is the label untrustedText puts at the start of its two sentences, for a source that is not a string and for one over the ceiling; both keep the code TH1201, which message-source-byte-ceiling.test.ts asserts."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -7314,7 +7314,7 @@
       "original": "profile === undefined",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "Lines 784 to 804 return EQ1203 for any function that is neither in the built-in profile nor registered, MESSAGE_FUNCTION_OPTIONS has an entry for each of the ten built-in names and customProfiles one for each registered name, so no function reaches this line without a profile."
+      "reason": "Lines 784 to 804 return TH1203 for any function that is neither in the built-in profile nor registered, MESSAGE_FUNCTION_OPTIONS has an entry for each of the ten built-in names and customProfiles one for each registered name, so no function reaches this line without a profile."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -7338,7 +7338,7 @@
       "original": "`:${functionRef.name}`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The literal is the phrase naming the function in the sentences checkUnicodeOptions writes; the code stays EQ1204, which message-format.test.ts asserts for u: options written on a function."
+      "reason": "The literal is the phrase naming the function in the sentences checkUnicodeOptions writes; the code stays TH1204, which message-format.test.ts asserts for u: options written on a function."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -7531,7 +7531,7 @@
       "original": "`MessageFormat source exceeds the ${RESOURCE_LIMITS.messageBytes}-byte implementation ceiling.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1201 finding for a message whose UTF-8 bytes pass the ceiling while its characters do not; its code and its path are what the case compares."
+      "reason": "The whole summary of the TH1201 finding for a message whose UTF-8 bytes pass the ceiling while its characters do not; its code and its path are what the case compares."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7539,7 +7539,7 @@
       "original": "`Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.inputsPerMessage}-input implementation ceiling.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1302 finding for a message past the input ceiling; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1302 finding for a message past the input ceiling; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7547,7 +7547,7 @@
       "original": "`Rich slot ${JSON.stringify(stack.at(-1))} is not closed.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1303 finding for an opening element nothing closes; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1303 finding for an opening element nothing closes; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7555,7 +7555,7 @@
       "original": "-1",
       "replacement": "+1",
       "category": "message-wording",
-      "reason": "The index only chooses which open slot the EQ1303 summary for an unclosed element names; the diagnostic is pushed whenever the stack is not empty, with the same code and path."
+      "reason": "The index only chooses which open slot the TH1303 summary for an unclosed element names; the diagnostic is pushed whenever the stack is not empty, with the same code and path."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7563,15 +7563,15 @@
       "original": "`Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.slotsPerMessage}-slot implementation ceiling.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1303 finding for a message past the slot ceiling; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1303 finding for a message past the slot ceiling; its code and its path are what the cases compare."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "StringLiteral",
-      "original": "'Empty scopes do not produce Equator registries or generated output.'",
+      "original": "'Empty scopes do not produce Thoth registries or generated output.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The whole summary of the EQ1301 finding for a source catalog with no message; its code and its path are what the cases compare."
+      "reason": "The whole summary of the TH1301 finding for a source catalog with no message; its code and its path are what the cases compare."
     },
     {
       "file": "packages/runtime/src/formatting.ts",

@@ -32,7 +32,7 @@ import {
   zonedDateTime,
   type LocalizationObservabilityEvent,
   type LocalizationObservabilitySink,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -323,7 +323,7 @@ describe('a value the formatter will not write', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    // Nothing on the page. Not an apology in Equator words, and not a thrown error taking a view
+    // Nothing on the page. Not an apology in Thoth words, and not a thrown error taking a view
     // down over one value.
     expect(textOf(fixture, 'data-unformattable')).toBe('');
 
@@ -336,6 +336,6 @@ describe('a value the formatter will not write', () => {
     );
     expect(reported.length).toBeGreaterThan(0);
     expect(reported[0]?.reason).toBe('unsupported-formatting-capability');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

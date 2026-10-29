@@ -4,6 +4,6 @@
  */
 import { afterEach } from 'vitest';
 
-import { resetLocalizationTestEnvironment } from '@neolorn/equator/testing';
+import { resetLocalizationTestEnvironment } from '@neolorn/thoth/testing';
 
 afterEach(resetLocalizationTestEnvironment);

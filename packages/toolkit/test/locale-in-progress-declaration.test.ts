@@ -78,13 +78,13 @@ describe('a project declares which locales are still being translated', () => {
   it('refuses a key that is not a locale identity', () => {
     expect(
       codesOf(parse({ inProgress: { 'not a locale': { note: 'x' } } })),
-    ).toContain('EQ1003');
+    ).toContain('TH1003');
   });
 
   it('refuses a locale the project does not serve', () => {
     expect(
       codesOf(parse({ inProgress: { 'fr-FR': { note: 'Later.' } } })),
-    ).toContain('EQ1004');
+    ).toContain('TH1004');
   });
 
   it('refuses the source locale, which defines what complete means', () => {
@@ -92,7 +92,7 @@ describe('a project declares which locales are still being translated', () => {
     // an outcome, and an entry that can never do anything reads as a decision somebody made.
     expect(
       codesOf(parse({ inProgress: { 'en-US': { note: 'Still writing.' } } })),
-    ).toContain('EQ1004');
+    ).toContain('TH1004');
   });
 
   it('refuses a pseudo-locale, which is derived rather than written', () => {
@@ -107,7 +107,7 @@ describe('a project declares which locales are still being translated', () => {
       }),
     );
     expect(result.ok).toBe(false);
-    expect(result.diagnostics.map(({ code }) => code)).toContain('EQ1004');
+    expect(result.diagnostics.map(({ code }) => code)).toContain('TH1004');
   });
 
   it('refuses an entry with no reason', () => {
@@ -152,7 +152,7 @@ describe('a project declares which locales are still being translated', () => {
       );
       await write(
         root,
-        'equator.config.json',
+        'thoth.config.json',
         `${configurationText({
           inProgress: { 'ar-EG': { note: 'Translation starts in October.' } },
         })}\n`,
@@ -198,7 +198,7 @@ describe('a project declares which locales are still being translated', () => {
       expect(
         result.diagnostics
           .map(({ code }) => code)
-          .filter((code) => code.startsWith('EQ1')),
+          .filter((code) => code.startsWith('TH1')),
       ).toEqual([]);
       const index = await readFile(
         resolve(root, 'src/generated/i18n/index.ts'),

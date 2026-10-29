@@ -8,7 +8,7 @@ import { refusalOf } from './compiled-artifact-harness.js';
  *
  * `DynamicAssetParticipantReportInput` gives a report four outcomes, and a domain outcome is the
  * one that carries the application's code: a document withdrawn, an image under review. The code
- * is the application's word, held to the identity grammar because it is logged beside Equator's.
+ * is the application's word, held to the identity grammar because it is logged beside Thoth's.
  */
 
 describe('a dynamic asset that ended in a domain outcome', () => {

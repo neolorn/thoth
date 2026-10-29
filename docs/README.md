@@ -1,4 +1,4 @@
-# Equator documentation
+# Thoth documentation
 
 Four kinds of page, each answering a different kind of question.
 
@@ -42,14 +42,14 @@ Running the project:
 - [How to run generation in your build](how-to/run-generation-in-your-build.md)
 - [How to translate catalogs](how-to/translate-catalogs.md)
 - [How to test localized output](how-to/test-localized-output.md)
-- [How to extend Equator](how-to/add-an-extension.md)
+- [How to extend Thoth](how-to/add-an-extension.md)
 
 ## Reference
 
 These pages are generated from the packages.
 
 - [Command line](reference/cli.md): every command and flag, captured from the built CLI's own help.
-- [Configuration](reference/configuration.md): every field `equator.config.json` accepts.
+- [Configuration](reference/configuration.md): every field `thoth.config.json` accepts.
 - [Entry points](reference/entry-points.md): what each import specifier publishes.
 - [Features](reference/features.md): every feature `provideLocalization` composes.
 - [Diagnostics](reference/diagnostics.md): every code and what it means.

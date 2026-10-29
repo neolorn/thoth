@@ -7,8 +7,8 @@ import { testProjectConfiguration } from './fixtures.js';
 /**
  * NEW-1: a target catalog that omits a required source message.
  *
- * `semantic-model.ts` errored when a target *invented* a message (EQ1304) and returned silently
- * when a target *omitted* one. So an incomplete locale looked finished: `equator check` exited 0,
+ * `semantic-model.ts` errored when a target *invented* a message (TH1304) and returned silently
+ * when a target *omitted* one. So an incomplete locale looked finished: `thoth check` exited 0,
  * generation succeeded, a re-check reported output current, and the message fell back to the
  * source locale in a production build with nothing said anywhere.
  *
@@ -17,7 +17,7 @@ import { testProjectConfiguration } from './fixtures.js';
  * filled later.
  *
  * The severity is settled: warn during development, fail in CI through an explicit
- * `equator check --require-complete`. English lands before Arabic in ordinary authoring order, so
+ * `thoth check --require-complete`. English lands before Arabic in ordinary authoring order, so
  * erroring during development would break the dev loop on every new message and train a team to
  * bypass the check.
  */
@@ -76,7 +76,7 @@ describe('a target locale that omits a source message', () => {
 
   it('reports each omission by name', () => {
     const graph = analyze(missingTwo);
-    const omissions = graph.diagnostics.filter((d) => d.code === 'EQ1307');
+    const omissions = graph.diagnostics.filter((d) => d.code === 'TH1307');
 
     expect(omissions).toHaveLength(2);
     const summaries = omissions.map((d) => d.summary).join(' ');
@@ -92,7 +92,7 @@ describe('a target locale that omits a source message', () => {
     const graph = analyze(missingOne);
 
     expect(graph.ok).toBe(true);
-    const omissions = graph.diagnostics.filter((d) => d.code === 'EQ1307');
+    const omissions = graph.diagnostics.filter((d) => d.code === 'TH1307');
     expect(omissions).toHaveLength(1);
     expect(omissions[0]?.severity).toBe('warning');
   });
@@ -104,7 +104,7 @@ describe('a target locale that omits a source message', () => {
     // locale is unfinished, not that the analysis has no graph to give. What blocks the
     // run is the severity, and the run is what `checkProject` and the CLI decide.
     expect(graph.ok).toBe(true);
-    const omissions = graph.diagnostics.filter((d) => d.code === 'EQ1307');
+    const omissions = graph.diagnostics.filter((d) => d.code === 'TH1307');
     expect(omissions).toHaveLength(1);
     expect(omissions[0]?.severity).toBe('error');
   });
@@ -121,13 +121,13 @@ describe('a target locale that omits a source message', () => {
     for (const requireComplete of [false, true]) {
       const graph = analyze(invented, requireComplete);
       expect(graph.ok).toBe(false);
-      expect(graph.diagnostics.map((d) => d.code)).toContain('EQ1304');
+      expect(graph.diagnostics.map((d) => d.code)).toContain('TH1304');
     }
   });
 
   it('carries the message identity in the diagnostic path', () => {
     const graph = analyze(missingOne);
-    const omission = graph.diagnostics.find((d) => d.code === 'EQ1307');
+    const omission = graph.diagnostics.find((d) => d.code === 'TH1307');
 
     expect(omission?.path).toEqual(['messages', 'nav.products']);
   });

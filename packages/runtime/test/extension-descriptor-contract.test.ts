@@ -4,7 +4,7 @@ import type {
   MessageFunctionInvocation,
   MessageFunctionResult,
   RuntimeMessageFunctionDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import {
   defineExtensionRegistry,

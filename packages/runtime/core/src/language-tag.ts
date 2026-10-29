@@ -15,7 +15,7 @@
  * refused here too: a legacy `i-` tag, an extended language subtag, a leading script, `root`, and a
  * repeated variant or singleton. Extension values are put in canonical order but not replaced: the
  * aliases for them are in the CLDR `bcp47` data, which is not a pinned source, and no identity
- * Equator stores carries an extension.
+ * Thoth stores carries an extension.
  */
 import {
   LIKELY_REPLACEMENT_REGIONS,

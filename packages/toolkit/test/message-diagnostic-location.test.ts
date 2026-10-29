@@ -41,7 +41,7 @@ describe('a syntax refusal', () => {
 
     expect(refusals(source)).toEqual([
       {
-        code: 'EQ1201',
+        code: 'TH1201',
         path: ['messages', 'greeting'],
         span: [10, 11],
         sourcePath: 'i18n/shell/en-US.yaml',
@@ -55,7 +55,7 @@ describe('a syntax refusal', () => {
 
     expect(refusals(source)).toEqual([
       {
-        code: 'EQ1201',
+        code: 'TH1201',
         path: ['messages', 'greeting'],
         span: [6, source.length],
         sourcePath: 'i18n/shell/en-US.yaml',
@@ -76,7 +76,7 @@ describe('a refusal of the message as a whole', () => {
 
     expect(refusals(source)).toEqual([
       {
-        code: 'EQ1203',
+        code: 'TH1203',
         path: ['messages', 'greeting'],
         span: [0, source.length],
         sourcePath: 'i18n/shell/en-US.yaml',
@@ -89,7 +89,7 @@ describe('a refusal of the message as a whole', () => {
 
     expect(refusals(source)).toEqual([
       {
-        code: 'EQ1204',
+        code: 'TH1204',
         path: ['messages', 'greeting'],
         span: [0, source.length],
         sourcePath: 'i18n/shell/en-US.yaml',

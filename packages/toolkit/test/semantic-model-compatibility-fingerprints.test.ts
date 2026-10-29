@@ -95,7 +95,7 @@ describe('the application-contract fingerprint', () => {
   it('is taken per scope over the message and family contracts', () => {
     const { scope } = analyzed();
     expect(scope.applicationContractFingerprint).toBe(
-      digestCanonicalJson('equator-scope-application-contract/1', {
+      digestCanonicalJson('thoth-scope-application-contract/1', {
         messages: [
           { identity: '@example/orders:shell:status.pending', ...contract },
           { identity: '@example/orders:shell:status.ready', ...contract },
@@ -126,7 +126,7 @@ describe('the application-contract fingerprint', () => {
   it('is rolled up over the scopes by provider, scope and fingerprint', () => {
     const { graph, scope } = analyzed();
     expect(graph.applicationContractFingerprint).toBe(
-      digestCanonicalJson('equator-application-contract/1', [
+      digestCanonicalJson('thoth-application-contract/1', [
         {
           providerId: '@example/orders',
           scopeId: 'shell',
@@ -141,7 +141,7 @@ describe('the semantic-registry fingerprint', () => {
   it('is taken per scope over the referenced kinds and required descriptors', () => {
     const { scope, descriptor } = analyzed();
     expect(scope.semanticRegistryFingerprint).toBe(
-      digestCanonicalJson('equator-scope-semantic-registry/1', {
+      digestCanonicalJson('thoth-scope-semantic-registry/1', {
         builtInKinds: ['link:paired'],
         extensions: [
           {
@@ -157,7 +157,7 @@ describe('the semantic-registry fingerprint', () => {
   it('is rolled up over the scopes by provider, scope and fingerprint', () => {
     const { graph, scope } = analyzed();
     expect(graph.semanticRegistryFingerprint).toBe(
-      digestCanonicalJson('equator-semantic-registry/1', [
+      digestCanonicalJson('thoth-semantic-registry/1', [
         {
           providerId: '@example/orders',
           scopeId: 'shell',

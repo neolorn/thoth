@@ -5,7 +5,7 @@ needs to be correct, so nothing has to be inferred from a number.
 
 ## Before you begin
 
-You need a composed runtime, which every Equator application has after
+You need a composed runtime, which every Thoth application has after
 [the tutorial](../tutorial.md).
 
 ## Build the value
@@ -34,18 +34,18 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { FormattingResult } from '@neolorn/equator/core';
+import type { FormattingResult } from '@neolorn/thoth/core';
 import {
   decimal,
   Localization,
   money,
   plainDate,
   withRecoveryMessage,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
 import { messages } from '#i18n/shell';
 
@@ -120,7 +120,7 @@ differently from the amount has the pieces. A failure carries a diagnostic with 
 
 A duration is written by the host's `Intl.DurationFormat`, and Node 22 does not have one. There,
 `formatDuration` and `localizedDuration` fail with `unsupported-formatting-capability` rather than
-put the units in an order Equator would have to guess.
+put the units in an order Thoth would have to guess.
 
 A date fails with the same code where the host has no calendar under the name it was asked for,
 whether the call, the value or the formatting context named it, rather than being written in
@@ -161,11 +161,11 @@ import {
   withRecoveryMessage,
   type LocalizationObservabilityEvent,
   type LocalizationObservabilitySink,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
 import { messages } from '#i18n/shell';
 
@@ -246,7 +246,7 @@ describe('a value rendered by a pipe', () => {
 
 A failed format renders an empty string and reports the diagnostic through the observability sink,
 so nothing is silent and nothing throws in a template. A throw would take a view down over one value
-that a locale cannot express, and a stand-in sentence would put Equator wording on your page. What
+that a locale cannot express, and a stand-in sentence would put Thoth wording on your page. What
 reaches the sink is [About diagnostics and runtime outcomes](../explanation/about-diagnostics.md).
 
 Hold the options in a field rather than writing them into the binding. A pipe formats again only
@@ -274,7 +274,7 @@ zone here, or write `timeZone` on the expression.
 A `timeZone`, a `calendar` or a `unit` written on an expression, and the options of a number taken
 together, are judged when the message is compiled, and the answer does not depend on the machine
 that compiles it. The zone is a name of the time zone
-database Equator pins, so `timeZone=|+05:00|` is `EQ1204`. The calendar is any name written as a
+database Thoth pins, so `timeZone=|+05:00|` is `TH1204`. The calendar is any name written as a
 calendar name, and one the rendering host does not count in is reported when the date is formatted.
 
 ## Choose relative time thresholds

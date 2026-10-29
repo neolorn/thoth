@@ -7,12 +7,12 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
  * Where this application's pages live, read from `addresses.json` beside this file.
  *
  * The table is written out by hand, one address per page per locale, rather than computed. An
- * expected address computed through Equator agrees with Equator by construction, so a spec that
- * compared against one would pass whatever Equator did. Each consumer row that runs this
+ * expected address computed through Thoth agrees with Thoth by construction, so a spec that
+ * compared against one would pass whatever Thoth did. Each consumer row that runs this
  * application under another policy replaces the table together with `route-policy.ts`.
  *
  * A page has an address in a locale only where arriving there, with no preference stated, yields
- * that locale. That is the rule Equator advertises and links by, so under a locale-neutral policy
+ * that locale. That is the rule Thoth advertises and links by, so under a locale-neutral policy
  * most pages have an address in the default locale alone.
  *
  * The table spells each address in plain Unicode, as a person reads it. The functions below give
@@ -104,7 +104,7 @@ export function addressedLocales(page: Page): readonly string[] {
 }
 
 /**
- * The address as Equator writes it: a path, or an absolute URL where the origin is the locale, with
+ * The address as Thoth writes it: a path, or an absolute URL where the origin is the locale, with
  * every character a path cannot carry percent-encoded.
  */
 export function pageAddress(page: Page, locale: string): string {

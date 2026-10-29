@@ -56,7 +56,7 @@ const one = (message: string): readonly string[] => [
   `  note: ${JSON.stringify(message)}`,
 ];
 
-const refusedAtTheMessage = ['EQ1304 messages/note i18n/shell/ar-EG.yaml'];
+const refusedAtTheMessage = ['TH1304 messages/note i18n/shell/ar-EG.yaml'];
 
 describe('a target message', () => {
   it('is refused at the message when it retypes an input', () => {

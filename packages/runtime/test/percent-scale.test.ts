@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { decimal, formatPercent, percent } from '../src/formatting.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 const CONTEXT: FormattingContext = Object.freeze({ locale: 'en-US' });
 const OPTIONS = Object.freeze({ maximumFractionDigits: 3 });

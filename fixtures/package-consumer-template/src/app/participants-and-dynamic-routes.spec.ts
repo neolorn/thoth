@@ -11,8 +11,8 @@ import {
   type RouteParameterContext,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator';
-import { ControllableLocalizationParticipant } from '@neolorn/equator/testing';
+} from '@neolorn/thoth';
+import { ControllableLocalizationParticipant } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -111,7 +111,7 @@ describe('participant contracts and transactions', () => {
         ({
           ...ready('en-US'),
           payload: {
-            title: 'This consumer payload must never enter Equator state.',
+            title: 'This consumer payload must never enter Thoth state.',
           },
         }) as unknown as LocalizationParticipantReport,
     });
@@ -290,7 +290,7 @@ describe('participant contracts and transactions', () => {
     });
     runtime.dispose();
     claimCapability('testing:ControllableLocalizationParticipant');
-    claimCapability('entry:@neolorn/equator/testing');
+    claimCapability('entry:@neolorn/thoth/testing');
   });
 
   it('commits primary UI first in progressive mode and completes the region independently', async () => {
@@ -391,7 +391,7 @@ describe('participant contracts and transactions', () => {
     );
     runtime.dispose();
     claimCapability('testing:ControllableLocalizationParticipant');
-    claimCapability('entry:@neolorn/equator/testing');
+    claimCapability('entry:@neolorn/thoth/testing');
   });
 
   it('enforces participant deadlines without changing the committed snapshot', async () => {
@@ -458,7 +458,7 @@ describe('participant contracts and transactions', () => {
     expect(secondRegistration.state().attempt.status).toBe('failed');
     runtime.dispose();
     claimCapability('testing:ControllableLocalizationParticipant');
-    claimCapability('entry:@neolorn/equator/testing');
+    claimCapability('entry:@neolorn/thoth/testing');
   });
 
   it('does not commit a participant unregistered by an earlier cohort member', async () => {
@@ -491,12 +491,12 @@ describe('participant contracts and transactions', () => {
     expect(first.rolledBack.length).toBeGreaterThan(0);
     runtime.dispose();
     claimCapability('testing:ControllableLocalizationParticipant');
-    claimCapability('entry:@neolorn/equator/testing');
+    claimCapability('entry:@neolorn/thoth/testing');
   });
 });
 
 describe('consumer custody and source neutrality', () => {
-  it('substitutes consumer sources without changing the Equator participant contract', async () => {
+  it('substitutes consumer sources without changing the Thoth participant contract', async () => {
     const outcomes: {
       readonly state: unknown;
       readonly sourceLabel: string | undefined;
@@ -691,7 +691,7 @@ describe('dynamic route equivalence and truthful SEO', () => {
     claimCapability('declaration:route-parameter-codec', {
       policy: routePolicy,
     });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   /** As `direct-api-contracts.spec.ts`: the locales a production build of this fixture generates. */
@@ -757,6 +757,6 @@ describe('dynamic route equivalence and truthful SEO', () => {
     claimCapability('declaration:route-parameter-codec', {
       policy: routePolicy,
     });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 });

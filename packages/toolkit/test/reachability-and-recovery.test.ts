@@ -39,7 +39,7 @@ async function write(
 /**
  * Which spelling composes the runtime.
  *
- * `generated` is what every real application writes: the wrapper Equator generates into `#i18n`.
+ * `generated` is what every real application writes: the wrapper Thoth generates into `#i18n`.
  * `package` is the direct `provideLocalizationSetup()` call, for an application with a reason to
  * assemble the setup itself. Detection has to recognize both, and a detector that recognizes only
  * one spelling is blind to every application that writes the other.
@@ -47,7 +47,7 @@ async function write(
 type CompositionSpelling = 'generated' | 'package';
 
 interface ProjectOptions {
-  /** Compose the Equator application runtime, the way an Angular application does. */
+  /** Compose the Thoth application runtime, the way an Angular application does. */
   readonly application: boolean;
   readonly spelling?: CompositionSpelling;
   /** Select a recovery message through the provider feature. */
@@ -79,7 +79,7 @@ async function project(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -130,14 +130,14 @@ async function project(options: ProjectOptions): Promise<string> {
     ].join('\n'),
   );
 
-  // A stub of the Equator package. The detector resolves the symbol and requires its declaration to
-  // come from inside @neolorn/equator, so a declaration file at that path is what the analysis
+  // A stub of the Thoth package. The detector resolves the symbol and requires its declaration to
+  // come from inside @neolorn/thoth, so a declaration file at that path is what the analysis
   // needs, and it declares the API that exists. A stub that declares a name the package does not
   // export, such as `provideLocalization`, keeps this test passing against a function nobody can
   // call while detection is broken for every real consumer.
   await write(
     root,
-    'node_modules/@neolorn/equator/index.d.ts',
+    'node_modules/@neolorn/thoth/index.d.ts',
     [
       'export declare function provideLocalizationSetup(',
       '  setup: unknown,',
@@ -151,9 +151,9 @@ async function project(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'node_modules/@neolorn/equator/package.json',
+    'node_modules/@neolorn/thoth/package.json',
     `${JSON.stringify(
-      { name: '@neolorn/equator', version: '0.0.0', types: './index.d.ts' },
+      { name: '@neolorn/thoth', version: '0.0.0', types: './index.d.ts' },
       null,
       2,
     )}\n`,
@@ -167,11 +167,11 @@ async function project(options: ProjectOptions): Promise<string> {
       ...(options.application
         ? options.spelling === 'package'
           ? [
-              "import { provideLocalizationSetup, withRecoveryMessage } from '@neolorn/equator';",
+              "import { provideLocalizationSetup, withRecoveryMessage } from '@neolorn/thoth';",
             ]
           : [
               "import { provideLocalization } from '#i18n';",
-              "import { withRecoveryMessage } from '@neolorn/equator';",
+              "import { withRecoveryMessage } from '@neolorn/thoth';",
             ]
         : []),
       '',
@@ -214,12 +214,12 @@ describe('an owner that composes the application runtime', () => {
 
     const generated = await generateProject({ project: root });
     const generateCodes = generated.diagnostics.map(({ code }) => code);
-    expect(generateCodes).toContain('EQ1310');
+    expect(generateCodes).toContain('TH1310');
 
     // "in both generate and bare check": a release gate runs check, so an error only generate
     // reports is an error the gate never sees.
     const checked = await checkProject({ project: root });
-    expect(checked.diagnostics.map(({ code }) => code)).toContain('EQ1310');
+    expect(checked.diagnostics.map(({ code }) => code)).toContain('TH1310');
     claimCapability('cli:generate');
     claimCapability('cli:check');
   });
@@ -234,7 +234,7 @@ describe('an owner that composes the application runtime', () => {
 
     const generated = await generateProject({ project: root });
 
-    expect(generated.diagnostics.map(({ code }) => code)).toContain('EQ1310');
+    expect(generated.diagnostics.map(({ code }) => code)).toContain('TH1310');
     claimCapability('cli:generate');
   });
 
@@ -248,7 +248,7 @@ describe('an owner that composes the application runtime', () => {
     const generated = await generateProject({ project: root });
 
     expect(generated.diagnostics.map(({ code }) => code)).not.toContain(
-      'EQ1310',
+      'TH1310',
     );
     claimCapability('cli:generate');
   });
@@ -265,7 +265,7 @@ describe('an owner that composes the application runtime', () => {
     const generated = await generateProject({ project: root });
 
     expect(generated.diagnostics.map(({ code }) => code)).not.toContain(
-      'EQ1310',
+      'TH1310',
     );
     claimCapability('cli:generate');
   });
@@ -283,7 +283,7 @@ describe('source messages nothing reaches', () => {
 
     const generated = await generateProject({ project: root });
     const advisories = generated.diagnostics.filter(
-      ({ code }) => code === 'EQ1311',
+      ({ code }) => code === 'TH1311',
     );
 
     expect(advisories).toHaveLength(1);
@@ -319,7 +319,7 @@ describe('source messages nothing reaches', () => {
     const generated = await generateProject({ project: root });
 
     expect(generated.diagnostics.map(({ code }) => code)).not.toContain(
-      'EQ1311',
+      'TH1311',
     );
     claimCapability('cli:generate');
   });

@@ -11,7 +11,7 @@
  *
  * The configuration page is the schema staged into the built package. Every field,
  * its type, whether it is required, and the sentence describing it all come from the schema, which
- * is also what validates the file and what `equator init --help` prints its flags from. A key added
+ * is also what validates the file and what `thoth init --help` prints its flags from. A key added
  * to the schema appears here on the day it lands.
  *
  * The entry point page is the `exports` map of each built manifest, and what each entry point
@@ -36,10 +36,10 @@
  * mechanism the diagnostics table and the init option table use.
  *
  * One table is not generated and is pinned instead. The README states the supported ranges rather
- * than linking to them, because someone deciding whether to adopt Equator reads that page and
+ * than linking to them, because someone deciding whether to adopt Thoth reads that page and
  * nothing else. That makes it a second copy of a claim whose original is a manifest, and a second
  * copy is held against its original here: a manifest that moves without the README fails this stage
- * rather than shipping a page that promises a range Equator no longer supports.
+ * rather than shipping a page that promises a range Thoth no longer supports.
  *
  * The CLI is run with its working directory outside this repository. Running it here would look for
  * an owner to act on and find one, and no page is worth that.
@@ -102,18 +102,18 @@ const help = execFileSync(
   .trimEnd();
 
 assert.ok(
-  help.includes('Usage: equator <command> [options]'),
+  help.includes('Usage: thoth <command> [options]'),
   'The built CLI printed something that is not its help text.',
 );
 
 // The version line changes on every release and says nothing a reader of this page needs, and
 // carrying it would make this file part of the release diff for no reason.
-const helpBody = help.replace(/^Equator toolkit [^\n]*\n\n/u, '');
+const helpBody = help.replace(/^Thoth toolkit [^\n]*\n\n/u, '');
 
 const cliDocument = `${[
   '# Command line',
   '',
-  'Every command and every flag the `equator` command line accepts. The text below is the output of',
+  'Every command and every flag the `thoth` command line accepts. The text below is the output of',
   '`--help` on the built CLI, captured by running it.',
   '',
   GENERATED_NOTE,
@@ -213,8 +213,8 @@ assert.ok(
 const configurationDocument = `${[
   '# Configuration',
   '',
-  'Every field `equator.config.json` accepts. The table is read from the schema that validates the',
-  'file and produces the flags of `equator init --help`.',
+  'Every field `thoth.config.json` accepts. The table is read from the schema that validates the',
+  'file and produces the flags of `thoth init --help`.',
   '',
   GENERATED_NOTE,
   '',
@@ -230,7 +230,7 @@ const configurationDocument = `${[
   '',
   '## The version field',
   '',
-  '`schemaVersion` is written by `equator init` and read by everything that opens the file. It is not',
+  '`schemaVersion` is written by `thoth init` and read by everything that opens the file. It is not',
   'a field you set: it says which shape the rest of the file is in, and a version this release does',
   'not understand is refused rather than guessed at.',
 ]
@@ -250,22 +250,22 @@ const configurationDocument = `${[
  * point that no longer ships can pass.
  */
 const PURPOSE = Object.freeze({
-  '@neolorn/equator':
+  '@neolorn/thoth':
     'Everything an application component and its bootstrap need.',
-  '@neolorn/equator/core':
+  '@neolorn/thoth/core':
     'The contracts, the locale profiles and negotiation, and the route and address helpers, with no Angular in the graph. This is what a library or a test helper imports.',
-  '@neolorn/equator/forms':
+  '@neolorn/thoth/forms':
     'Localized input parsing and the directive that binds it to a form control.',
-  '@neolorn/equator/http':
+  '@neolorn/thoth/http':
     'The locale request handler and its Node adapter: one request in, one response out, with no Angular in the graph.',
-  '@neolorn/equator/router':
+  '@neolorn/thoth/router':
     'Localized routing: the router setup, the link directive, and the address projection behind them.',
-  '@neolorn/equator/ssr':
+  '@neolorn/thoth/ssr':
     'Server rendering: per-route render modes, and the locale the server renders in.',
-  '@neolorn/equator/testing':
+  '@neolorn/thoth/testing':
     'The test harness. It replaces the parts of the runtime a test cannot wait for, and nothing else. Everything in it but the server seat runs under `TestBed`, which needs a DOM and a test runner that installs one.',
-  '@neolorn/equator-toolkit':
-    'The compiler behind the `equator` command, as a library. An application does not import this; a build script that needs the compiler without the command line does.',
+  '@neolorn/thoth-toolkit':
+    'The compiler behind the `thoth` command, as a library. An application does not import this; a build script that needs the compiler without the command line does.',
 });
 
 const runtimeManifest = JSON.parse(
@@ -311,7 +311,7 @@ function entryPointRows(): Omit<EntryPointRow, 'composables'>[] {
   }
   const toolkit = toolkitDeclaration();
   rows.push({
-    specifier: '@neolorn/equator-toolkit',
+    specifier: '@neolorn/thoth-toolkit',
     names: publishedNames(toolkit),
     text: toolkit,
     needs: [],
@@ -322,7 +322,7 @@ function entryPointRows(): Omit<EntryPointRow, 'composables'>[] {
 const entryPoints = entryPointRows() as EntryPointRow[];
 
 assert.ok(
-  entryPoints.some(({ specifier }) => specifier === '@neolorn/equator'),
+  entryPoints.some(({ specifier }) => specifier === '@neolorn/thoth'),
   'The built manifests publish no primary entry point, so this page would be rendered from nothing.',
 );
 assert.deepEqual(
@@ -405,9 +405,9 @@ const SELECTS = Object.freeze({
   withFormattingContext:
     'Sets what every formatter starts from: the time zone, the calendar, the numbering system, and the hour cycle.',
   withLocaleAnnouncement:
-    'Replaces the wording of the locale-change announcement Equator already makes. Returning nothing leaves the announcing to a live region of your own.',
+    'Replaces the wording of the locale-change announcement Thoth already makes. Returning nothing leaves the announcing to a live region of your own.',
   withLocaleSources:
-    'Names the sources Equator asks for the locale, and their order: `url`, `stored`, `browser` and `default`.',
+    'Names the sources Thoth asks for the locale, and their order: `url`, `stored`, `browser` and `default`.',
   withLocalizationClock:
     'Decides what `now` is for relative time. `fixedClock` makes a test reproducible.',
   withObservability: 'Sends runtime outcomes to a sink you supply.',
@@ -544,8 +544,8 @@ const compatibilityDocument = `${[
       ),
     ),
   '',
-  'Angular is a peer, not a dependency, so the copy that compiles your application is the copy Equator',
-  'compiles against. There is never a second Angular in your tree because of Equator.',
+  'Angular is a peer, not a dependency, so the copy that compiles your application is the copy Thoth',
+  'compiles against. There is never a second Angular in your tree because of Thoth.',
   '',
   '## Peers you install only if you use them',
   '',
@@ -580,13 +580,13 @@ const compatibilityDocument = `${[
   'unwatched.',
   '',
   '`@angular/build` before 22.1.7 finishes a build in which a prerendered page failed to render and',
-  'writes no file for that page. A page Equator refuses after it has started rendering, such as one',
+  'writes no file for that page. A page Thoth refuses after it has started rendering, such as one',
   'that declares its outcome while prerendering, is then missing from the output instead of failing',
   'the build.',
   '',
   '## Browsers',
   '',
-  'Equator targets what your Angular build targets. It adds no browser requirement of its own beyond',
+  'Thoth targets what your Angular build targets. It adds no browser requirement of its own beyond',
   '`Intl`, which every browser Angular supports has had for years.',
   '',
   'What varies between browsers is the data behind `Intl`. Two browsers can format the same date',
@@ -596,13 +596,13 @@ const compatibilityDocument = `${[
   '',
   '## Formatting a host does not provide',
   '',
-  "Equator formats with the host's own `Intl`. On a host without the capability a function needs,",
+  "Thoth formats with the host's own `Intl`. On a host without the capability a function needs,",
   'that function returns a failure with the code `unsupported-formatting-capability` rather than an',
   'approximation.',
   '',
   ...(capabilityGapRows.length === 0
     ? [
-        'Every host each release is run on has every capability Equator formats with.',
+        'Every host each release is run on has every capability Thoth formats with.',
       ]
     : [
         'These are the hosts each release is run on that lack one:',
@@ -614,7 +614,7 @@ const compatibilityDocument = `${[
   '',
   '## When a version outside the range is installed',
   '',
-  'The toolkit checks the host before the compiler does anything and refuses with `EQ1806` rather',
+  'The toolkit checks the host before the compiler does anything and refuses with `TH1806` rather',
   'than attempting a best effort. A refusal names what it found and what it wanted, so the fix is',
   'the install rather than a bisect.',
 ]
@@ -712,7 +712,7 @@ if (check) {
     );
   }
   process.stdout.write(
-    `Equator docs reference verified: the command line page is the built CLI's own help, the ` +
+    `Thoth docs reference verified: the command line page is the built CLI's own help, the ` +
       `configuration page is ${fields.length} field(s) read from the schema, the entry point ` +
       `page is ${entryPoints.length} entry point(s) read from the built manifests, the features ` +
       `page is ${composableNames.length} composable export(s) read from the built declarations, and the ` +
@@ -725,7 +725,7 @@ if (check) {
     await writeFile(target, contents, 'utf8');
   }
   process.stdout.write(
-    `Equator docs reference written: ${written.length} page(s), ${fields.length} configuration field(s), ${entryPoints.length} entry point(s), ${consumerProfiles.size} build row(s).\n`,
+    `Thoth docs reference written: ${written.length} page(s), ${fields.length} configuration field(s), ${entryPoints.length} entry point(s), ${consumerProfiles.size} build row(s).\n`,
   );
 }
 
@@ -745,6 +745,6 @@ assert.deepEqual(
 
 if (check) {
   process.stdout.write(
-    `Equator README compatibility pinned: ${README_RANGES.size} range(s) stated there are the ranges the packages declare.\n`,
+    `Thoth README compatibility pinned: ${README_RANGES.size} range(s) stated there are the ranges the packages declare.\n`,
   );
 }

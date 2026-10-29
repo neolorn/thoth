@@ -84,7 +84,7 @@ describe('the number options of a message', () => {
     for (const source of REFUSED) {
       const reported = onTheRealHost.get(source) ?? [];
       expect(reported, source).toHaveLength(1);
-      expect(reported[0], source).toMatch(/^EQ1204 /u);
+      expect(reported[0], source).toMatch(/^TH1204 /u);
       expect(reported[0], source).toContain(TOGETHER);
     }
   });

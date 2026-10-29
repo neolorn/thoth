@@ -5,7 +5,7 @@ import {
   Localization,
   provideLocalizationSetup,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -18,7 +18,7 @@ import { runtimeExtensions } from './runtime-extensions';
  * Arabic plural selection, executed rather than assumed.
  *
  * Without a plural in a fixture catalog, `selectPattern` and the `Intl.PluralRules` dispatch behind
- * it run in no Equator test. Arabic has six CLDR cardinal categories against English's two, so a
+ * it run in no Thoth test. Arabic has six CLDR cardinal categories against English's two, so a
  * source-locale corpus proves nothing here: the target locale is the whole point.
  *
  * CLDR `ar` cardinal rules, and the smallest value that selects each category:

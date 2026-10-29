@@ -11,7 +11,7 @@ import {
   type LocalizedInputStatus,
   type LocalizedInputValue,
   type PlainDateTimeValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A field holding a date and a time is two stated patterns and what joins them. The text is cut at

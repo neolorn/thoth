@@ -9,11 +9,11 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, type Routes } from '@angular/router';
-import { LocalizationError, pageAbsent, pageGone } from '@neolorn/equator/core';
+import { LocalizationError, pageAbsent, pageGone } from '@neolorn/thoth/core';
 import {
   LocalizedPageOutcome,
   LocalizedRouteParameters,
-} from '@neolorn/equator/router';
+} from '@neolorn/thoth/router';
 
 /**
  * A declaration made while its navigation is still in flight, and one made before any.
@@ -134,7 +134,7 @@ describe('a declaration made before any navigation completed', () => {
     expect(
       warn.mock.calls.filter(([message]) =>
         String(message).startsWith(
-          '[Equator] LocalizedRouteParameters.declare()',
+          '[Thoth] LocalizedRouteParameters.declare()',
         ),
       ),
     ).toHaveLength(1);

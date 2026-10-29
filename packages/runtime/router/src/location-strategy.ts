@@ -13,7 +13,7 @@ import {
   withBasePath,
   withoutBasePath,
   type LocalizedAddressContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 import {
   LANGUAGE_FIELD,
@@ -29,7 +29,7 @@ import { LocalizedRouteParameters } from './route-parameters.js';
  * The base href stays constant, and that is settled rather than deferred. `Location` computes
  * `_basePath` once in its constructor and `path()` strips that frozen value, so a base href that
  * varied per locale would be read once and then be wrong. Angular's own i18n answer is a
- * build-time base href per locale; Equator's is one build whose locale lives in the path.
+ * build-time base href per locale; Thoth's is one build whose locale lives in the path.
  *
  * `RouterLink` never calls `prepareExternalUrl` (its click navigates the raw, unprepared tree)
  * and the design does not need it to. The click hands the Router a canonical address, which is a

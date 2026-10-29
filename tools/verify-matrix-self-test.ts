@@ -121,14 +121,14 @@ it('asserts one thing and claims another', () => {
 `;
 
 const NAMED_BY_TYPE_ONLY = `import { expect, it } from 'vitest';
-import { type Localization } from '@neolorn/equator';
+import { type Localization } from '@neolorn/thoth';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 
 it('names the entry point only through a type', () => {
   const held: Localization | undefined = undefined;
   expect(held).toBeUndefined();
-  claimCapability('entry:@neolorn/equator');
+  claimCapability('entry:@neolorn/thoth');
 });
 `;
 
@@ -347,7 +347,7 @@ try {
     );
     const result = evaluate({ sites: [...sites.sites, ...typed.sites] });
     assert.ok(
-      finding(result, 'mislabel', 'entry:@neolorn/equator'),
+      finding(result, 'mislabel', 'entry:@neolorn/thoth'),
       'An entry point claimed through a type-only import was accepted.',
     );
   });
@@ -412,7 +412,7 @@ try {
   expectRed('a composable export added to what is published', () => {
     const exported = 'withPlantedCapability';
     const runtime = published.runtime.map((entry) =>
-      entry.entryPoint === 'neolorn-equator'
+      entry.entryPoint === 'neolorn-thoth'
         ? {
             ...entry,
             text: `${entry.text}\ndeclare function ${exported}(): LocalizationFeature;\nexport { ${exported} };\n`,

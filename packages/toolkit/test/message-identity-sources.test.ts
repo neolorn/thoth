@@ -53,7 +53,7 @@ async function unreached(body: readonly string[]): Promise<readonly string[]> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify({ schemaVersion: 1, sourceLocale: 'en-US', defaultLocale: 'en-US', locales: ['en-US'] }, null, 2)}\n`,
   );
   await write(
@@ -96,7 +96,7 @@ async function unreached(body: readonly string[]): Promise<readonly string[]> {
   );
   const generated = await generateProject({ project: root });
   expect(generated.ok, JSON.stringify(generated.diagnostics)).toBe(true);
-  const advisory = generated.diagnostics.find(({ code }) => code === 'EQ1311');
+  const advisory = generated.diagnostics.find(({ code }) => code === 'TH1311');
   return advisory === undefined
     ? []
     : [...advisory.summary.matchAll(/"([^"]+)"/gu)].map(
@@ -113,7 +113,7 @@ describe('what does not become a message identity', () => {
         'export const interpolated = present(`issue.${code}`);',
         'export const indexed = present((messages.issue as Record<string, unknown>)[code]);',
         'export const spelled = present({',
-        "  generatedAbi: 'equator-generated/1',",
+        "  generatedAbi: 'thoth-generated/1',",
         "  resultKind: 'plain',",
         "  identity: '@example/identity-sources:shell:issue.unknown',",
         '} as const);',

@@ -11,7 +11,7 @@ import type {
   LocalizationScope,
   LocalizationSetup,
   LocalizationSnapshot,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { compileSet, loadersFor, scope } from './catalog-store-harness.js';
 

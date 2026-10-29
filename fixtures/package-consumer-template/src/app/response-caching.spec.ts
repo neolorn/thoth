@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createLocaleRequestHandler,
   type LocaleRequestHandlerOptions,
-} from '@neolorn/equator/http';
+} from '@neolorn/thoth/http';
 import { configuration } from '#i18n';
 
 import { expectedPageCaching, pageUrl } from './addresses';

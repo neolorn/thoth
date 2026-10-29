@@ -3,7 +3,7 @@ import { Readable } from 'node:stream';
 import { vi } from 'vitest';
 
 /**
- * Runs the `equator` executable in this process, as the installed binary would run it, and returns
+ * Runs the `thoth` executable in this process, as the installed binary would run it, and returns
  * what it wrote to each stream and the exit code it set.
  *
  * The executable runs its command when it loads, so each run is a fresh evaluation of `cli.ts`
@@ -72,7 +72,7 @@ export async function runCli(
   });
   process.stderr.isTTY = terminal;
   process.stdout.isTTY = false;
-  process.argv = [argv[0] ?? 'node', 'equator', ...arguments_];
+  process.argv = [argv[0] ?? 'node', 'thoth', ...arguments_];
   process.exitCode = undefined;
   try {
     await import('../src/cli.js');

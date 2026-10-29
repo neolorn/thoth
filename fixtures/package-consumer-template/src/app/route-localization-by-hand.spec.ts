@@ -20,14 +20,14 @@ import {
   createPathPrefixLocalePolicy,
   withFormattingContext,
   withRouting,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   RouteLocalization,
   RouteLocalizationError,
   provideLocalizedRouter,
   type LocalizedRouterOptions,
-} from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -364,7 +364,7 @@ describe('a response that reached no route, with a document that declares no tit
 
     expect(
       warn.mock.calls.filter(([message]) =>
-        String(message).startsWith('[Equator] A response classed "not-found"'),
+        String(message).startsWith('[Thoth] A response classed "not-found"'),
       ),
     ).toHaveLength(1);
   });
@@ -385,7 +385,7 @@ describe('a response that reached no route, with a document that declares no tit
 
     expect(
       warn.mock.calls.filter(([message]) =>
-        String(message).startsWith('[Equator] A response classed'),
+        String(message).startsWith('[Thoth] A response classed'),
       ),
     ).toHaveLength(0);
     // Written in the locale the address states, which is the one that was committed for it.

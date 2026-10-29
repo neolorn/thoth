@@ -51,7 +51,7 @@ const sourceCatalog = catalog(
   'en-US',
   [
     'messages:',
-    '  app-title: Equator feature lab',
+    '  app-title: Thoth feature lab',
     '  welcome: "Welcome {$name}!"',
     '  balance: "Balance: {$amount :currency currency=USD}"',
     '  status:',
@@ -72,7 +72,7 @@ const targetCatalog = catalog(
   'ar-EG',
   [
     'messages:',
-    '  app-title: مختبر Equator',
+    '  app-title: مختبر Thoth',
     '  welcome: "مرحبًا {$name}!"',
     '  balance: "الرصيد: {$amount :currency currency=USD}"',
     '  status: "الحالة: {$value}"',
@@ -83,7 +83,7 @@ const targetCatalog = catalog(
   ].join('\n'),
 );
 
-describe('Equator catalog-set semantic analysis', () => {
+describe('Thoth catalog-set semantic analysis', () => {
   it('derives effective input, rich-slot, target, and compatibility contracts', () => {
     const result = analyzeCatalogSet({
       configuration: configuration(),
@@ -155,12 +155,12 @@ describe('Equator catalog-set semantic analysis', () => {
       catalogs: [invalidSource, invalidTarget],
     });
     expect(result.ok).toBe(false);
-    expect(result.diagnostics.map(({ code }) => code)).toContain('EQ1302');
-    expect(result.diagnostics.map(({ code }) => code)).toContain('EQ1304');
+    expect(result.diagnostics.map(({ code }) => code)).toContain('TH1302');
+    expect(result.diagnostics.map(({ code }) => code)).toContain('TH1304');
   });
 });
 
-describe('Equator generated contracts and bounded application analysis', () => {
+describe('Thoth generated contracts and bounded application analysis', () => {
   it('generates typed deep handle trees and analyzes TypeScript, templates, and routes through public APIs', () => {
     const graph = analyzeCatalogSet({
       configuration: configuration(),
@@ -209,8 +209,8 @@ describe('Equator generated contracts and bounded application analysis', () => {
       "import type { Routes } from '@angular/router';",
       "import { AppComponent } from './app.component';",
       'export const routes = [',
-      "  { path: '', component: AppComponent, data: { equatorRouteId: 'home', equatorIndexing: 'indexable' } },",
-      "  { path: 'about/:id', loadComponent: () => import('./about.component').then((value) => value.AboutComponent), data: { equatorRouteId: 'about', equatorIndexing: 'non-indexable' } },",
+      "  { path: '', component: AppComponent, data: { thothRouteId: 'home', thothIndexing: 'indexable' } },",
+      "  { path: 'about/:id', loadComponent: () => import('./about.component').then((value) => value.AboutComponent), data: { thothRouteId: 'about', thothIndexing: 'non-indexable' } },",
       '] satisfies Routes;',
       '',
     ].join('\n');
@@ -292,7 +292,7 @@ describe('Equator generated contracts and bounded application analysis', () => {
       ({ path }) => path === 'routes.ts',
     );
     expect(routeContract?.contents).toMatch(
-      /profile: 'equator-route-projection\/1'/u,
+      /profile: 'thoth-route-projection\/1'/u,
     );
     expect(routeContract?.contents).toMatch(/identity: "sha256-/u);
     expect(routeContract?.contents).toContain(
@@ -305,7 +305,7 @@ describe('Equator generated contracts and bounded application analysis', () => {
   });
 });
 
-describe('Equator analysis under consumer compiler configuration', () => {
+describe('Thoth analysis under consumer compiler configuration', () => {
   function analysisFixture(): {
     readonly fixtureRoot: string;
     readonly virtualModules: readonly {
@@ -344,7 +344,7 @@ describe('Equator analysis under consumer compiler configuration', () => {
     };
   }
 
-  // Guards the consumer-configuration contract: Equator analyzes the program the
+  // Guards the consumer-configuration contract: Thoth analyzes the program the
   // consumer's compiler builds. Imposing stricter options or discarding the
   // consumer's path aliases reports defects in a program that does not exist,
   // and makes generation unreachable for ordinary Angular workspaces.
@@ -355,7 +355,7 @@ describe('Equator analysis under consumer compiler configuration', () => {
     const appPath = resolve(fixtureRoot, 'app.component.ts');
     const aliasSource = [
       'export function describeCount(values: readonly string[]): string {',
-      // Valid without noUncheckedIndexedAccess; an error when Equator imposes it.
+      // Valid without noUncheckedIndexedAccess; an error when Thoth imposes it.
       '  const first = values[0];',
       '  return first.toUpperCase();',
       '}',
@@ -369,7 +369,7 @@ describe('Equator analysis under consumer compiler configuration', () => {
       'interface Label {',
       '  readonly text?: string;',
       '}',
-      // Valid without exactOptionalPropertyTypes; an error when Equator imposes it.
+      // Valid without exactOptionalPropertyTypes; an error when Thoth imposes it.
       'const label: Label = { text: undefined };',
       '@Component({',
       "  selector: 'consumer-options-probe',",
@@ -404,7 +404,7 @@ describe('Equator analysis under consumer compiler configuration', () => {
     });
 
     // Every regression this fixture exists to catch reports as a *warning*, because a consumer's
-    // own TypeScript problems are consumer-owned and Equator does not treat them as fatal. An
+    // own TypeScript problems are consumer-owned and Thoth does not treat them as fatal. An
     // assertion that filters for errors therefore sees none of them: dropping the consumer's
     // paths, or imposing noUncheckedIndexedAccess, or imposing exactOptionalPropertyTypes, all
     // leave this test green. The subject has to be every diagnostic collected, rather than the
@@ -448,7 +448,7 @@ describe('Equator analysis under consumer compiler configuration', () => {
 
     expect(analysis.ok).toBe(true);
     const advisories = analysis.diagnostics.filter(
-      ({ code, severity }) => code === 'EQ1401' && severity === 'warning',
+      ({ code, severity }) => code === 'TH1401' && severity === 'warning',
     );
     expect(advisories.length).toBeGreaterThan(0);
     expect(
@@ -489,7 +489,7 @@ describe('Equator analysis under consumer compiler configuration', () => {
     expect(analysis.ok).toBe(false);
     expect(
       analysis.diagnostics.some(
-        ({ code, severity }) => code === 'EQ1401' && severity === 'error',
+        ({ code, severity }) => code === 'TH1401' && severity === 'error',
       ),
     ).toBe(true);
   });

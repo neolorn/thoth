@@ -19,7 +19,7 @@ import {
   localizedAsset,
   neutralAsset,
   resolveLocalizedAsset,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 const wordmark = localizedAsset('wordmark', [
   { locale: 'en-US', source: '/assets/wordmark-en.svg' },
@@ -75,7 +75,7 @@ describe('an asset that does not change', () => {
 });
 ```
 
-Equator never guesses a fallback chain. A locale with no variant and no `fallbackLocales` resolves
+Thoth never guesses a fallback chain. A locale with no variant and no `fallbackLocales` resolves
 to `unavailable`, and the page decides what to show.
 
 `neutralAsset` declares an asset that does not change with the locale. It is declared rather than

@@ -7,7 +7,7 @@ import {
   toInternalPath,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Addresses that name a member every plain object inherits.
@@ -22,7 +22,7 @@ const MEMBERS = Object.getOwnPropertyNames(Object.prototype);
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-PrototypeMemberKeysTestIdentity0123456789ab',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },

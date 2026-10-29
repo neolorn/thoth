@@ -24,20 +24,20 @@ cd my-app
 
 The CLI asks whether to enable server-side rendering. Answer no, which is the default, so the
 application this tutorial builds runs in the browser alone and every file below is the file the CLI
-wrote. Equator localizes a server-rendered application too, and [How to render on the
+wrote. Thoth localizes a server-rendered application too, and [How to render on the
 server](how-to/render-on-the-server.md) starts from one.
 
 Run `npm start` and open the address the CLI prints. The Angular welcome page appears. Stop the
 server before continuing.
 
-## Install Equator
+## Install Thoth
 
 ```sh install
-npm install @neolorn/equator
-npm install --save-dev @neolorn/equator-toolkit
+npm install @neolorn/thoth
+npm install --save-dev @neolorn/thoth-toolkit
 ```
 
-`@neolorn/equator` ships with the application. `@neolorn/equator-toolkit` compiles the catalogs at
+`@neolorn/thoth` ships with the application. `@neolorn/thoth-toolkit` compiles the catalogs at
 build time and is a development dependency.
 
 ## Set up the project
@@ -45,12 +45,12 @@ build time and is a development dependency.
 Declare the locales the application serves:
 
 ```sh run
-npx equator init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG
+npx thoth init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG
 ```
 
-`init` writes `equator.config.json`, maps `#i18n` in `package.json`, creates the `i18n/` directory,
-and adds the `equator:generate`, `equator:check`, `equator:format`, `equator:clean`, and
-`equator:watch` scripts. `equator.config.json` holds the locale set and nothing else.
+`init` writes `thoth.config.json`, maps `#i18n` in `package.json`, creates the `i18n/` directory,
+and adds the `thoth:generate`, `thoth:check`, `thoth:format`, `thoth:clean`, and
+`thoth:watch` scripts. `thoth.config.json` holds the locale set and nothing else.
 
 `init` writes no catalog and no recovery message. Both are content, and content belongs to the
 project.
@@ -72,7 +72,7 @@ messages:
   open-second: Open the second page
   return-home: Back to the start
   hero-tagline: Localized end to end.
-  asset.alt: The Equator handbook cover
+  asset.alt: The Thoth handbook cover
   learn-more:
     message: 'Read the {#strong}guide{/strong}.'
     description: Shown under the hero. The guide is a separate page.
@@ -92,7 +92,7 @@ messages:
   open-second: افتح الصفحة الثانية
   return-home: العودة إلى البداية
   hero-tagline: مترجم من أوله إلى آخره.
-  asset.alt: غلاف دليل Equator
+  asset.alt: غلاف دليل Thoth
   learn-more:
     message: 'اقرأ {#strong}الدليل{/strong}.'
   help-link:
@@ -100,7 +100,7 @@ messages:
 ```
 
 `recovery-message` is the sentence a visitor reads when no catalog can be loaded, and
-`recovery-retry` names the button beside it. Equator has no default for either, so every application
+`recovery-retry` names the button beside it. Thoth has no default for either, so every application
 writes them, and both travel in the recovery payload so they arrive in the reader's language even
 though no catalog could be loaded.
 
@@ -111,7 +111,7 @@ with the message to whoever translates it.
 ## Compile the catalogs
 
 ```sh run
-npx equator generate
+npx thoth generate
 ```
 
 `generate` compiles both catalogs and writes the modules the application imports:
@@ -133,7 +133,7 @@ Create `src/app/localization.routes.ts`:
 import {
   createPathPrefixLocalePolicy,
   defineRouteProjection,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { routeProjection } from '#i18n/routes';
 
 export const routePolicy = createPathPrefixLocalePolicy({
@@ -165,7 +165,7 @@ import {
   LocalizedLabel,
   LocalizedMessage,
   LocalizePipe,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { messages } from '#i18n/shell';
 
 @Component({
@@ -207,7 +207,7 @@ Replace `src/app/app.routes.ts`:
 ```ts src/app/app.routes.ts
 import { Component } from '@angular/core';
 import { RouterLink, type Routes } from '@angular/router';
-import { LocalizePipe } from '@neolorn/equator';
+import { LocalizePipe } from '@neolorn/thoth';
 import { messages } from '#i18n/shell';
 
 import { Hero } from './hero';
@@ -262,8 +262,8 @@ import {
   withPersistence,
   withRecoveryMessage,
   withRouting,
-} from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
+} from '@neolorn/thoth';
+import { provideLocalizedRouter } from '@neolorn/thoth/router';
 import { routes } from './app.routes';
 import { appRouteProjection, routePolicy } from './localization.routes';
 
@@ -302,11 +302,7 @@ Replace `src/app/app.ts`:
 ```ts src/app/app.ts
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import {
-  injectLocalization,
-  LocaleChoice,
-  LocalizePipe,
-} from '@neolorn/equator';
+import { injectLocalization, LocaleChoice, LocalizePipe } from '@neolorn/thoth';
 import { messages } from '#i18n/shell';
 
 @Component({
@@ -340,11 +336,11 @@ for the old one.
 The route table exists now, so compile again:
 
 ```sh run
-npx equator generate
+npx thoth generate
 ```
 
 `generate` writes `#i18n/routes` from what this pass found, and checks the composed providers
-against it. `equator watch` runs both steps while you work.
+against it. `thoth watch` runs both steps while you work.
 
 ## Run the application
 
@@ -364,13 +360,13 @@ import { MOCK_PLATFORM_LOCATION_CONFIG } from '@angular/common/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { Localization } from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
+import { Localization } from '@neolorn/thoth';
+import { provideLocalizedRouter } from '@neolorn/thoth/router';
 import {
   LocalizationTestingController,
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
 import { providerId, scopeId } from '#i18n/shell';
 
@@ -380,7 +376,7 @@ import { routes } from './app.routes';
 
 const shell = { providerId, scopeId } as const;
 
-// The DOM outlives this file. Equator reads the address bar for the locale, so a file that
+// The DOM outlives this file. Thoth reads the address bar for the locale, so a file that
 // navigates and does not put it back decides what the next file is testing.
 afterEach(resetLocalizationTestEnvironment);
 
@@ -522,5 +518,5 @@ it has no scrolling to do rather than anything about the application.
   locale omits a message.
 - [How to localize your routes](how-to/localize-routes.md): the other locale policies, and what a
   visitor's address decides.
-- [About how a locale is resolved](explanation/about-locale-resolution.md): the order Equator asks
+- [About how a locale is resolved](explanation/about-locale-resolution.md): the order Thoth asks
   in, and how to choose the sources it asks.

@@ -1,4 +1,4 @@
-// What Equator reports about its own operation, in codes rather than sentences.
+// What Thoth reports about its own operation, in codes rather than sentences.
 //
 // `specs/08-formatting-parsing-and-domain.spec.md` section 11 keeps localized text out of a log,
 // a metric, an analytics record, a security event and a protocol field, so an event means the
@@ -7,7 +7,7 @@
 // explicit boundary, which leaves the event itself unchanged.
 //
 // `specs/11-diagnostics-and-observability.spec.md` section 6 keeps the sink optional and the
-// transport out. Equator has no endpoint, no account and no collector, and with no sink
+// transport out. Thoth has no endpoint, no account and no collector, and with no sink
 // configured it builds no event at all, so an application that wants none pays nothing for
 // the capability.
 
@@ -15,14 +15,14 @@ import {
   type LocalizationFailureCode,
   ɵfunctionOption,
   ɵrecordOption,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The version stamp every runtime event carries, so a consumer of the stream can tell what shape
  * it is reading. It changes when the event's fields change in a way a reader would notice.
  */
 export const RUNTIME_OBSERVABILITY_PROFILE =
-  'equator-runtime-observability-event/1' as const;
+  'thoth-runtime-observability-event/1' as const;
 
 /**
  * One stable code per area the runtime reports on, for filtering a log without matching on words.
@@ -31,14 +31,14 @@ export const RUNTIME_OBSERVABILITY_PROFILE =
  * working. The wording of an event may change; the code is the identity.
  */
 export const RUNTIME_EVENT_CODES = Object.freeze({
-  initialization: 'EQ-E2001',
-  catalog: 'EQ-E2002',
-  transition: 'EQ-E2003',
-  formatting: 'EQ-E2004',
-  cache: 'EQ-E2005',
-  ssrHydration: 'EQ-E2006',
-  integration: 'EQ-E2007',
-  persistence: 'EQ-E2008',
+  initialization: 'TH-E2001',
+  catalog: 'TH-E2002',
+  transition: 'TH-E2003',
+  formatting: 'TH-E2004',
+  cache: 'TH-E2005',
+  ssrHydration: 'TH-E2006',
+  integration: 'TH-E2007',
+  persistence: 'TH-E2008',
 } as const);
 
 /** Any of the eight codes. Worth naming when a sink switches on one. */
@@ -109,7 +109,7 @@ export interface LocalizationObservabilityEvent {
   /** Which participant this is about, on an event raised by one. */
   readonly participantId?: string;
   /**
-   * Ties this to work outside Equator, when the application supplied an identifier to tie it to.
+   * Ties this to work outside Thoth, when the application supplied an identifier to tie it to.
    */
   readonly correlationId?: string;
   /** Which locale change this belongs to, so the events of one transaction group together. */
@@ -125,7 +125,7 @@ export interface LocalizationObservabilityEvent {
 /**
  * Where events go. Supply one with `withObservability`; with none, no event is built at all.
  *
- * Equator ships no transport and knows no endpoint, so this is the whole of the contract:
+ * Thoth ships no transport and knows no endpoint, so this is the whole of the contract:
  * forwarding, batching and sampling belong to whoever implements it. It must not throw and must not
  * block; an event is raised in the middle of work a reader is waiting on.
  */

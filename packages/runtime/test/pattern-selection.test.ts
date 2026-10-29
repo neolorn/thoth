@@ -104,11 +104,11 @@ describe('MF2 Compare Variants', () => {
     // an NFD key authored in a catalog reaches the runtime already in NFC. That is why this case
     // is built by rewriting one key of a real parse rather than by writing NFD in the source.
     //
-    // What normalizes it is `messageformat`'s parser, not Equator. `normalizeVariantKey` in
+    // What normalizes it is `messageformat`'s parser, not Thoth. `normalizeVariantKey` in
     // `packages/toolkit/src/message-format.ts` copies a key's value through untouched: it
-    // normalizes the *shape* into Equator's semantic model, not the string into NFC. Naming the
-    // toolkit here would put Equator's name on a third-party parser's behaviour, and the day that
-    // behaviour changed the sentence would still read as though Equator guaranteed it.
+    // normalizes the *shape* into Thoth's semantic model, not the string into NFC. Naming the
+    // toolkit here would put Thoth's name on a third-party parser's behaviour, and the day that
+    // behaviour changed the sentence would still read as though Thoth guaranteed it.
     // `packages/toolkit/test/message-format.test.ts` pins the parser so the change is a failing
     // test rather than a silent one.
     //
@@ -150,14 +150,14 @@ describe('MF2 Compare Variants', () => {
 /**
  * A `.match` whose selector was produced by a function that formats but does not select.
  *
- * MessageFormat requires a *Bad Selector* here. Equator reported nothing, and worse than nothing:
+ * MessageFormat requires a *Bad Selector* here. Thoth reported nothing, and worse than nothing:
  * one factory builds the resolved value for all six numeric functions, so `:currency` and `:unit`
  * inherited numeric selection and matched keyed variants the standard says are unreachable.
  * `.match {42 :currency currency=EUR} 42 {{keyed}} * {{other}}` chose `keyed`. `:date` was quieter
  * and no better: its `match` returned false for every key, which is the visible half of the rule
  * with the reported half missing, so the author was never told the keyed variants were dead.
  *
- * The toolkit refuses such a message at parse (EQ1206), so no catalog can carry one here and the
+ * The toolkit refuses such a message at parse (TH1206), so no catalog can carry one here and the
  * sources below do not parse whole. The runtime keeps the rule anyway, because its input is a
  * compiled artifact and it has no way to know what produced one. The same reason and the same
  * construction as the NFD key above and the inherited `select` in `declaration-values.test.ts`:

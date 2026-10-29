@@ -18,7 +18,7 @@ import type {
   LocalizedSlotTemplateContext,
   LocalizedText,
   TrustedDestination,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * The contracts whose shape is Angular's, kept out of the core for that reason.

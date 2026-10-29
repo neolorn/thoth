@@ -10,21 +10,21 @@ import {
   type RouteCachingClass,
   type RouteHttpDescriptor,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
 /**
  * Two questions live in a response's cache headers and only one of them is the consumer's.
  *
- * Whether a shared cache may hold a response is Equator's conclusion about its own routing. How
+ * Whether a shared cache may hold a response is Thoth's conclusion about its own routing. How
  * long one should then hold it is a fact about a deployment. A consumer answering both, by mapping
  * classifications to directive strings in a conditional chain, compiles, answers, and goes on
  * compiling and answering after a classification changes meaning, because a conditional chain
  * always has a last branch.
  *
- * A third thing is in the split, and it is the one Equator genuinely cannot derive: where
- * the host read the visitor's locale preference. Equator never sees the request. It knows that an
+ * A third thing is in the split, and it is the one Thoth genuinely cannot derive: where
+ * the host read the visitor's locale preference. Thoth never sees the request. It knows that an
  * answer varied by locale; it cannot know whether that came from `Accept-Language`, which a shared
  * cache can hold one variant of per language, or from a cookie, which it cannot.
  *
@@ -46,7 +46,7 @@ const FRESHNESS = {
   localePreference: 'none',
 } as const;
 
-describe('the cache headers Equator determines', () => {
+describe('the cache headers Thoth determines', () => {
   it('emits storability itself and takes freshness from the consumer', () => {
     expect(routeCacheHeaders(descriptorFor('public'), FRESHNESS)).toStrictEqual(
       {
@@ -278,7 +278,7 @@ describe('what a route declares about caching', () => {
     } = {},
   ): RouteRuntimeProjection => ({
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
       routes: [
         { id: 'route:account', path: 'account', parameterNames: [], ...route },
@@ -324,7 +324,7 @@ describe('what a route declares about caching', () => {
 });
 
 /**
- * What a page says about its own caching, combined with Equator's rather than replaced by it.
+ * What a page says about its own caching, combined with Thoth's rather than replaced by it.
  *
  * Narrowing only. A page knows what it put in itself, a nonce or a signed-in name, and can say so;
  * it cannot know which other responses share its address, so nothing it says can widen who keeps
@@ -406,7 +406,7 @@ describe('what a page says about its own caching', () => {
     );
   });
 
-  it("adds the page's Vary fields to Equator's, each once", () => {
+  it("adds the page's Vary fields to Thoth's, each once", () => {
     expect(
       routeCacheHeaders(
         descriptorFor('varies-by-locale-preference'),
@@ -522,7 +522,7 @@ describe('what locale entry may be cached as', () => {
 
   const PROJECTION: RouteRuntimeProjection = {
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
       routes: [{ id: 'route:about', path: 'about', parameterNames: [] }],
     },
@@ -590,7 +590,7 @@ describe('what a locale-neutral policy does to cacheability', () => {
 
   const PROJECTION: RouteRuntimeProjection = {
     generated: {
-      profile: 'equator-route-projection/1',
+      profile: 'thoth-route-projection/1',
       identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
       routes: [{ id: 'route:about', path: 'about', parameterNames: [] }],
     },

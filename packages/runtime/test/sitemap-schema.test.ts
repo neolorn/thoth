@@ -11,14 +11,14 @@ import {
   type GeneratedConfiguration,
   type RouteRuntimeProjection,
   type SitemapDocument,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
 
 /**
- * Every file Equator writes, against the schemas the publishers ship for the format it claims.
+ * Every file Thoth writes, against the schemas the publishers ship for the format it claims.
  *
- * Not a round trip and not a shape assertion. A sitemap is read by software Equator will never see,
+ * Not a round trip and not a shape assertion. A sitemap is read by software Thoth will never see,
  * and the only statement worth making about one is that the format's own schema accepts it. That is
  * what caught the ordering rule the emitter now follows: `tUrl` is an `xsd:sequence`, so an entry
  * that writes its alternates before its `priority` is well-formed, self-consistent, and invalid.
@@ -82,7 +82,7 @@ async function schemaErrors(
 }
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],
@@ -104,7 +104,7 @@ const POLICY = createPathPrefixLocalePolicy({
  */
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-SitemapSchemaTestProjectionIdentity01234567',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -150,7 +150,7 @@ function build(pages = 1): readonly SitemapDocument[] {
   });
 }
 
-describe('the documents Equator writes', () => {
+describe('the documents Thoth writes', () => {
   it('validates against the sitemap schema with the hreflang extension imported', async () => {
     const [file] = build();
     expect(file).toBeDefined();

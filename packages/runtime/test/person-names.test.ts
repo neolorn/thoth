@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { type PersonNameProfileSet } from '@neolorn/equator/core';
+import { type PersonNameProfileSet } from '@neolorn/thoth/core';
 import { formatPersonName, personName } from '../src/formatting.js';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.ts';
@@ -82,7 +82,7 @@ function profileSet(rows: readonly RowSpec[]): PersonNameProfileSet {
     ] as const;
   });
   return {
-    profile: 'cldr-48.2/equator-person-names-1',
+    profile: 'cldr-48.2/thoth-person-names-1',
     patterns,
     rows: encoded,
   } as PersonNameProfileSet;
@@ -677,7 +677,7 @@ describe('field modifiers', () => {
 describe('data the runtime cannot read', () => {
   it('refuses a profile set from a derivation it does not know', () => {
     const foreign = {
-      profile: 'cldr-99/equator-person-names-7',
+      profile: 'cldr-99/thoth-person-names-7',
       patterns: ['{given}'],
       rows: [],
     } as unknown as PersonNameProfileSet;

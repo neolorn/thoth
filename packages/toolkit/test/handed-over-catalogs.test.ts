@@ -110,7 +110,7 @@ describe('a catalog an entry point is handed as an object', () => {
     (_name, call) => {
       const result = call(empty);
       expect(result.ok).toBe(false);
-      expect(result.diagnostics[0]?.code).toMatch(/^EQ11/u);
+      expect(result.diagnostics[0]?.code).toMatch(/^TH11/u);
     },
   );
 
@@ -138,6 +138,6 @@ describe('a configuration diffCatalogSets is handed as an object', () => {
       after: { configuration: assembled, catalogs: [parsed()] },
     });
     expect(result.ok).toBe(false);
-    expect(result.diagnostics[0]?.code).toMatch(/^EQ10/u);
+    expect(result.diagnostics[0]?.code).toMatch(/^TH10/u);
   });
 });

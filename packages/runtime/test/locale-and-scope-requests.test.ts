@@ -12,7 +12,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import type { LocalizationDiagnostic } from '@neolorn/equator/core';
+import type { LocalizationDiagnostic } from '@neolorn/thoth/core';
 
 import { PROVIDER, diagnosticOf, scope } from './catalog-store-harness.js';
 import {

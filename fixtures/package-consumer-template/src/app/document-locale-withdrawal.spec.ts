@@ -18,7 +18,7 @@ import {
   withRouting,
   withoutDocumentLocale,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -32,8 +32,8 @@ import { appRouteProjection, routePolicy } from './localization.routes';
 import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 
 /**
- * `withoutDocumentLocale()`, which withdraws the one Equator default that touches a document
- * Equator may not own.
+ * `withoutDocumentLocale()`, which withdraws the one Thoth default that touches a document
+ * Thoth may not own.
  *
  * This sat in progressive coordination's exact position: a public feature provider, a live
  * runtime branch, and no consumer anywhere. It was verified by hand and it worked; a hand
@@ -61,11 +61,11 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
  * attributes, not better.
  */
 
-const ANNOUNCER = '[data-equator-announcer]';
+const ANNOUNCER = '[data-thoth-announcer]';
 
 /**
- * Sentinel values no locale produces, so "Equator left it alone" is asserted against something
- * Equator would have had to overwrite rather than against an empty attribute that was always empty.
+ * Sentinel values no locale produces, so "Thoth left it alone" is asserted against something
+ * Thoth would have had to overwrite rather than against an empty attribute that was always empty.
  */
 const HOST_LANGUAGE = 'fr-CA';
 const HOST_DIRECTION = 'ltr';
@@ -102,10 +102,10 @@ function setup(withdrawn: boolean, routed = false) {
 /**
  * An application whose first commit fails after the document step has written.
  *
- * The participant is registered by an initializer listed ahead of Equator's, so it is registered
+ * The participant is registered by an initializer listed ahead of Thoth's, so it is registered
  * before the start begins and is one of the participants that start commits. Registered any later,
  * it is no part of the start, which then commits without it. The recovery message is what lets the
- * application's own start settle in a browser when Equator's does not.
+ * application's own start settle in a browser when Thoth's does not.
  */
 function setupWithAFailingFirstCommit() {
   TestBed.resetTestingModule();

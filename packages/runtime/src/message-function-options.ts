@@ -48,7 +48,7 @@
  * lower limits on the resolved value of a digit size option consistent with that implementation's
  * practical limits."*
  *
- * Equator's practical limits are `Intl.NumberFormat`'s, because that is what receives the value.
+ * Thoth's practical limits are `Intl.NumberFormat`'s, because that is what receives the value.
  * They are declared here rather than discovered at each call site so a diagnostic can name the
  * range, and `packages/runtime/test/message-function-options.test.ts` probes `Intl` to confirm each
  * bound is where this table says it is. A limit nothing measures is a guess with a comment on it.
@@ -67,7 +67,7 @@ export interface EnumeratedRule {
   readonly kind: 'enumerated';
   readonly values: readonly string[];
   /**
-   * Values the specification requires and Equator has no way to produce. Refused by name rather
+   * Values the specification requires and Thoth has no way to produce. Refused by name rather
    * than ignored: `currencyDisplay=never` asks for the amount without its currency, and silently
    * printing the currency anyway is a money bug with no diagnostic attached to it.
    */
@@ -110,7 +110,7 @@ export interface ConstructedRule {
   readonly alternatives?: readonly string[];
 }
 
-/** An option the specification defines and Equator cannot implement at all. */
+/** An option the specification defines and Thoth cannot implement at all. */
 export interface UnsupportedRule {
   readonly kind: 'unsupported';
   readonly reason: string;
@@ -188,7 +188,7 @@ export const MESSAGE_OPTION_RULES: Readonly<Record<string, MessageOptionRule>> =
      * *"If the implementation does not recognize the value of the `select` option, or if the value
      * is not a literal, a Bad Option error is emitted."* The default when absent is `plural`.
      *
-     * Equator rejects rather than ignores, and at compile time rather than at format time, because
+     * Thoth rejects rather than ignores, and at compile time rather than at format time, because
      * the value decides which CLDR table a target catalog's plural coverage is checked against. An
      * unrecognized value falling through to the cardinal table would let an ordinal message missing
      * `two` and `few` pass a completeness gate while shipping "2th" and "3th".
@@ -267,7 +267,7 @@ export const MESSAGE_OPTION_RULES: Readonly<Record<string, MessageOptionRule>> =
     /**
      * *"unlike number/integer formats, the fraction digits for currency formatting are fixed"*: one
      * option, not a minimum and a maximum, and `auto` means the digits the currency itself uses.
-     * Equator passed `minimumFractionDigits` and `maximumFractionDigits` to `:currency` and ignored
+     * Thoth passed `minimumFractionDigits` and `maximumFractionDigits` to `:currency` and ignored
      * `fractionDigits`, so it accepted the two names the specification does not give this function
      * and dropped the one it does.
      */
@@ -297,7 +297,7 @@ export const MESSAGE_OPTION_RULES: Readonly<Record<string, MessageOptionRule>> =
      *
      * The specification anticipates exactly this: implementing `usage` is optional, and
      * *"Implementations SHOULD emit an Unsupported Operation error if the requested conversion is
-     * not supported."* Equator supports none of them, so it says so at compile time instead.
+     * not supported."* Thoth supports none of them, so it says so at compile time instead.
      */
     usage: Object.freeze({
       kind: 'unsupported',
@@ -395,7 +395,7 @@ export interface MessageFunctionOptionProfile {
    *
    * *"The `fields` and `length` option values MUST each be set by a literal"*, and the same
    * sentence appears for `:datetime` and `:time`: everything except the date/time override
-   * options. The numeric family names one, `select`, and for the reason Equator cares about it: a
+   * options. The numeric family names one, `select`, and for the reason Thoth cares about it: a
    * value that arrives at render time cannot be measured against a plural table at build time.
    */
   readonly literalOnly: readonly string[];
@@ -575,7 +575,7 @@ export const MESSAGE_FUNCTION_OPTIONS: Readonly<
      * `:percent` has no `select`, no `minimumIntegerDigits` and no `roundingIncrement` of its own,
      * and the specification says all three are discarded when they arrive from an operand. So
      * `.local $n = {1 :number select=exact}` followed by `{$n :percent}` is a valid message: the
-     * option is dropped, not reported. Equator refused it, which is a message rejected for
+     * option is dropped, not reported. Thoth refused it, which is a message rejected for
      * conforming.
      */
     Object.freeze(['minimumIntegerDigits', 'roundingIncrement', 'select']),
@@ -698,7 +698,7 @@ export function messageOptionProblem(
         ? undefined
         : 'is not true or false';
     case 'unsupported':
-      return `is outside the Equator 1 profile: ${rule.reason}`;
+      return `is outside the Thoth 1 profile: ${rule.reason}`;
     case 'identifier':
       return rule.pattern.test(value) ? undefined : `is not ${rule.describes}`;
     case 'enumerated':
@@ -706,7 +706,7 @@ export function messageOptionProblem(
         return `is not one of ${rule.values.join(', ')}`;
       }
       return rule.unsupported?.includes(value) === true
-        ? 'is in the specification but not in the Equator 1 profile: this runtime has no way to produce it'
+        ? 'is in the specification but not in the Thoth 1 profile: this runtime has no way to produce it'
         : undefined;
     case 'digit-size': {
       if (rule.auto === true && value === 'auto') return undefined;
@@ -754,7 +754,7 @@ export function messageOptionProblem(
 /**
  * A date expression's resolved options, with `timeZone=input` answered.
  *
- * *"The value `input` corresponds to the time zone of the operand."* An Equator date input is a
+ * *"The value `input` corresponds to the time zone of the operand."* A Thoth date input is a
  * `Date`, which carries no zone, so the only operand that can answer is one whose own declaration
  * wrote a zone: `.local $t = {$when :datetime timeZone=|Europe/Paris|}` and then
  * `{$t :time timeZone=input}`. When nothing in the chain wrote one, `input` is left in place and

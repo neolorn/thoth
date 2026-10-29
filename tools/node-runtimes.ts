@@ -14,13 +14,13 @@ import { fileURLToPath } from 'node:url';
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const nodeRoot = resolve(
-  process.env['EQUATOR_NODE_COMPATIBILITY_ROOT'] ??
+  process.env['THOTH_NODE_COMPATIBILITY_ROOT'] ??
     resolve(workspaceRoot, '.runtimes/node'),
 );
 
 /** The variable that names one version's executable outright, in place of the staged build. */
 export const nodeExecutableVariable = (version: string): string =>
-  `EQUATOR_NODE_${version.replaceAll('.', '_')}_EXECUTABLE`;
+  `THOTH_NODE_${version.replaceAll('.', '_')}_EXECUTABLE`;
 
 function platformLayout(version: string) {
   const executable = process.platform === 'win32' ? 'node.exe' : 'bin/node';

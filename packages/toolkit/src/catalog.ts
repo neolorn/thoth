@@ -400,8 +400,8 @@ function yamlDiagnostic(
  * is usable alone (the inner one has the rule and no property, the wrapper has the property and
  * no rule) so a reader got
  *
- *     en-US.yaml:2:3:  Equator catalog must match pattern "^[a-z][a-z0-9]*(?:-[a-z]...".
- *     en-US.yaml:2:17: Equator catalog property name must be valid.
+ *     en-US.yaml:2:3:  Thoth catalog must match pattern "^[a-z][a-z0-9]*(?:-[a-z]...".
+ *     en-US.yaml:2:17: Thoth catalog property name must be valid.
  *
  * two lines about one key, at two positions, saying between them less than either would alone. The
  * wrapper is kept because it resolves to the offending entry rather than to the map containing it,
@@ -430,7 +430,7 @@ function reportableSchemaErrors(
 /**
  * A rejected catalog key, said the way a person would say it.
  *
- * *"Equator catalog property name must be valid"* names no property and no rule, and the line above
+ * *"Thoth catalog property name must be valid"* names no property and no rule, and the line above
  * it printed the raw regex, which states the rule in a language the reader is not writing in,
  * and never mentions that the file spells keys one way and code spells them another.
  * `sign-in-button` in the file is `messages.signInButton` in code, and that mapping was written
@@ -494,7 +494,7 @@ function rejectedKeySummary(
  * offending source, then a caret. Interpolated into a one-line diagnostic those newlines survive as
  * the raw bytes they are (on a terminal the reader gets
  * `Missing closing "quote at line 3, column 1:<CR><LF>  greeting: "unterminated<CR><LF>^<CR>`) and
- * the frame is a worse copy of the source Equator is already pointing at by file, line and column.
+ * the frame is a worse copy of the source Thoth is already pointing at by file, line and column.
  *
  * So: the first line only, with the position stripped off the end of it for the same reason. What is
  * left is the part that says what is wrong.
@@ -538,8 +538,8 @@ function inspectYamlNode(
       yamlDiagnostic(
         source,
         sourcePath,
-        'EQ1101',
-        `Equator catalog structure exceeds the node ceiling of ${RESOURCE_LIMITS.yamlNodes}.`,
+        'TH1101',
+        `Thoth catalog structure exceeds the node ceiling of ${RESOURCE_LIMITS.yamlNodes}.`,
         { node, path },
       ),
     );
@@ -551,8 +551,8 @@ function inspectYamlNode(
       yamlDiagnostic(
         source,
         sourcePath,
-        'EQ1101',
-        `Equator catalog structure exceeds the depth ceiling of ${RESOURCE_LIMITS.yamlDepth}.`,
+        'TH1101',
+        `Thoth catalog structure exceeds the depth ceiling of ${RESOURCE_LIMITS.yamlDepth}.`,
         { node, path },
       ),
     );
@@ -564,8 +564,8 @@ function inspectYamlNode(
       yamlDiagnostic(
         source,
         sourcePath,
-        'EQ1101',
-        'Equator catalogs cannot contain YAML aliases.',
+        'TH1101',
+        'Thoth catalogs cannot contain YAML aliases.',
         { node, path },
       ),
     );
@@ -577,8 +577,8 @@ function inspectYamlNode(
       yamlDiagnostic(
         source,
         sourcePath,
-        'EQ1101',
-        'Equator catalogs cannot contain YAML anchors.',
+        'TH1101',
+        'Thoth catalogs cannot contain YAML anchors.',
         { node, path },
       ),
     );
@@ -594,8 +594,8 @@ function inspectYamlNode(
           yamlDiagnostic(
             source,
             sourcePath,
-            'EQ1101',
-            `Equator catalog structure exceeds the node ceiling of ${RESOURCE_LIMITS.yamlNodes}.`,
+            'TH1101',
+            `Thoth catalog structure exceeds the node ceiling of ${RESOURCE_LIMITS.yamlNodes}.`,
             { node: pair.key, path },
           ),
         );
@@ -606,8 +606,8 @@ function inspectYamlNode(
           yamlDiagnostic(
             source,
             sourcePath,
-            'EQ1101',
-            'Equator catalog mappings require scalar string keys.',
+            'TH1101',
+            'Thoth catalog mappings require scalar string keys.',
             { node: pair.key, path },
           ),
         );
@@ -630,8 +630,8 @@ function inspectYamlNode(
           yamlDiagnostic(
             source,
             sourcePath,
-            'EQ1101',
-            'Equator catalog keys contain malformed Unicode or unauthorized invisible or bidi controls.',
+            'TH1101',
+            'Thoth catalog keys contain malformed Unicode or unauthorized invisible or bidi controls.',
             { node: pair.key, path: childPath },
           ),
         );
@@ -641,8 +641,8 @@ function inspectYamlNode(
           yamlDiagnostic(
             source,
             sourcePath,
-            'EQ1101',
-            'Equator catalogs cannot contain YAML merge keys.',
+            'TH1101',
+            'Thoth catalogs cannot contain YAML merge keys.',
             { node: pair.key, path: childPath },
           ),
         );
@@ -652,8 +652,8 @@ function inspectYamlNode(
           yamlDiagnostic(
             source,
             sourcePath,
-            'EQ1103',
-            `Equator catalog contains the duplicate key ${JSON.stringify(key)}.`,
+            'TH1103',
+            `Thoth catalog contains the duplicate key ${JSON.stringify(key)}.`,
             { node: pair.key, path: childPath },
           ),
         );
@@ -713,8 +713,8 @@ function inspectYamlNode(
         yamlDiagnostic(
           source,
           sourcePath,
-          'EQ1101',
-          'Equator catalogs permit only JSON-compatible Core-schema scalar values.',
+          'TH1101',
+          'Thoth catalogs permit only JSON-compatible Core-schema scalar values.',
           { node, path },
         ),
       );
@@ -723,8 +723,8 @@ function inspectYamlNode(
         yamlDiagnostic(
           source,
           sourcePath,
-          'EQ1101',
-          'Equator catalog text contains malformed Unicode or forbidden control characters.',
+          'TH1101',
+          'Thoth catalog text contains malformed Unicode or forbidden control characters.',
           { node, path },
         ),
       );
@@ -735,7 +735,7 @@ function inspectYamlNode(
           yamlDiagnostic(
             source,
             sourcePath,
-            'EQ1103',
+            'TH1103',
             BIDI_VIOLATION_SUMMARY[violation],
             { node, path },
           ),
@@ -749,8 +749,8 @@ function inspectYamlNode(
     yamlDiagnostic(
       source,
       sourcePath,
-      'EQ1101',
-      'Equator catalog contains an unsupported YAML node.',
+      'TH1101',
+      'Thoth catalog contains an unsupported YAML node.',
       { node, path },
     ),
   );
@@ -936,17 +936,17 @@ function contextDiagnostics(options: CatalogParseOptions): {
   const diagnostics: ToolkitDiagnostic[] = [];
   if (!providerId.ok) {
     diagnostics.push(
-      toolkitDiagnostic('EQ1104', 'Catalog provider identity is malformed.'),
+      toolkitDiagnostic('TH1104', 'Catalog provider identity is malformed.'),
     );
   }
   if (!scopeId.ok) {
     diagnostics.push(
-      toolkitDiagnostic('EQ1104', 'Catalog scope identity is malformed.'),
+      toolkitDiagnostic('TH1104', 'Catalog scope identity is malformed.'),
     );
   }
   if (!locale.ok) {
     diagnostics.push(
-      toolkitDiagnostic('EQ1003', 'Catalog locale is malformed.'),
+      toolkitDiagnostic('TH1003', 'Catalog locale is malformed.'),
     );
   }
   return {
@@ -991,7 +991,7 @@ function parseCatalogText(
 ): ToolkitResult<Catalog> {
   const sourceText = untrustedText(
     sourceValue,
-    'EQ1101',
+    'TH1101',
     'Catalog source',
     RESOURCE_LIMITS.catalogBytes,
   );
@@ -1000,8 +1000,8 @@ function parseCatalogText(
   if (Buffer.byteLength(source, 'utf8') > RESOURCE_LIMITS.catalogBytes) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1101',
-        `Equator catalog exceeds the ${RESOURCE_LIMITS.catalogBytes}-byte implementation ceiling.`,
+        'TH1101',
+        `Thoth catalog exceeds the ${RESOURCE_LIMITS.catalogBytes}-byte implementation ceiling.`,
         {
           span: spanAt(source, 0, source.length, options.sourcePath),
         },
@@ -1025,7 +1025,7 @@ function parseCatalogText(
     });
   } catch {
     return toolkitFailure([
-      toolkitDiagnostic('EQ1101', 'Equator catalog is not valid YAML.', {
+      toolkitDiagnostic('TH1101', 'Thoth catalog is not valid YAML.', {
         span: spanAt(source, 0, Math.min(1, source.length), options.sourcePath),
       }),
     ]);
@@ -1034,8 +1034,8 @@ function parseCatalogText(
   if (documents.length !== 1) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1101',
-        'Equator catalogs must contain exactly one YAML document.',
+        'TH1101',
+        'Thoth catalogs must contain exactly one YAML document.',
         {
           span: spanAt(source, 0, source.length, options.sourcePath),
         },
@@ -1047,8 +1047,8 @@ function parseCatalogText(
   if (document === undefined) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1101',
-        'Equator catalog must contain one YAML document.',
+        'TH1101',
+        'Thoth catalog must contain one YAML document.',
       ),
     ]);
   }
@@ -1057,8 +1057,8 @@ function parseCatalogText(
     (error) => {
       const span = yamlRangeSpan(source, error.pos, options.sourcePath);
       return toolkitDiagnostic(
-        'EQ1101',
-        `Equator catalog YAML is invalid: ${yamlErrorSentence(error.message)}`,
+        'TH1101',
+        `Thoth catalog YAML is invalid: ${yamlErrorSentence(error.message)}`,
         span === undefined ? {} : { span },
       );
     },
@@ -1074,8 +1074,8 @@ function parseCatalogText(
     const span = yamlRangeSpan(source, document.range, options.sourcePath);
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1101',
-        'Equator catalogs cannot contain YAML directives.',
+        'TH1101',
+        'Thoth catalogs cannot contain YAML directives.',
         span === undefined ? {} : { span },
       ),
     ]);
@@ -1086,8 +1086,8 @@ function parseCatalogText(
     const span = yamlNodeSpan(source, root, options.sourcePath);
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1101',
-        'Equator catalog root must be a mapping.',
+        'TH1101',
+        'Thoth catalog root must be a mapping.',
         span === undefined ? {} : { span },
       ),
     ]);
@@ -1112,8 +1112,8 @@ function parseCatalogText(
       yamlDiagnostic(
         source,
         options.sourcePath,
-        'EQ1101',
-        `Equator catalog exceeds the ${RESOURCE_LIMITS.messagesPerCatalog}-message implementation ceiling.`,
+        'TH1101',
+        `Thoth catalog exceeds the ${RESOURCE_LIMITS.messagesPerCatalog}-message implementation ceiling.`,
         {
           path: ['messages'],
           ...(messagesNode === undefined ? {} : { node: messagesNode }),
@@ -1135,11 +1135,11 @@ function parseCatalogText(
         return yamlDiagnostic(
           source,
           options.sourcePath,
-          targetContract ? 'EQ1105' : 'EQ1102',
+          targetContract ? 'TH1105' : 'TH1102',
           targetContract
             ? 'Target catalog entries inherit inputs and slots from the source catalog.'
             : (rejectedKeySummary(error, errors) ??
-                schemaErrorSummary('Equator catalog', error)),
+                schemaErrorSummary('Thoth catalog', error)),
           {
             path,
             ...(node === undefined ? {} : { node }),
@@ -1158,7 +1158,7 @@ function parseCatalogText(
         yamlDiagnostic(
           source,
           options.sourcePath,
-          'EQ1104',
+          'TH1104',
           `Message identity ${JSON.stringify(messageId)} is malformed.`,
           {
             path: ['messages', messageId],
@@ -1414,7 +1414,7 @@ export function formatCatalogSource(
   source: string,
   options: CatalogParseOptions,
 ): ToolkitResult<string> {
-  // Presentation is normalised only on a catalog Equator can read. Reformatting a file whose
+  // Presentation is normalised only on a catalog Thoth can read. Reformatting a file whose
   // meaning is unknown is how a formatter turns one problem into two.
   const parsed = parseCatalog(source, options);
   if (!parsed.ok) return parsed;
@@ -1432,7 +1432,7 @@ export function formatCatalogSource(
     });
   } catch {
     return toolkitFailure([
-      toolkitDiagnostic('EQ1101', 'Equator catalog is not valid YAML.', {
+      toolkitDiagnostic('TH1101', 'Thoth catalog is not valid YAML.', {
         span: spanAt(source, 0, Math.min(1, source.length), options.sourcePath),
       }),
     ]);
@@ -1667,7 +1667,7 @@ function admitOneCatalog(
     if (role !== 'source' && role !== 'target') {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1102',
+          'TH1102',
           'Catalog role must be "source" or "target".',
           { path: ['role'] },
         ),
@@ -1697,7 +1697,7 @@ function admitOneCatalog(
     // no form for. Nothing narrower can be said about it without reading it again.
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1101',
+        'TH1101',
         'A catalog handed over as an object holds a value that cannot be written as catalog data.',
       ),
     ]);

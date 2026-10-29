@@ -1,5 +1,5 @@
 import { provideRouter } from '@angular/router';
-import { provideLocalizationSetup } from '@neolorn/equator';
+import { provideLocalizationSetup } from '@neolorn/thoth';
 import { configuration, provideLocalization } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';

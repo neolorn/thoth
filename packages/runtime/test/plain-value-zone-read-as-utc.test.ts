@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 import {
   formatPlainDateTime,

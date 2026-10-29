@@ -36,7 +36,7 @@ describe('a date function asking an operand for its time zone', () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.diagnostics.map(({ code }) => code)).toEqual(['EQ1204']);
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(['TH1204']);
   });
 
   it('is answered when the operand was annotated by a built-in date function that wrote input', () => {

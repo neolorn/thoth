@@ -20,12 +20,12 @@ import {
   withRouting,
   type LocaleUrlPolicy,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   LocalizedTitleStrategy,
   provideLocalizedRouter,
-} from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -58,12 +58,12 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
  * Both diagnostics are warnings and both are about silence. Angular provides
  * `ROUTER_CONFIGURATION` non-multi and `LocationStrategy` as an overridable root factory, so a
  * consumer replaces either of them by writing one line and nothing anywhere says so. Neither
- * replacement is refused: Equator needs nothing from the router config beyond the one mode it
+ * replacement is refused: Thoth needs nothing from the router config beyond the one mode it
  * refuses outright, and a consumer's own `LocationStrategy` is an escape hatch rather than a
  * mistake.
  *
  * This file uses the application's real routes rather than a probe pair, so the route table itself
- * has nothing to report and any `[Equator]` warning is the one under test.
+ * has nothing to report and any `[Thoth]` warning is the one under test.
  */
 
 /**
@@ -79,7 +79,7 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
 @Injectable()
 class ConsumerTitleStrategy extends TitleStrategy {
   override updateTitle(): void {
-    // Deliberately inert. This file asserts what Equator reports about the token, not what the
+    // Deliberately inert. This file asserts what Thoth reports about the token, not what the
     // replacement does with it: that is `title-strategy.spec.ts`, on the document.
   }
 }
@@ -100,7 +100,7 @@ class ConsumerUrlHandling extends UrlHandlingStrategy {
   }
 }
 
-/** The whole of the Equator surface these assertions read: what it wrote to the console. */
+/** The whole of the Thoth surface these assertions read: what it wrote to the console. */
 interface WarnSpy {
   readonly mock: { readonly calls: readonly (readonly unknown[])[] };
 }
@@ -108,7 +108,7 @@ interface WarnSpy {
 function warnings(spy: WarnSpy): string[] {
   return spy.mock.calls
     .map((call): string => (typeof call[0] === 'string' ? call[0] : ''))
-    .filter((message: string) => message.startsWith('[Equator]'));
+    .filter((message: string) => message.startsWith('[Thoth]'));
 }
 
 /**
@@ -191,12 +191,12 @@ describe('provideLocalizedRouter diagnostics', () => {
    *
    * `ɵkind` is not unique per feature in Angular itself: on 22.1.3 `withViewTransitions({})` and
    * `ɵwithRouterResources()` both answer 9. A "two features share a kind" scan would warn on this
-   * pair, where nothing of Equator's is replaced at all. Both features are constructed rather than
+   * pair, where nothing of Thoth's is replaced at all. Both features are constructed rather than
    * fabricated as objects carrying a `ɵkind`, because a fabricated pair would pass an
    * implementation that reads the real ones wrongly.
    *
    * **Version-specific, and it says so rather than being skipped quietly.** The collision is a
-   * fact about a particular Angular build, not about Equator: `ɵwithRouterResources` does not exist
+   * fact about a particular Angular build, not about Thoth: `ɵwithRouterResources` does not exist
    * on 22.0.4, so on that row there is no pair to collide and nothing for this case to assert.
    * Skipping alone would be the shape this whole file argues against, a check that stopped
    * running and still reported green, so the companion case below asserts the absence with a
@@ -232,7 +232,7 @@ describe('provideLocalizedRouter diagnostics', () => {
 
   /**
    * The direction that actually breaks localization, and the reason 5.1 ships an assertion instead
-   * of a line the consumer has to write and read. Equator registers its own `LocationStrategy`
+   * of a line the consumer has to write and read. Thoth registers its own `LocationStrategy`
    * before `provideRouter`, so this provider wins on ordinary ordering: the escape hatch works,
    * and it is not silent.
    */
@@ -244,7 +244,7 @@ describe('provideLocalizedRouter diagnostics', () => {
    * `app.routes.ts` declares one English title, on `second`, which is what makes this fire here.
    *
    * What the warning is *for* is asserted in `title-strategy.spec.ts`, on the document: this file
-   * only proves that Equator says something, and that it says it in the configuration where the
+   * only proves that Thoth says something, and that it says it in the configuration where the
    * damage happens rather than in the one where it cannot.
    */
   it('warns when a route declares a title and the localized strategy is absent', async () => {
@@ -280,7 +280,7 @@ describe('provideLocalizedRouter diagnostics', () => {
    * `RouteMetadataTitleStrategy` overwrites a localized title exactly as `DefaultTitleStrategy`
    * does; the warning names what won so the reader can tell which of the two they are looking at.
    */
-  it('names a consumer strategy that is not Equator\u2019s', async () => {
+  it('names a consumer strategy that is not Thoth\u2019s', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await bootstrap(
       [],
@@ -324,7 +324,7 @@ describe('provideLocalizedRouter diagnostics', () => {
    * back something else entirely. The defect this file already records against
    * `ConsumerTitleStrategy`.
    */
-  it('names a UrlHandlingStrategy that is not Equator\u2019s', async () => {
+  it('names a UrlHandlingStrategy that is not Thoth\u2019s', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await bootstrap(
       [],
@@ -345,7 +345,7 @@ describe('provideLocalizedRouter diagnostics', () => {
    *
    * `says nothing when nothing of its own is replaced` above covers this token along with every
    * other, which is what makes the assertion here about the *token* rather than about the absence
-   * of output: Equator installed its own and the injector confirms it, in the same bootstrap the
+   * of output: Thoth installed its own and the injector confirms it, in the same bootstrap the
    * warning case uses minus one provider.
    */
   it('finds its own UrlHandlingStrategy in the injector when nothing replaced it', async () => {
@@ -363,7 +363,7 @@ describe('provideLocalizedRouter diagnostics', () => {
  * make. A policy kind is not that: three exported, documented kinds accepted by name and served
  * partly, behind an `unlocalizable-policy` warning that a production build never prints and nobody
  * reads, is an application that half works. All three are served; what these cases pin is that the
- * decision is made rather than defaulted, so a kind Equator has not decided about cannot start.
+ * decision is made rather than defaulted, so a kind Thoth has not decided about cannot start.
  */
 const NEUTRAL = createLocaleNeutralPolicy({
   defaultLocale: 'en-US',
@@ -584,7 +584,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
   });
 
   /**
-   * A kind Equator has not decided about does not start, and the refusal names the kinds it serves.
+   * A kind Thoth has not decided about does not start, and the refusal names the kinds it serves.
    *
    * Section 3 of `specs/07-routing-rendering-and-seo.spec.md` asks for both: a refusal at
    * configuration rather than a warning that lets the application run, and one that tells the

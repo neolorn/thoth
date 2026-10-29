@@ -1,6 +1,6 @@
 # How to control how your pages are cached
 
-Every response the handler in `@neolorn/equator/http` returns carries a `Cache-Control` that Equator
+Every response the handler in `@neolorn/thoth/http` returns carries a `Cache-Control` that Thoth
 derived from the address. Where you know more than the address does, you raise it: on a route, for
 every page, or from the page itself. Nothing you declare lowers it.
 
@@ -9,7 +9,7 @@ every page, or from the page itself. Nothing you declare lowers it.
 Serve through the handler, which is
 [How to negotiate a locale on your own server](negotiate-on-your-own-server.md).
 
-## What Equator decides
+## What Thoth decides
 
 There are three levels, from least to most restrictive:
 
@@ -22,7 +22,7 @@ An answer chosen for one visitor is per visitor: the redirect from an entry addr
 language came from a cookie. A 400, a 404, a 410, a page that declared an outcome, and a route
 classified `private` for indexing are not stored. Every other localized page is shared.
 
-`Vary: Accept-Language` goes on every answer Equator chose from that header, whatever its level. A
+`Vary: Accept-Language` goes on every answer Thoth chose from that header, whatever its level. A
 cookie is never named in `Vary`.
 
 ## Declare a route's caching
@@ -32,7 +32,7 @@ Classify the route in its own `data`:
 ```text
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Home },
-  { path: 'account', component: Account, data: { equatorCaching: 'per-visitor' } },
+  { path: 'account', component: Account, data: { thothCaching: 'per-visitor' } },
 ];
 ```
 
@@ -43,13 +43,13 @@ concluded, and there is no value for shared, because a declaration only raises.
 A class on a parent route reaches its children the way Angular passes route data down: every child
 under the router's default, and under `paramsInheritanceStrategy: 'emptyOnly'` only a child with an
 empty path or one whose parent renders no component. A class the child states itself wins.
-`generate` reads the strategy from your router configuration, and where it cannot, reports `EQ1416`
+`generate` reads the strategy from your router configuration, and where it cannot, reports `TH1416`
 and passes the class to every child.
 
 Where a parent and its children share an address, the class that counts is the one on the route
 Angular renders there. Where a `matcher` or a `canMatch` guard picks that route when the page is
 visited, `generate` cannot tell which one it is, so it answers the address as `not-stored` and reports
-`EQ1413`.
+`TH1413`.
 
 A project that already classifies its routes names the field it has and maps its values:
 
@@ -64,12 +64,12 @@ withRouting({
 }),
 ```
 
-`DEFAULT_ROUTE_CACHING_FIELD` is `equatorCaching`. Under a field of your own, a value the table does
+`DEFAULT_ROUTE_CACHING_FIELD` is `thothCaching`. Under a field of your own, a value the table does
 not list says nothing about caching.
 
 Both are read from your source text at generate time, the same way as the indexing field, so they are
 string literals, written in place or through a `const`. A value `generate` cannot read or use is
-reported as `EQ1413`, and until you correct it the route is not stored: every class it could have
+reported as `TH1413`, and until you correct it the route is not stored: every class it could have
 named keeps the page out of a shared cache.
 
 ## Declare a floor for every page
@@ -88,14 +88,14 @@ carries no page, so it keeps the level routing gave it. The value is `per-visito
 
 ## Let a page narrow its own caching
 
-The `Cache-Control` and `Vary` your render returns are combined with Equator's rather than replaced by
+The `Cache-Control` and `Vary` your render returns are combined with Thoth's rather than replaced by
 them. A page can make itself more private and shorten how long it is kept, and nothing it says makes
 it more shared or kept longer:
 
 ```ts src/app/page-caching.spec.ts
 import { describe, expect, it } from 'vitest';
 
-import { createLocaleRequestHandler } from '@neolorn/equator/http';
+import { createLocaleRequestHandler } from '@neolorn/thoth/http';
 import { localizationSetup } from '#i18n';
 
 import { appRouteProjection, routePolicy } from './localization.routes';
@@ -169,7 +169,7 @@ A page whose language came from a cookie is per visitor, so a browser asks the s
 reusing it and a visitor who has chosen another language since gets that one. The exception is a page
 the browser restores from its back-forward cache, which comes back from memory without a request.
 
-Equator checks a restored page in the browser. Where the locale your persistence stores remember
+Thoth checks a restored page in the browser. Where the locale your persistence stores remember
 differs from the one on screen, and the locale sources you configured would choose it at that
 address, the page changes to it. You write nothing for this, and the change is not remembered as a
 new choice, because the visitor made none. The sink you pass to `withObservability` is told how each
@@ -177,19 +177,16 @@ check ended.
 
 ## Compute the headers without the handler
 
-Outside the handler, `routeCacheHeaders` takes the classification Equator derived for a resolved route
+Outside the handler, `routeCacheHeaders` takes the classification Thoth derived for a resolved route
 and the freshness numbers this deployment chose, and returns the headers to write:
 
 ```ts src/app/caching.spec.ts
 import { describe, expect, it } from 'vitest';
 
-import { routeCacheHeaders } from '@neolorn/equator';
-import type {
-  RouteCacheFreshness,
-  RouteHttpDescriptor,
-} from '@neolorn/equator';
+import { routeCacheHeaders } from '@neolorn/thoth';
+import type { RouteCacheFreshness, RouteHttpDescriptor } from '@neolorn/thoth';
 
-// How long this deployment's shared caches hold a response Equator has said may be shared, and
+// How long this deployment's shared caches hold a response Thoth has said may be shared, and
 // where this deployment reads a visitor's language preference.
 const freshness: RouteCacheFreshness = {
   successMaxAge: 300,
@@ -242,7 +239,7 @@ describe('the headers a route class implies', () => {
 `routeHttpDescriptor` produces the descriptor from a resolved route, and the handler calls both for
 you. It passes the page's own headers as the third argument, which is how the combining above works.
 
-`localePreference` is the one fact Equator cannot derive, because it never sees the request. Reading
+`localePreference` is the one fact Thoth cannot derive, because it never sees the request. Reading
 the preference from `Accept-Language` leaves a successful response shared-cacheable per language, and
 `Vary: Accept-Language` says so. Reading it from a cookie does not, and the answer is
 `private, no-cache`.

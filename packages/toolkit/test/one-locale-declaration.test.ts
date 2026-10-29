@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { generateProject } from '../src/index.js';
 
 /**
- * Every locale-dependent table comes from the locale list in `equator.config.json`.
+ * Every locale-dependent table comes from the locale list in `thoth.config.json`.
  *
  * The project is generated, then the one line that lists its locales gains `en-GB` and nothing else
  * changes: no catalog, no source file, no other key. Each generated table that depends on the
@@ -34,7 +34,7 @@ async function declare(
 ): Promise<void> {
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,

@@ -106,7 +106,7 @@ describe('the work root', () => {
     const withHistory = await snapshot(generatedRoot);
     expect(withHistory.size).toBeGreaterThan(0);
 
-    await rm(resolve(root, '.equator'), { recursive: true });
+    await rm(resolve(root, '.thoth'), { recursive: true });
     await rm(generatedRoot, { recursive: true });
     const clean = await generateProject({ project: root });
     expect(clean.ok).toBe(true);
@@ -116,7 +116,7 @@ describe('the work root', () => {
   it('carries no timestamp, absolute path or process identity', async () => {
     const root = await project();
     expect((await generateProject({ project: root })).ok).toBe(true);
-    const work = await snapshot(resolve(root, '.equator'));
+    const work = await snapshot(resolve(root, '.thoth'));
     expect([...work.keys()]).toContain('cache/compiler-state.json');
     for (const [path, encoded] of work) {
       const text = Buffer.from(encoded, 'base64').toString('utf8');

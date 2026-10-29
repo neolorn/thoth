@@ -10,14 +10,14 @@ import {
   type GeneratedConfiguration,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What the request handler answers on its own, and what it hands on.
  *
  * `specs/07-routing-rendering-and-seo.spec.md` section 4 orders the steps: the target is validated,
  * then a locale-neutral root reaches its owner, then presentation routing. Section 5 keeps the
- * status Equator's and the body the renderer's, so a deployment with no renderer still gets the
+ * status Thoth's and the body the renderer's, so a deployment with no renderer still gets the
  * status and the headers, and a renderer's own headers travel with its document.
  */
 
@@ -35,7 +35,7 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-HandlerDeclinedAnswersTestIdentity012345678',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -244,12 +244,12 @@ describe('a handler with a renderer', () => {
     expect(response.headers.getSetCookie()).toStrictEqual([
       'session=one; Path=/; HttpOnly',
       'cart=two; Path=/',
-      'equator-locale=ar-EG; Path=/; Max-Age=31536000; SameSite=Lax; Secure',
+      'thoth-locale=ar-EG; Path=/; Max-Age=31536000; SameSite=Lax; Secure',
     ]);
     expect(response.headers.get('content-type')).toBe('text/html');
   });
 
-  it("replaces the renderer's statement of a field Equator decides", async () => {
+  it("replaces the renderer's statement of a field Thoth decides", async () => {
     const response = await handlerWith({
       render: () =>
         new Response(PAGE, {
@@ -317,7 +317,7 @@ describe('the build configuration a handler is given', () => {
   const configurationFor = (
     locales: readonly string[],
   ): GeneratedConfiguration => ({
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
     locales,
@@ -347,7 +347,7 @@ describe('the build configuration a handler is given', () => {
   it('stops a cookie naming such a locale from choosing it', async () => {
     const entry = await handlerWith({
       configuration: configurationFor(['en-US']),
-    })(request('/second', { cookie: 'equator-locale=ar-EG' }));
+    })(request('/second', { cookie: 'thoth-locale=ar-EG' }));
 
     expect(entry.status).toBe(307);
     expect(entry.headers.get('location')).toBe('/en-us/second');

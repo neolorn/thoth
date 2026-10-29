@@ -143,7 +143,7 @@ const toolkit = (file: string, type: string): Declared => ({
   type,
 });
 const core = (type: string): Declared => ({
-  file: 'dist/runtime/types/neolorn-equator-core.d.ts',
+  file: 'dist/runtime/types/neolorn-thoth-core.d.ts',
   type,
 });
 const schema = (name: string) => `dist/toolkit/schemas/${name}.v1.schema.json`;
@@ -154,7 +154,7 @@ const schema = (name: string) => `dist/toolkit/schemas/${name}.v1.schema.json`;
  * and a runtime of another reads is recorded from both sides, since either can move.
  *
  * `closed` is also the entry for a reader that ignores unknown fields but rewrites the data and so
- * loses them, and for a format read only by applications, whose readers Equator cannot see.
+ * loses them, and for a format read only by applications, whose readers Thoth cannot see.
  *
  * `openValues` names the fields whose set of values is open: the section has a reader of an
  * observability event accept a code it does not know, so a value added to one of these is a
@@ -163,12 +163,12 @@ const schema = (name: string) => `dist/toolkit/schemas/${name}.v1.schema.json`;
  */
 const FORMATS: readonly FormatDefinition[] = Object.freeze([
   {
-    stamp: 'equator-compiled-ir/1',
+    stamp: 'thoth-compiled-ir/1',
     readers: 'closed',
     declarations: [toolkit('compiled-artifacts', 'CompiledCatalog')],
   },
   {
-    stamp: 'equator-compiled-catalog/1',
+    stamp: 'thoth-compiled-catalog/1',
     readers: 'open',
     declarations: [
       toolkit('compiled-artifacts', 'ArtifactAddress'),
@@ -176,7 +176,7 @@ const FORMATS: readonly FormatDefinition[] = Object.freeze([
     ],
   },
   {
-    stamp: 'equator-catalog-set/1',
+    stamp: 'thoth-catalog-set/1',
     readers: 'open',
     declarations: [
       toolkit('compiled-artifacts', 'CatalogSetDescriptor'),
@@ -184,7 +184,7 @@ const FORMATS: readonly FormatDefinition[] = Object.freeze([
     ],
   },
   {
-    stamp: 'equator-resource-summary/1',
+    stamp: 'thoth-resource-summary/1',
     readers: 'closed',
     declarations: [
       toolkit('compiled-artifacts', 'CatalogResourceSummary'),
@@ -193,17 +193,17 @@ const FORMATS: readonly FormatDefinition[] = Object.freeze([
   },
   {
     // The top level is read openly, each scope closed, so the format is as strict as its scopes.
-    stamp: 'equator-generated/1',
+    stamp: 'thoth-generated/1',
     readers: 'closed',
     declarations: [core('GeneratedConfiguration'), core('MessageHandle')],
   },
   {
-    stamp: 'equator-route-projection/1',
+    stamp: 'thoth-route-projection/1',
     readers: 'open',
     declarations: [core('GeneratedRouteProjection')],
   },
   {
-    stamp: 'equator-extension-descriptor/1',
+    stamp: 'thoth-extension-descriptor/1',
     readers: 'closed',
     declarations: [
       toolkit('extensions', 'ExtensionDescriptor'),
@@ -213,80 +213,80 @@ const FORMATS: readonly FormatDefinition[] = Object.freeze([
   {
     // The file an application writes, which the schema states; the parsed registry adds a
     // fingerprint the file does not carry.
-    stamp: 'equator-extension-registry/1',
+    stamp: 'thoth-extension-registry/1',
     readers: 'closed',
     schemas: [schema('extension-registry')],
   },
   {
-    stamp: 'equator-runtime-observability-event/1',
+    stamp: 'thoth-runtime-observability-event/1',
     readers: 'closed',
     openValues: ['code'],
     declarations: [
       {
-        file: 'dist/runtime/types/neolorn-equator.d.ts',
+        file: 'dist/runtime/types/neolorn-thoth.d.ts',
         type: 'LocalizationObservabilityEvent',
       },
     ],
   },
   {
-    stamp: 'equator-toolkit-observability-event/1',
+    stamp: 'thoth-toolkit-observability-event/1',
     readers: 'closed',
     openValues: ['code', 'diagnosticCode'],
     declarations: [toolkit('observability', 'ToolkitObservabilityEvent')],
   },
   {
-    stamp: 'equator-compiler-state/1',
+    stamp: 'thoth-compiler-state/1',
     readers: 'closed',
     declarations: [toolkit('compiler', 'CompilerState')],
   },
   {
-    stamp: 'equator-compiler-cache/1',
+    stamp: 'thoth-compiler-cache/1',
     readers: 'closed',
     declarations: [toolkit('project-host', 'CompilerCacheEnvelope')],
   },
   {
-    stamp: 'equator-output-transaction/1',
+    stamp: 'thoth-output-transaction/1',
     readers: 'open',
     declarations: [toolkit('output-host', 'TransactionJournal')],
   },
   {
-    stamp: 'equator-work-owner/1',
+    stamp: 'thoth-work-owner/1',
     readers: 'closed',
     declarations: [toolkit('output-host', 'WorkOwnerMarker')],
   },
   {
-    stamp: 'equator-completion-manifest/1',
+    stamp: 'thoth-completion-manifest/1',
     readers: 'closed',
     declarations: [toolkit('output-plan', 'CompletionManifest')],
   },
   {
-    stamp: 'equator-authored-change-plan/1',
+    stamp: 'thoth-authored-change-plan/1',
     readers: 'closed',
     declarations: [toolkit('authoring-transaction', 'AuthoredChangePlan')],
   },
   {
-    stamp: 'equator-semantic-catalog-diff/1',
+    stamp: 'thoth-semantic-catalog-diff/1',
     readers: 'closed',
     declarations: [toolkit('catalog-diff', 'CatalogDiff')],
   },
   {
     // Read openly, but rewritten from what was read, so a field it does not know is lost.
-    stamp: 'equator-translation-state/1',
+    stamp: 'thoth-translation-state/1',
     readers: 'closed',
     declarations: [toolkit('translation-state', 'TranslationState')],
   },
   {
-    stamp: 'equator-xliff-2.2/1',
+    stamp: 'thoth-xliff-2.2/1',
     readers: 'closed',
     declarations: [toolkit('xliff', 'XliffUnitContract')],
   },
   {
-    stamp: 'equator-cli-result/1',
+    stamp: 'thoth-cli-result/1',
     readers: 'closed',
     schemas: [schema('cli-result')],
   },
   {
-    stamp: 'equator-cli-watch-event/1',
+    stamp: 'thoth-cli-watch-event/1',
     readers: 'closed',
     schemas: [schema('cli-watch-event')],
   },
@@ -300,32 +300,32 @@ const FORMATS: readonly FormatDefinition[] = Object.freeze([
 
 /** Written and read by one build, in data that does not outlive the run or render that wrote it. */
 const SAME_BUILD = Object.freeze([
-  'equator-transfer-state/1',
-  'equator-participant-state/1',
-  'equator-output-plan/1',
-  'equator-host-compatibility/1',
+  'thoth-transfer-state/1',
+  'thoth-participant-state/1',
+  'thoth-output-plan/1',
+  'thoth-host-compatibility/1',
 ]);
 
 /** Domain labels of fingerprints (section 13), which name a digest's input and are not formats. */
 const DIGEST_LABELS = Object.freeze([
-  'equator-application-contract/1',
-  'equator-compiler-analysis-graph/1',
-  'equator-compiler-cache-state/1',
-  'equator-compiler-catalog-input/1',
-  'equator-compiler-configuration-input/1',
-  'equator-compiler-input-set/1',
-  'equator-compiler-recovery-input/1',
-  'equator-compiler-static-source-input/1',
-  'equator-generated-owner/1',
-  'equator-message-contract/1',
-  'equator-provider-catalog-set/1',
-  'equator-provider-output-path/1',
-  'equator-scope-application-contract/1',
-  'equator-scope-semantic-registry/1',
-  'equator-semantic-registry/1',
-  'equator-source-message/1',
-  'equator-translation-view/1',
-  'equator-xliff-source-message/1',
+  'thoth-application-contract/1',
+  'thoth-compiler-analysis-graph/1',
+  'thoth-compiler-cache-state/1',
+  'thoth-compiler-catalog-input/1',
+  'thoth-compiler-configuration-input/1',
+  'thoth-compiler-input-set/1',
+  'thoth-compiler-recovery-input/1',
+  'thoth-compiler-static-source-input/1',
+  'thoth-generated-owner/1',
+  'thoth-message-contract/1',
+  'thoth-provider-catalog-set/1',
+  'thoth-provider-output-path/1',
+  'thoth-scope-application-contract/1',
+  'thoth-scope-semantic-registry/1',
+  'thoth-semantic-registry/1',
+  'thoth-source-message/1',
+  'thoth-translation-view/1',
+  'thoth-xliff-source-message/1',
 ]);
 
 /* ------------------------------------------------------------------ *
@@ -350,11 +350,11 @@ const program = ts.createProgram(declarationFiles, {
   // The runtime's declarations import each other by package name, which resolves to the built files
   // being read rather than to whatever copy an installed package would hold.
   paths: {
-    '@neolorn/equator': [
-      resolve(workspaceRoot, 'dist/runtime/types/neolorn-equator.d.ts'),
+    '@neolorn/thoth': [
+      resolve(workspaceRoot, 'dist/runtime/types/neolorn-thoth.d.ts'),
     ],
-    '@neolorn/equator/core': [
-      resolve(workspaceRoot, 'dist/runtime/types/neolorn-equator-core.d.ts'),
+    '@neolorn/thoth/core': [
+      resolve(workspaceRoot, 'dist/runtime/types/neolorn-thoth-core.d.ts'),
     ],
   },
 });
@@ -750,7 +750,7 @@ function stampsInBuiltCode() {
   assert.ok(files.length > 0, 'No built code was found. Run pnpm run build.');
   for (const file of files) {
     for (const [, stamp] of readFileSync(file, 'utf8').matchAll(
-      /["'`](equator-[a-z0-9.-]+\/\d+)["'`]/gu,
+      /["'`](thoth-[a-z0-9.-]+\/\d+)["'`]/gu,
     ) as Iterable<[string, string]>) {
       if (!found.has(stamp)) {
         found.set(stamp, relative(workspaceRoot, file).replaceAll('\\', '/'));

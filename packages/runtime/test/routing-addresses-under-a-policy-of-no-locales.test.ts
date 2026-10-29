@@ -7,7 +7,7 @@ import {
   resolveLocalizedRoute,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Listing a page's addresses under a written-out policy that names no locales.
@@ -20,7 +20,7 @@ import {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-AddressesUnderNoLocalesTestIdentity01234567',
     routes: [{ id: 'second', path: 'second', parameterNames: [] }],
   },

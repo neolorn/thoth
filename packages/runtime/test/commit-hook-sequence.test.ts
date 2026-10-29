@@ -11,7 +11,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { LocalizationCommitHook } from '../src/localization.js';
-import type { LocalizationSnapshot } from '@neolorn/equator/core';
+import type { LocalizationSnapshot } from '@neolorn/thoth/core';
 
 import { catalogKey } from './catalog-store-harness.js';
 import {

@@ -16,7 +16,7 @@ import { checkProject, generateProject } from '../src/index.js';
  *
  * A hand-written locale switcher has a recognizable shape: the locale as a string in a click
  * handler, the option's language as a static `lang`, its direction as a static `dir`, and its name
- * in its own language as literal text. Four answers Equator already holds, authored again per
+ * in its own language as literal text. Four answers Thoth already holds, authored again per
  * locale per template, in languages the author may not read, and adding a locale means finding
  * every one of those places, with nothing failing when one is missed.
  *
@@ -108,7 +108,7 @@ async function project(template: string): Promise<string> {
   );
   await write(
     root,
-    'equator.config.json',
+    'thoth.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -187,7 +187,7 @@ async function findings(root: string): Promise<{
     }[],
   ): readonly { code: string; severity: string }[] =>
     diagnostics
-      .filter(({ code }) => code === 'EQ1410')
+      .filter(({ code }) => code === 'TH1410')
       .map(({ code, severity }) => ({ code, severity }));
   const generated = await generateProject({ project: root });
   const checked = await checkProject({ project: root });
@@ -232,7 +232,7 @@ describe('a template may not spell out a locale', () => {
     const reported = await findings(await project(QUOTATION));
 
     for (const step of [reported.generate, reported.check]) {
-      expect(step).toEqual([{ code: 'EQ1410', severity: 'warning' }]);
+      expect(step).toEqual([{ code: 'TH1410', severity: 'warning' }]);
     }
   });
 

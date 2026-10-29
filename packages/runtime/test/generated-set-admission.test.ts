@@ -29,7 +29,7 @@ const cases: ReadonlyArray<readonly [string, Edit]> = [
   [
     'a descriptor profile this release does not read',
     ({ descriptor }) => {
-      (descriptor as { profile: string }).profile = 'equator-catalog-set/2';
+      (descriptor as { profile: string }).profile = 'thoth-catalog-set/2';
     },
   ],
   [
@@ -56,13 +56,13 @@ const cases: ReadonlyArray<readonly [string, Edit]> = [
   [
     'a compiled profile this release does not read',
     firstAddress((address) => {
-      address['compiledIrProfile'] = 'equator-compiled-ir/2';
+      address['compiledIrProfile'] = 'thoth-compiled-ir/2';
     }),
   ],
   [
     'a schema this release does not read',
     firstAddress((address) => {
-      address['schema'] = 'equator-compiled-catalog/2';
+      address['schema'] = 'thoth-compiled-catalog/2';
     }),
   ],
   [

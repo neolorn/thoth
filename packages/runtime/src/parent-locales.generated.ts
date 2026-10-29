@@ -1,6 +1,6 @@
 /** Generated from cldr-core 48.2.0 by tools/generate-locale-profile.ts. */
 export const PARENT_LOCALE_PROFILE =
-  'cldr-48.2/equator-parent-locales-1' as const;
+  'cldr-48.2/thoth-parent-locales-1' as const;
 
 /**
  * The parent CLDR declares for a locale, where that parent is not the tag with its last subtag
@@ -22,7 +22,7 @@ export const PARENT_LOCALE_PROFILE =
  * from the likely scripts to the locales this table does not name, `ru-Latn` among them.
  *
  * Four parents change the language: `hi-Latn` takes `en-IN`, `ht` takes `fr-HT`, and `nb` and
- * `nn` take `no`. That is CLDR data rather than a choice Equator made, and a project that
+ * `nn` take `no`. That is CLDR data rather than a choice Thoth made, and a project that
  * disagrees says so under `parentLocales` in its own configuration.
  *
  * Both packages carry the same table. The toolkit resolves from it the chain each configured

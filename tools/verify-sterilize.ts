@@ -331,7 +331,7 @@ const CHANGELOG_RELEASE_HEADING =
  * closing it, fails the stage rather than holding less than was written. The path is absolute,
  * because the gate runs this stage from a tree of its own.
  */
-const LISTED_WORDS_VARIABLE = 'EQUATOR_RESIDUE_FILE';
+const LISTED_WORDS_VARIABLE = 'THOTH_RESIDUE_FILE';
 
 interface ListedWord {
   readonly word: string;
@@ -849,7 +849,7 @@ const counts = Object.fromEntries(
 
 if (findings.length > 0 || unusedExemptions.length > 0) {
   const lines = [
-    `Equator sterilization: ${findings.length} hit(s) across ${files.length} files and ${messages.length} commit messages. ${listNote}`,
+    `Thoth sterilization: ${findings.length} hit(s) across ${files.length} files and ${messages.length} commit messages. ${listNote}`,
     '',
     ...CATEGORIES.map(
       (category) => `  ${category.padEnd(10)} ${counts[category]}`,
@@ -874,6 +874,6 @@ if (findings.length > 0 || unusedExemptions.length > 0) {
   process.exitCode = 1;
 } else {
   process.stdout.write(
-    `Equator sterilization verified: ${files.length} files and ${messages.length} commit messages carry no dash used as punctuation, no authoring tool name or co-author trailer, no reference to an internal document, no listed word, and no path into this repository that does not resolve. ${EXEMPTIONS.length} exemption(s), all still matching. ${listNote}\n`,
+    `Thoth sterilization verified: ${files.length} files and ${messages.length} commit messages carry no dash used as punctuation, no authoring tool name or co-author trailer, no reference to an internal document, no listed word, and no path into this repository that does not resolve. ${EXEMPTIONS.length} exemption(s), all still matching. ${listNote}\n`,
   );
 }

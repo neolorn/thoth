@@ -4,7 +4,7 @@ import type {
   FormattingContext,
   LocalizedParts,
   MessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import { parseMessageSemanticModel } from '../../toolkit/src/message-format.js';
 import type { CompiledCatalog } from '../src/catalog-runtime.js';
 import {
@@ -52,9 +52,9 @@ function catalogFor(
     outputParts: 64,
   };
   return {
-    profile: 'equator-compiled-ir/1',
-    generatedAbi: 'equator-generated/1',
-    standardsProfile: 'equator-1',
+    profile: 'thoth-compiled-ir/1',
+    generatedAbi: 'thoth-generated/1',
+    standardsProfile: 'thoth-1',
     key: { providerId: 'slot', scopeId: 'slot', catalogLocale: 'en-US' },
     applicationContractFingerprint: 'test',
     semanticRegistryFingerprint: 'test',
@@ -94,7 +94,7 @@ function evaluateParts(
   slots: readonly { name: string; kind: string }[],
 ): LocalizedParts {
   const handle = {
-    generatedAbi: 'equator-generated/1',
+    generatedAbi: 'thoth-generated/1',
     providerId: 'slot',
     scopeId: 'slot',
     messageId: 'subject',

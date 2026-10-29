@@ -69,7 +69,7 @@ describe('a catalog calling a message function', () => {
   it('is refused when the application registered none by that name', () => {
     const result = parse(calling);
     expect(result.ok).toBe(false);
-    expect(result.diagnostics.map(({ code }) => code)).toContain('EQ1203');
+    expect(result.diagnostics.map(({ code }) => code)).toContain('TH1203');
   });
 
   it('is accepted when the application registered it', () => {
@@ -91,7 +91,7 @@ describe('a catalog declaring a slot kind', () => {
     expect(analyzed.ok).toBe(false);
     expect(analyzed.diagnostics).toContainEqual(
       expect.objectContaining({
-        code: 'EQ1303',
+        code: 'TH1303',
         summary: expect.stringContaining('unregistered semantic kind'),
       }),
     );

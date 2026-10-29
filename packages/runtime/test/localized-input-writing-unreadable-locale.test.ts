@@ -11,7 +11,7 @@ import { formatLocalizedInput } from '../src/localized-input.js';
 import {
   type LocalizedInputProfile,
   type LocalizedInputValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Writing a field's value under a locale the host refuses.

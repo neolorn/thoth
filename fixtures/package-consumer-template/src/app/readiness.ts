@@ -11,11 +11,8 @@ import {
   systemClock,
   type LocalizedInputStatus,
   type RelativeTimePolicy,
-} from '@neolorn/equator';
-import {
-  LocalizedInput,
-  localizedInputIssueCode,
-} from '@neolorn/equator/forms';
+} from '@neolorn/thoth';
+import { LocalizedInput, localizedInputIssueCode } from '@neolorn/thoth/forms';
 import { messages } from '#i18n/shell';
 
 import { appFormattingContext } from './app.config';
@@ -24,7 +21,7 @@ import { appFormattingContext } from './app.config';
  * The application-level uses of four exports that had none.
  *
  * These stay on the published surface on the argument that an export sitting beside a
- * documented feature is reachable by a consumer whether or not Equator's own corpus names it. That
+ * documented feature is reachable by a consumer whether or not Thoth's own corpus names it. That
  * argument is only honest if the corpus then names them the way a consumer would, as application
  * code that breaks when they break, not as a test written to reference a symbol. So each use here
  * is one an application would plausibly have written for its own reasons, and each renders
@@ -42,11 +39,11 @@ const INPUT_ISSUE_STATUSES = Object.freeze([
 ] as const satisfies readonly Exclude<LocalizedInputStatus, 'valid'>[]);
 
 /**
- * The application's own wording for each input issue, keyed by Equator's issue code.
+ * The application's own wording for each input issue, keyed by Thoth's issue code.
  *
  * Built by asking `localizedInputIssueCode` for the code rather than by writing the six code
  * strings out. The point is not brevity: it is that the key and the value the directive puts on
- * the control come from the same function, so they cannot drift. A hand-written `'equator.input.
+ * the control come from the same function, so they cannot drift. A hand-written `'thoth.input.
  * out-of-range'` that stops matching produces a blank message and no error anywhere.
  */
 const INPUT_ISSUE_MESSAGES: ReadonlyMap<string, string> = new Map(
@@ -121,8 +118,8 @@ export class FeatureLabReadiness {
   /**
    * The application's own upload cap, expressed against the runtime's ceiling rather than beside it.
    *
-   * A number written here would be a second copy of a limit Equator enforces, and the failure mode
-   * is the quiet one: the application offers a bound Equator refuses, and the refusal names a
+   * A number written here would be a second copy of a limit Thoth enforces, and the failure mode
+   * is the quiet one: the application offers a bound Thoth refuses, and the refusal names a
    * ceiling the application had no way to read. Publishing `RUNTIME_LIMITS` is what makes this
    * expressible; half the catalog ceiling is a decision this application owns.
    */
@@ -147,7 +144,7 @@ export class FeatureLabReadiness {
     // been narrowed to the locales the generated configuration lists, so `policy.locales` is what
     // shipped rather than what was declared. Intersecting the two here by hand works and makes
     // this component one of four places that have to remember to. Under
-    // `equator generate --pseudo` this is how a developer reaches the pseudo-locale; under a
+    // `thoth generate --pseudo` this is how a developer reaches the pseudo-locale; under a
     // production build the same code offers only the locales that exist.
     return Object.keys(policy.locales)
       .filter((locale) => locale !== active)

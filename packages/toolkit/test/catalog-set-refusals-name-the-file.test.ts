@@ -40,7 +40,7 @@ function refusals(catalogs: readonly Catalog[]): readonly string[] {
   });
   expect(compiled.ok).toBe(false);
   return compiled.diagnostics
-    .filter(({ code }) => code === 'EQ1301')
+    .filter(({ code }) => code === 'TH1301')
     .map(({ summary }) => summary);
 }
 

@@ -11,7 +11,7 @@ import {
   type MessageHandle,
   type MessageInputArguments,
   type PlainMessageHandle,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A document message together with the values it takes.

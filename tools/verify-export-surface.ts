@@ -1,7 +1,7 @@
 /**
  * Is every published export reachable from something that is not a throwaway?
  *
- * The corpus is Equator only, and the export list is read from the built declaration files. It
+ * The corpus is Thoth only, and the export list is read from the built declaration files. It
  * needs `build`.
  *
  * Two rules the corpus has to keep. A scan that counts throwaway files holds exports "used" on
@@ -74,7 +74,7 @@ const CORPUS = Object.freeze([
  * The corpus above names test directories by hand, and a hand-written list of directories is the
  * shape that goes quietly wrong.
  *
- * Equator keeps source in five places, not one: `packages/runtime/src` plus the secondary entry
+ * Thoth keeps source in five places, not one: `packages/runtime/src` plus the secondary entry
  * points beside it (`router`, `forms`, `testing`) and `packages/toolkit/src`. A scan aimed at
  * one of them finds nothing in the other four and reports that as nothing existing. A scan scoped
  * to `packages/runtime/src/*.ts` does not see `packages/runtime/router/src/public-api.ts`, and
@@ -162,7 +162,7 @@ interface CorpusFile {
   readonly text: string;
 }
 
-const SKIP = new Set(['node_modules', 'dist', '.angular', '.equator', 'tmp']);
+const SKIP = new Set(['node_modules', 'dist', '.angular', '.thoth', 'tmp']);
 const QUOTES_THE_LIBRARY = new Set([
   'tools/assurance-injections.ts',
   'tools/assurance-runtime-injections.ts',
@@ -293,7 +293,7 @@ for (const { text } of declarationSets) {
 
 // Resolved rather than counted; `export-reachability.ts` says why the count was the wrong
 // instrument. The seed is the set above, so what comes back is everything a consumer arrives at by
-// following the surface out of something Equator's own consumers, gates and tests already hold.
+// following the surface out of something Thoth's own consumers, gates and tests already hold.
 const { reached, seeded } = reachablePublishedNames(
   (name) => (namedBy.get(name) ?? []).length > 0,
 );
@@ -526,7 +526,7 @@ assert.equal(
  */
 const RETIRED_MEMBERS = [
   {
-    entryPoint: 'neolorn-equator',
+    entryPoint: 'neolorn-thoth',
     interfaceName: 'RoutingOptions',
     members: ['localizedPaths', 'parameters', 'historical'],
     replacement:
@@ -657,9 +657,9 @@ const wiring = examples.flatMap(({ path, text }) =>
 assert.deepEqual(
   wiring,
   [],
-  `A fixture or a documented example imports a ɵ-prefixed export, which is wiring between Equator's own entry points and not part of its contract:\n${wiring.join('\n')}`,
+  `A fixture or a documented example imports a ɵ-prefixed export, which is wiring between Thoth's own entry points and not part of its contract:\n${wiring.join('\n')}`,
 );
 
 process.stdout.write(
-  `\nEquator export surface verified: ${candidates.length} accepted candidate(s), all named in the baseline.\n`,
+  `\nThoth export surface verified: ${candidates.length} accepted candidate(s), all named in the baseline.\n`,
 );

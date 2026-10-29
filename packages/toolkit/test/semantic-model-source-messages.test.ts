@@ -77,7 +77,7 @@ describe('the source fingerprint of a message declared empty', () => {
     const [note] = messages(source(['  note:', '    empty: true']));
 
     expect(note?.sourceFingerprint).toBe(
-      digestCanonicalJson('equator-source-message/1', {
+      digestCanonicalJson('thoth-source-message/1', {
         identity: '@example/app:shell:note',
         resultKind: 'plain',
         inputs: [],

@@ -98,7 +98,7 @@ class Browser {
   assert.equal(await page.evaluate(), 1);
 }
 
-const runs = mkdtempSync(join(tmpdir(), 'equator-teardown-'));
+const runs = mkdtempSync(join(tmpdir(), 'thoth-teardown-'));
 try {
   const file = join(runs, 'row.occurrences.jsonl');
   const environment = { [OCCURRENCES_FILE_VARIABLE]: file };

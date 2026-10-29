@@ -17,7 +17,7 @@ import {
  * from the source a project would actually contain, so a field added to the configuration is
  * supplied here on the day it lands rather than remembered, and the locales are branded by the
  * function that owns the brand. It is the general rule for a value under test: validate it
- * against the Equator function that will receive it, not against the primitive underneath.
+ * against the Thoth function that will receive it, not against the primitive underneath.
  */
 export function testProjectConfiguration(
   locales: readonly string[],
@@ -38,7 +38,7 @@ export function testProjectConfiguration(
   );
   if (!parsed.ok) {
     throw new Error(
-      `The test configuration is not an Equator configuration: ${parsed.diagnostics
+      `The test configuration is not a Thoth configuration: ${parsed.diagnostics
         .map(({ code, summary }) => `${code} ${summary}`)
         .join('; ')}`,
     );

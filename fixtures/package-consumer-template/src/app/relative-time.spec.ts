@@ -12,7 +12,7 @@ import {
   withLocalizationClock,
   withRelativeTimePolicy,
   type RelativeTimePolicy,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -30,9 +30,9 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.ts';
  * nobody assigned, each of four applications would write the same selection loop, and they would
  * disagree.
  *
- * The split: Equator owns the rule, largest unit the span reaches, truncated and never rounded up,
+ * The split: Thoth owns the rule, largest unit the span reaches, truncated and never rounded up,
  * and the consumer owns the thresholds, because "3 days ago" is right on a message and wrong on
- * an invoice and Equator has no basis for preferring either.
+ * an invoice and Thoth has no basis for preferring either.
  *
  * The clock is a port for the same reason the reference instant is explicit: a "now" that cannot be
  * supplied cannot be tested, and a server render and the browser render that rehydrates it must be
@@ -86,7 +86,7 @@ describe('unit selection', () => {
       unit: 'week',
       value: -3,
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('truncates rather than rounds', () => {
@@ -97,7 +97,7 @@ describe('unit selection', () => {
       unit: 'hour',
       value: -1,
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('keeps the sign, so the future reads as the future', () => {
@@ -105,11 +105,11 @@ describe('unit selection', () => {
       unit: 'minute',
       value: 5,
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('names the smallest permitted unit rather than inventing wording', () => {
-    // Half a second under a minute-floor policy is zero minutes. Equator does not turn that into
+    // Half a second under a minute-floor policy is zero minutes. Thoth does not turn that into
     // "just now": the phrase belongs to the product, and translating it is a catalog entry.
     expect(
       selectRelativeTime(at(-500), at(0), { smallestUnit: 'minute' }),
@@ -117,7 +117,7 @@ describe('unit selection', () => {
       unit: 'minute',
       value: 0,
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -128,7 +128,7 @@ describe('thresholds the consumer declares', () => {
     });
     expect(decision.unit).toBeUndefined();
     expect(decision).toMatchObject({ elapsedMilliseconds: -425 * DAY });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('stops being relative past an explicit ceiling', () => {
@@ -141,17 +141,17 @@ describe('thresholds the consumer declares', () => {
     expect(
       selectRelativeTime(at(-8 * DAY), at(0), policy).unit,
     ).toBeUndefined();
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 
   it('leaves the absolute rendering to the consumer', () => {
-    // Equator hands back the elapsed span and stops. Choosing the date format, the zone and the
+    // Thoth hands back the elapsed span and stops. Choosing the date format, the zone and the
     // wording of the fallback is the product decision this whole mechanism exists to avoid making.
     const decision = selectRelativeTime(at(-8 * DAY), at(0), {
       absoluteAfterMilliseconds: 7 * DAY,
     });
     expect(Object.keys(decision)).toEqual(['elapsedMilliseconds']);
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });
 
@@ -245,6 +245,6 @@ describe('the service call', () => {
       unit: 'hour',
       value: -3,
     });
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('entry:@neolorn/thoth');
   });
 });

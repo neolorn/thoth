@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   renderedText,
   resetLocalizationTestEnvironment,
-} from '@neolorn/equator/testing';
+} from '@neolorn/thoth/testing';
 
 /**
  * The testing surface, held to what it promises a consumer's own suite.
@@ -27,15 +27,15 @@ describe('the testing helpers', () => {
 
   it('puts back the address and the storages a localized test moved', () => {
     history.replaceState(null, '', '/ar-EG/orders');
-    localStorage.setItem('equator-locale', 'ar-EG');
-    sessionStorage.setItem('equator-locale', 'ar-EG');
-    document.cookie = 'equator-locale=ar-EG; Path=/';
+    localStorage.setItem('thoth-locale', 'ar-EG');
+    sessionStorage.setItem('thoth-locale', 'ar-EG');
+    document.cookie = 'thoth-locale=ar-EG; Path=/';
 
     resetLocalizationTestEnvironment();
 
     expect(location.pathname).toBe('/');
     expect(localStorage.length).toBe(0);
     expect(sessionStorage.length).toBe(0);
-    expect(document.cookie).not.toContain('equator-locale');
+    expect(document.cookie).not.toContain('thoth-locale');
   });
 });

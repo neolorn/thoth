@@ -38,7 +38,7 @@ const IGNORED = [
   'dist/',
   'tmp/',
   '.angular/',
-  '.equator/',
+  '.thoth/',
   'src/generated/',
 ];
 

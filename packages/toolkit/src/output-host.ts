@@ -53,21 +53,21 @@ import { compareCodeUnit } from './sorted-records.js';
 import { pathExists, writeSynced } from './file-system.js';
 
 /**
- * The file that marks a work root as Equator's, relative to the work root itself.
+ * The file that marks a work root as Thoth's, relative to the work root itself.
  *
- * Equator will create a work root, and will refuse an existing directory that does not carry this
+ * Thoth will create a work root, and will refuse an existing directory that does not carry this
  * marker. That refusal is the whole reason the constant is published: a consumer whose tooling
- * removes or relocates Equator's disposable state has to be able to recognise the directory as
- * Equator-owned before deleting anything, and recognising it by a path spelled out in the
+ * removes or relocates Thoth's disposable state has to be able to recognise the directory as
+ * Thoth-owned before deleting anything, and recognising it by a path spelled out in the
  * consumer's own script is a guess that goes stale silently. Read the marker, check its `profile`
- * against {@link WORK_OWNER_PROFILE}, and only then treat the directory as Equator's.
+ * against {@link WORK_OWNER_PROFILE}, and only then treat the directory as Thoth's.
  *
- * The marker also carries an `ownerId`, which is what makes two Equator-owned trees in one
+ * The marker also carries an `ownerId`, which is what makes two Thoth-owned trees in one
  * repository distinguishable. A work root whose `ownerId` does not match the generated output
  * beside it is refused rather than adopted: one project's cache silently serving another's build is
  * the failure this prevents.
  */
-export const WORK_OWNER_PATH = '.equator-owner.json' as const;
+export const WORK_OWNER_PATH = '.thoth-owner.json' as const;
 export const COMPILER_CACHE_PATH = 'cache/compiler-state.json' as const;
 const TRANSACTION_PATH = 'transaction.json';
 const LOCK_PATH = 'generation.lock';
@@ -75,13 +75,13 @@ const LOCK_PATH = 'generation.lock';
  * The `profile` value inside a work-root ownership marker, and the version of its shape.
  *
  * Compare against this rather than against the string: the trailing `/1` is a format version, and a
- * future Equator that changes what the marker holds will bump it. A consumer that matched on the
+ * future Thoth that changes what the marker holds will bump it. A consumer that matched on the
  * literal would then keep deleting a directory whose contents it no longer understands, which is
  * the one outcome an ownership check exists to prevent. A marker whose profile is not this one is
- * not a marker this version of Equator wrote, and the safe reading of it is "leave it alone".
+ * not a marker this version of Thoth wrote, and the safe reading of it is "leave it alone".
  */
-export const WORK_OWNER_PROFILE = 'equator-work-owner/1' as const;
-export const TRANSACTION_PROFILE = 'equator-output-transaction/1' as const;
+export const WORK_OWNER_PROFILE = 'thoth-work-owner/1' as const;
+export const TRANSACTION_PROFILE = 'thoth-output-transaction/1' as const;
 
 // Exported so the built declarations carry the persisted format's shape, which its shape record in
 // `tools/format-shapes.json` is compared with. The package entry does not re-export it.
@@ -126,7 +126,7 @@ export interface OutputFreshness {
   readonly missing: readonly string[];
   /** Files on disk holding something other than what the sources produce. */
   readonly changed: readonly string[];
-  /** Files Equator wrote that the sources no longer produce. */
+  /** Files Thoth wrote that the sources no longer produce. */
   readonly stale: readonly string[];
 }
 
@@ -183,7 +183,7 @@ function portableRelative(owner: string, candidate: string): string {
 function absoluteFromPortable(owner: string, path: string): string {
   const candidate = resolve(owner, ...path.split('/'));
   if (!containedPath(candidate, owner)) {
-    throw new TypeError(`Equator transaction path escapes its owner: ${path}`);
+    throw new TypeError(`Thoth transaction path escapes its owner: ${path}`);
   }
   return candidate;
 }
@@ -193,7 +193,7 @@ async function assertSafeExistingPath(
   target: string,
 ): Promise<void> {
   if (!containedPath(target, ownerRoot)) {
-    throw new TypeError(`Equator path escapes its owner: ${target}`);
+    throw new TypeError(`Thoth path escapes its owner: ${target}`);
   }
   const relativePath = relative(ownerRoot, target);
   let current = ownerRoot;
@@ -203,7 +203,7 @@ async function assertSafeExistingPath(
     if (!(await pathExists(current))) break;
     const metadata = await lstat(current);
     if (metadata.isSymbolicLink()) {
-      throw new TypeError(`Equator refuses linked output path: ${current}`);
+      throw new TypeError(`Thoth refuses linked output path: ${current}`);
     }
   }
   const existing = await pathExists(target);
@@ -212,7 +212,7 @@ async function assertSafeExistingPath(
     const canonicalTarget = await realpath(target);
     if (!containedPath(canonicalTarget, canonicalOwner)) {
       throw new TypeError(
-        `Equator output path resolves outside its owner: ${target}`,
+        `Thoth output path resolves outside its owner: ${target}`,
       );
     }
   }
@@ -234,7 +234,7 @@ async function validateRoots(
   const ownerMetadata = await lstat(ownerRoot);
   if (!ownerMetadata.isDirectory() || ownerMetadata.isSymbolicLink()) {
     throw new TypeError(
-      'Equator owner root must be an existing ordinary directory.',
+      'Thoth owner root must be an existing ordinary directory.',
     );
   }
   if (
@@ -247,7 +247,7 @@ async function validateRoots(
     containedPath(workRoot, generatedRoot)
   ) {
     throw new TypeError(
-      'Equator generated and work roots must be separate contained owner subdirectories.',
+      'Thoth generated and work roots must be separate contained owner subdirectories.',
     );
   }
   await assertSafeExistingPath(ownerRoot, generatedRoot);
@@ -263,14 +263,14 @@ async function collectFiles(root: string): Promise<readonly string[]> {
       const path = resolve(directory, entry.name);
       if (entry.isSymbolicLink()) {
         throw new TypeError(
-          `Equator refuses linked content in an owned root: ${path}`,
+          `Thoth refuses linked content in an owned root: ${path}`,
         );
       }
       if (entry.isDirectory()) await visit(path);
       else if (entry.isFile()) files.push(portableRelative(root, path));
       else
         throw new TypeError(
-          `Equator refuses special file in an owned root: ${path}`,
+          `Thoth refuses special file in an owned root: ${path}`,
         );
     }
   };
@@ -287,8 +287,8 @@ async function readCurrentManifest(
   if (!(await pathExists(manifestPath))) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1601',
-        'Equator refuses an existing generated root without its completion/ownership manifest.',
+        'TH1601',
+        'Thoth refuses an existing generated root without its completion/ownership manifest.',
       ),
     ]);
   }
@@ -297,7 +297,7 @@ async function readCurrentManifest(
     ? parsed
     : toolkitFailure(
         parsed.diagnostics.map((diagnostic) =>
-          toolkitDiagnostic('EQ1601', diagnostic.summary, {
+          toolkitDiagnostic('TH1601', diagnostic.summary, {
             path: diagnostic.path,
           }),
         ),
@@ -317,8 +317,8 @@ async function verifyOwnedInventory(
     if (!expected.has(path)) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1601',
-          `Equator generated root contains unowned file ${JSON.stringify(path)}.`,
+          'TH1601',
+          `Thoth generated root contains unowned file ${JSON.stringify(path)}.`,
           { path: ['outputs', path] },
         ),
       );
@@ -329,8 +329,8 @@ async function verifyOwnedInventory(
     if (!(await pathExists(path))) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1603',
-          `Equator generated output ${JSON.stringify(file.path)} is missing.`,
+          'TH1603',
+          `Thoth generated output ${JSON.stringify(file.path)} is missing.`,
           { path: ['outputs', file.path] },
         ),
       );
@@ -343,8 +343,8 @@ async function verifyOwnedInventory(
     ) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1603',
-          `Equator generated output ${JSON.stringify(file.path)} does not match its completion manifest.`,
+          'TH1603',
+          `Thoth generated output ${JSON.stringify(file.path)} does not match its completion manifest.`,
           { path: ['outputs', file.path] },
         ),
       );
@@ -369,17 +369,17 @@ async function ensureWorkOwner(
   }
   if (!(await pathExists(markerPath))) {
     throw new TypeError(
-      `Equator refuses an existing unmarked work root at ${JSON.stringify(workRoot)}: it holds no ${WORK_OWNER_PATH}, so Equator cannot tell whether the directory is its own. Remove it, or point this project's work root somewhere Equator owns.`,
+      `Thoth refuses an existing unmarked work root at ${JSON.stringify(workRoot)}: it holds no ${WORK_OWNER_PATH}, so Thoth cannot tell whether the directory is its own. Remove it, or point this project's work root somewhere Thoth owns.`,
     );
   }
   const found = await readWorkOwnerId(workRoot);
   if (found !== ownerId) {
     // Named on both sides, because the two readings are what tell the two causes apart. A second
-    // Equator-owned tree in the same repository is a configuration to fix; the identity of a
+    // Thoth-owned tree in the same repository is a configuration to fix; the identity of a
     // project that was renamed or that moved where it generates is a work root to discard, and the
     // work root holds nothing but disposable state.
     throw new TypeError(
-      `Equator work root at ${JSON.stringify(workRoot)} belongs to another generated owner: it records ${JSON.stringify(found ?? 'an unreadable identity')} and this project is ${JSON.stringify(ownerId)}. Run equator clean to discard that work root, it holds only Equator's own disposable state, or give this project a work root of its own.`,
+      `Thoth work root at ${JSON.stringify(workRoot)} belongs to another generated owner: it records ${JSON.stringify(found ?? 'an unreadable identity')} and this project is ${JSON.stringify(ownerId)}. Run thoth clean to discard that work root, it holds only Thoth's own disposable state, or give this project a work root of its own.`,
     );
   }
   const allowed = new Set([
@@ -390,7 +390,7 @@ async function ensureWorkOwner(
   ]);
   for (const path of await collectFiles(workRoot)) {
     if (!allowed.has(path)) {
-      throw new TypeError(`Equator work root contains unowned file ${path}.`);
+      throw new TypeError(`Thoth work root contains unowned file ${path}.`);
     }
   }
 }
@@ -399,13 +399,13 @@ async function readWorkOwnerId(workRoot: string): Promise<string | undefined> {
   if (!(await pathExists(workRoot))) return undefined;
   const markerPath = resolve(workRoot, WORK_OWNER_PATH);
   if (!(await pathExists(markerPath))) {
-    throw new TypeError('Equator refuses an existing unmarked work root.');
+    throw new TypeError('Thoth refuses an existing unmarked work root.');
   }
   let marker: unknown;
   try {
     marker = JSON.parse(await readFile(markerPath, 'utf8'));
   } catch {
-    throw new TypeError('Equator work-root ownership marker is invalid.');
+    throw new TypeError('Thoth work-root ownership marker is invalid.');
   }
   if (
     typeof marker !== 'object' ||
@@ -418,7 +418,7 @@ async function readWorkOwnerId(workRoot: string): Promise<string | undefined> {
       (marker as Record<string, unknown>)['ownerId'] as string,
     )
   ) {
-    throw new TypeError('Equator work-root ownership marker is invalid.');
+    throw new TypeError('Thoth work-root ownership marker is invalid.');
   }
   return (marker as Record<string, string>)['ownerId'];
 }
@@ -484,7 +484,7 @@ async function recoverTransaction(
     await readFile(journalPath, 'utf8'),
   ) as ReceivedTransactionJournal;
   if (journal.profile !== TRANSACTION_PROFILE || journal.ownerId !== ownerId) {
-    throw new TypeError('Equator output transaction journal is incompatible.');
+    throw new TypeError('Thoth output transaction journal is incompatible.');
   }
   for (const operation of [...journal.operations].reverse()) {
     const path = absoluteFromPortable(generatedRoot, operation.path);
@@ -527,8 +527,8 @@ async function freshness(
   if (current.value.ownerId !== ownerId) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1601',
-        `Equator generated root at ${JSON.stringify(generatedRoot)} belongs to another owner identity: its completion manifest records ${JSON.stringify(current.value.ownerId)} and this project is ${JSON.stringify(ownerId)}. Run equator clean to remove the output that manifest describes, or generate into a root of this project's own.`,
+        'TH1601',
+        `Thoth generated root at ${JSON.stringify(generatedRoot)} belongs to another owner identity: its completion manifest records ${JSON.stringify(current.value.ownerId)} and this project is ${JSON.stringify(ownerId)}. Run thoth clean to remove the output that manifest describes, or generate into a root of this project's own.`,
       ),
     ]);
   }
@@ -548,8 +548,8 @@ async function freshness(
   ) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1603',
-        'Equator completion manifest changed while generated output was being inspected.',
+        'TH1603',
+        'Thoth completion manifest changed while generated output was being inspected.',
       ),
     ]);
   }
@@ -588,7 +588,7 @@ async function freshness(
  * Whether the generated output on disk is what this output plan would produce, without writing
  * anything.
  *
- * The same comparison `equator check --require-fresh` makes, published so a consumer's own gate can
+ * The same comparison `thoth check --require-fresh` makes, published so a consumer's own gate can
  * ask it without shelling out to the CLI and parsing its output. The result separates three
  * different ways output can be out of date, because they are three different problems: `missing` is
  * a file the output plan expects and disk does not have, `changed` is a file whose contents no
@@ -598,7 +598,7 @@ async function freshness(
  *
  * This reads; it does not repair. A caller that wants disk brought into line runs the generation.
  *
- * Failure here is an `EQ1601` diagnostic rather than a thrown error, in keeping with the rest of
+ * Failure here is an `TH1601` diagnostic rather than a thrown error, in keeping with the rest of
  * this surface: an unreadable or unowned root is a fact about the project, not a bug in the call.
  */
 export async function inspectOutputFreshness(
@@ -612,7 +612,7 @@ export async function inspectOutputFreshness(
   } catch (error) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1601',
+        'TH1601',
         error instanceof Error ? error.message : String(error),
       ),
     ]);
@@ -628,7 +628,7 @@ export async function applyOutputPlan(
   } catch (error) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1601',
+        'TH1601',
         error instanceof Error ? error.message : String(error),
       ),
     ]);
@@ -654,8 +654,8 @@ export async function applyOutputPlan(
       await releaseLock();
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1602',
-          `Equator could not acquire or recover its output transaction: ${error instanceof Error ? error.message : String(error)}`,
+          'TH1602',
+          `Thoth could not acquire or recover its output transaction: ${error instanceof Error ? error.message : String(error)}`,
         ),
       ]);
     }
@@ -669,7 +669,7 @@ export async function applyOutputPlan(
     await releaseLock();
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1601',
+        'TH1601',
         error instanceof Error ? error.message : String(error),
       ),
     ]);
@@ -723,8 +723,8 @@ export async function applyOutputPlan(
     ) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1602',
-          'Equator inputs changed after compilation; generation was not published.',
+          'TH1602',
+          'Thoth inputs changed after compilation; generation was not published.',
         ),
       ]);
     }
@@ -743,7 +743,7 @@ export async function applyOutputPlan(
     const operations: TransactionOperation[] = [];
     for (const path of operationPaths) {
       const destination = absoluteFromPortable(roots.generatedRoot, path);
-      const token = `.equator-${transactionId}`;
+      const token = `.thoth-${transactionId}`;
       const backupPath = resolve(
         dirname(destination),
         `.${basename(destination)}${token}.bak`,
@@ -834,15 +834,15 @@ export async function applyOutputPlan(
     } catch {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1602',
-          'Equator output publication failed and automatic rollback could not be completed safely.',
+          'TH1602',
+          'Thoth output publication failed and automatic rollback could not be completed safely.',
         ),
       ]);
     }
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1602',
-        `Equator output publication failed safely: ${error instanceof Error ? error.message : String(error)}`,
+        'TH1602',
+        `Thoth output publication failed safely: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
   } finally {
@@ -851,17 +851,17 @@ export async function applyOutputPlan(
 }
 
 /**
- * Removes what Equator generated, and nothing else.
+ * Removes what Thoth generated, and nothing else.
  *
- * The inventory is not a pattern and not a directory sweep: it is the completion manifest Equator
- * wrote when it generated, so every removed path is one Equator recorded creating. A file that
+ * The inventory is not a pattern and not a directory sweep: it is the completion manifest Thoth
+ * wrote when it generated, so every removed path is one Thoth recorded creating. A file that
  * appeared in the generated root by another route is not in the manifest, is not removed, and makes
  * the call fail rather than pass quietly: an unrecognised file in an owned directory means the
- * directory is not what Equator thinks it is, and deleting the rest of it on that assumption is how
+ * directory is not what Thoth thinks it is, and deleting the rest of it on that assumption is how
  * a cleanup destroys someone's work.
  *
  * Both roots are checked to belong to the same owner before anything is removed. Different owner
- * identities on the generated and work roots is `EQ1601`: two projects have been pointed at one
+ * identities on the generated and work roots is `TH1601`: two projects have been pointed at one
  * tree, and the right answer is to stop.
  *
  * `dryRun` returns the same `removed` list without touching disk, which is what makes this safe to
@@ -877,7 +877,7 @@ export async function cleanOutput(
   } catch (error) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1601',
+        'TH1601',
         error instanceof Error ? error.message : String(error),
       ),
     ]);
@@ -900,8 +900,8 @@ export async function cleanOutput(
     ) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1601',
-          'Equator generated and work roots have different owner identities.',
+          'TH1601',
+          'Thoth generated and work roots have different owner identities.',
         ),
       ]);
     }
@@ -926,8 +926,8 @@ export async function cleanOutput(
     ) {
       return toolkitFailure([
         toolkitDiagnostic(
-          'EQ1602',
-          'Equator clean cannot preview while an output transaction requires recovery.',
+          'TH1602',
+          'Thoth clean cannot preview while an output transaction requires recovery.',
         ),
       ]);
     }
@@ -1002,7 +1002,7 @@ export async function cleanOutput(
         accepted.value.planDigest !== emptyPlan.value.planDigest
       ) {
         throw new TypeError(
-          'Equator generated output changed while clean was finalizing.',
+          'Thoth generated output changed while clean was finalizing.',
         );
       }
       const acceptedDiagnostics = await verifyOwnedInventory(
@@ -1011,7 +1011,7 @@ export async function cleanOutput(
       );
       if (acceptedDiagnostics.length > 0) {
         throw new TypeError(
-          'Equator generated output changed while clean was finalizing.',
+          'Thoth generated output changed while clean was finalizing.',
         );
       }
       await unlink(resolve(roots.generatedRoot, COMPLETION_MANIFEST_PATH));
@@ -1037,8 +1037,8 @@ export async function cleanOutput(
   } catch (error) {
     return toolkitFailure([
       toolkitDiagnostic(
-        'EQ1602',
-        `Equator clean failed safely: ${error instanceof Error ? error.message : String(error)}`,
+        'TH1602',
+        `Thoth clean failed safely: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
   }

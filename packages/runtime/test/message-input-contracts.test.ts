@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { LocalizationError } from '@neolorn/equator/core';
+import { LocalizationError } from '@neolorn/thoth/core';
 
 import type { CompiledInputContract } from '../src/catalog-runtime.js';
 import { RUNTIME_LIMITS } from '../src/runtime-safety.js';

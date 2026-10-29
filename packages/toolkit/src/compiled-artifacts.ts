@@ -53,13 +53,13 @@ import { compareCodeUnit } from './sorted-records.js';
  * The version stamp on every compiled catalog, which a loader checks before reading one.
  *
  * It changes when the compiled shape changes in a way a reader would notice, so an artifact built
- * by one version of Equator and loaded by another is refused rather than misread.
+ * by one version of Thoth and loaded by another is refused rather than misread.
  */
-export const COMPILED_IR_PROFILE = 'equator-compiled-ir/1' as const;
+export const COMPILED_IR_PROFILE = 'thoth-compiled-ir/1' as const;
 /** The version stamp on the descriptor that lists a build's compiled catalogs. */
-export const CATALOG_DESCRIPTOR_PROFILE = 'equator-catalog-set/1' as const;
+export const CATALOG_DESCRIPTOR_PROFILE = 'thoth-catalog-set/1' as const;
 /** The version stamp on the resource counts carried beside a compiled catalog. */
-export const RESOURCE_SUMMARY_PROFILE = 'equator-resource-summary/1' as const;
+export const RESOURCE_SUMMARY_PROFILE = 'thoth-resource-summary/1' as const;
 
 /** What identifies one compiled catalog: whose it is, which scope, and which locale. */
 export interface CompiledCatalogKey {
@@ -174,7 +174,7 @@ export interface CompiledCatalog {
   /** Which generated interface this was built against, so old output and new code do not mix. */
   readonly generatedAbi: string;
   /** Which standards profile the messages were compiled under. */
-  readonly standardsProfile: 'equator-1';
+  readonly standardsProfile: 'thoth-1';
   /** Whose catalog this is, which scope, and which locale. */
   readonly key: CompiledCatalogKey;
   /** A digest of the application's message contracts, which a loader matches against its own. */
@@ -202,11 +202,11 @@ export interface ArtifactAddress {
   /** The compiled-shape version stamp the artifact carries. */
   readonly compiledIrProfile: typeof COMPILED_IR_PROFILE;
   /** The schema of the file itself. */
-  readonly schema: 'equator-compiled-catalog/1';
+  readonly schema: 'thoth-compiled-catalog/1';
   /** Runtime capabilities the artifact needs, which a host without them can refuse on. */
   readonly requiredFeatures: readonly string[];
   /** The standards profile it was compiled under. */
-  readonly standardsProfile: 'equator-1';
+  readonly standardsProfile: 'thoth-1';
   /** The generated interface version it matches. */
   readonly generatedAbi: string;
   /** The application contract digest it was built against. */
@@ -278,16 +278,16 @@ export interface RecoveryRepresentation {
 /**
  * Which project this generated output belongs to, and where it writes.
  *
- * Two Equator-owned trees can sit in one repository, and the work root and the generated root each
+ * Two Thoth-owned trees can sit in one repository, and the work root and the generated root each
  * carry an owner identity so that one project's disposable state can never be adopted by another's
  * build. This is what that identity is made of, and the two fields are the whole of it: the package
  * that owns the catalogs, and the path it generates into, relative to that package.
  *
  * **It is deliberately not derived from anything the owner generates.** An identity that digests
  * the scope list changes the first time a consumer writes a catalog and again every time they add a
- * scope, so the work root records an owner the next run no longer computes, and `equator generate`
- * refuses with `EQ1602` until `equator clean` removes the marker. Adding a scope is ordinary
- * localization work and must cost no Equator step. An identity that moves when the work moves is
+ * scope, so the work root records an owner the next run no longer computes, and `thoth generate`
+ * refuses with `TH1602` until `thoth clean` removes the marker. Adding a scope is ordinary
+ * localization work and must cost no Thoth step. An identity that moves when the work moves is
  * not an identity; it is a digest of the work, which the completion manifest already keeps under
  * `planDigest`.
  *
@@ -296,9 +296,9 @@ export interface RecoveryRepresentation {
  */
 export interface OwnerIdentity {
   /**
-   * The owning package's Equator provider identity, which is its package name.
+   * The owning package's Thoth provider identity, which is its package name.
    *
-   * `compileProject` refuses one outside the provider grammar with `EQ1104`.
+   * `compileProject` refuses one outside the provider grammar with `TH1104`.
    */
   readonly providerId: string;
   /**
@@ -313,11 +313,11 @@ export interface OwnerIdentity {
 /**
  * The identity recorded in the work-root marker and the completion manifest.
  *
- * Published because a consumer's own tooling may need to recognise which of several Equator-owned
+ * Published because a consumer's own tooling may need to recognise which of several Thoth-owned
  * trees a directory belongs to without running a compilation to find out.
  */
 export function generatedOwnerId(owner: OwnerIdentity): string {
-  return digestCanonicalJson('equator-generated-owner/1', {
+  return digestCanonicalJson('thoth-generated-owner/1', {
     providerId: owner.providerId,
     generatedRootPath: owner.generatedRootPath,
   });
@@ -375,7 +375,7 @@ function serializeJson(value: unknown): string | undefined {
 function canonicalValue(value: unknown): CanonicalJsonValue {
   const serialized = serializeJson(value);
   if (serialized === undefined) {
-    throw new TypeError('Equator compiled data is not JSON serializable.');
+    throw new TypeError('Thoth compiled data is not JSON serializable.');
   }
   return JSON.parse(serialized) as CanonicalJsonValue;
 }
@@ -600,7 +600,7 @@ function compileCatalog(
   const base = {
     profile: COMPILED_IR_PROFILE,
     generatedAbi: graph.generatedAbi,
-    standardsProfile: 'equator-1' as const,
+    standardsProfile: 'thoth-1' as const,
     key: Object.freeze({
       providerId: catalog.providerId,
       scopeId: catalog.scopeId,
@@ -621,7 +621,7 @@ function compileCatalog(
   if (resources.irNodes > RESOURCE_LIMITS.irNodesPerCatalog) {
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1502',
+        'TH1502',
         `Compiled catalog ${catalog.providerId}/${catalog.scopeId}/${catalog.locale} exceeds the ${RESOURCE_LIMITS.irNodesPerCatalog}-node IR ceiling.`,
       ),
     );
@@ -629,7 +629,7 @@ function compileCatalog(
   if (resources.depth > RESOURCE_LIMITS.irDepth) {
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1502',
+        'TH1502',
         `Compiled catalog ${catalog.providerId}/${catalog.scopeId}/${catalog.locale} exceeds the IR depth ceiling of ${RESOURCE_LIMITS.irDepth}.`,
       ),
     );
@@ -740,15 +740,15 @@ function artifactAddress(catalog: CompiledCatalog): ArtifactAddress {
   return Object.freeze({
     key: catalog.key,
     compiledIrProfile: COMPILED_IR_PROFILE,
-    schema: 'equator-compiled-catalog/1',
+    schema: 'thoth-compiled-catalog/1',
     requiredFeatures: requiredFeatures(catalog),
-    standardsProfile: 'equator-1',
+    standardsProfile: 'thoth-1',
     generatedAbi: catalog.generatedAbi,
     applicationContractFingerprint: catalog.applicationContractFingerprint,
     semanticRegistryFingerprint: catalog.semanticRegistryFingerprint,
     requiredExtensions: catalog.requiredExtensions,
     contentDigest: digestCanonicalJson(
-      'equator-compiled-catalog/1',
+      'thoth-compiled-catalog/1',
       canonicalValue(catalog),
     ),
   });
@@ -756,7 +756,7 @@ function artifactAddress(catalog: CompiledCatalog): ArtifactAddress {
 
 function artifactPath(catalog: CompiledCatalog): string {
   const provider = digestCanonicalJson(
-    'equator-provider-output-path/1',
+    'thoth-provider-output-path/1',
     catalog.key.providerId,
   ).slice('sha256-'.length);
   return `catalogs/${provider}/${catalog.key.scopeId}/${catalog.key.catalogLocale}.ts`;
@@ -804,7 +804,7 @@ function catalogDescriptor(
         }),
       );
       const catalogSetId = digestCanonicalJson(
-        'equator-provider-catalog-set/1',
+        'thoth-provider-catalog-set/1',
         artifacts.map(({ address }) => addressIdentityJson(address)),
       );
       return Object.freeze({
@@ -824,7 +824,7 @@ function catalogDescriptor(
 
 function dataModule(exportName: string, value: unknown): string {
   return [
-    '/** Generated by Equator. Do not edit. */',
+    '/** Generated by Thoth. Do not edit. */',
     `export const ${exportName} = ${JSON.stringify(value, null, 2)} as const;`,
     '',
   ].join('\n');
@@ -839,7 +839,7 @@ function dataModule(exportName: string, value: unknown): string {
  */
 function personNamesModule(profileSet: PersonNameProfileSet): string {
   return [
-    '/** Generated by Equator. Do not edit. */',
+    '/** Generated by Thoth. Do not edit. */',
     '/**',
     ' * Person-name patterns for the configured locales, from pinned CLDR.',
     ' *',
@@ -883,7 +883,7 @@ function loaderModule(descriptor: CatalogSetDescriptor): string {
     }),
   );
   return [
-    '/** Generated by Equator. Do not edit. */',
+    '/** Generated by Thoth. Do not edit. */',
     'export const catalogLoaders = Object.freeze({',
     ...rows,
     '});',
@@ -947,7 +947,7 @@ export function compileLocalArtifacts(
     if (scope === undefined) {
       diagnostics.push(
         toolkitDiagnostic(
-          'EQ1501',
+          'TH1501',
           `Catalog ${catalog.providerId}/${catalog.scopeId}/${catalog.locale} is absent from the accepted semantic graph.`,
         ),
       );
@@ -974,7 +974,7 @@ export function compileLocalArtifacts(
     }
     diagnostics.push(
       toolkitDiagnostic(
-        'EQ1004',
+        'TH1004',
         `The pinned CLDR release carries no person-name patterns for ${JSON.stringify(locale)}, so declaring it changes nothing. Names in that locale are formatted with the interface's own patterns.`,
         { path: ['personNameLocales'], severity: 'warning' },
       ),

@@ -1,19 +1,19 @@
 # Versioning and compatibility
 
-What the version number on an Equator release covers, and how a release reaches you.
+What the version number on a Thoth release covers, and how a release reaches you.
 
 ## One line, two packages
 
-`@neolorn/equator` and `@neolorn/equator-toolkit` share a version. They are produced and verified
+`@neolorn/thoth` and `@neolorn/thoth-toolkit` share a version. They are produced and verified
 together, and the matching numbers say the pair in your install was tested as a pair. Upgrade them
 together.
 
 Matching versions are not a compatibility check for anything that leaves your build. A file your
 project exchanges or keeps carries its own format identity, and that identity decides whether a
-reader can open it. Two installs on the same Equator version can disagree about a document whose own
-format moved, and two installs on different Equator versions can exchange one.
+reader can open it. Two installs on the same Thoth version can disagree about a document whose own
+format moved, and two installs on different Thoth versions can exchange one.
 
-Equator follows [Semantic Versioning](https://semver.org). A patch release fixes something without
+Thoth follows [Semantic Versioning](https://semver.org). A patch release fixes something without
 changing what your code can call. A minor release adds. A major release breaks something and says
 so.
 
@@ -31,8 +31,8 @@ published under `latest`, so an install that names no version resolves to the ne
 and you opt into a candidate by asking for one:
 
 ```text
-npm install @neolorn/equator@next
-npm install --save-dev @neolorn/equator-toolkit@next
+npm install @neolorn/thoth@next
+npm install --save-dev @neolorn/thoth-toolkit@next
 ```
 
 A candidate carries the same verification a stable release does. The surface it adds is settled by
@@ -45,8 +45,8 @@ These are the surfaces a release does not break without saying so:
 - the package names and the entry points listed in [Entry points](reference/entry-points.md);
 - the exported types, functions, classes, tokens, providers and signals, and what they do;
 - the template and lifecycle behavior described in this documentation;
-- the shape and meaning of `equator.config.json`;
-- the commands, options, exit codes and machine output of the `equator` command;
+- the shape and meaning of `thoth.config.json`;
+- the commands, options, exit codes and machine output of the `thoth` command;
 - the diagnostic codes in [Diagnostics](reference/diagnostics.md), and the observability events;
 - the extension and adapter contracts;
 - the interchange format your catalogs travel in;
@@ -68,7 +68,7 @@ Some things are visible in your `node_modules` and are still outside the contrac
 - caches, reports and work files;
 - the physical path a generated file lands at, as long as the import you write for it is stable;
 - the exact wording of a message written for a human to read, as opposed to the code beside it;
-- which dependencies Equator uses;
+- which dependencies Thoth uses;
 - file ordering, timestamps, and formatting.
 
 A release that changes one of those is not labeled breaking. Safety, determinism and package
@@ -80,7 +80,7 @@ Everything under your generated root is output. It regenerates, it carries an id
 tooling that produced it, and it has no version of its own. There is no deprecation program for a
 generated handle and no alias table keeping an old one alive.
 
-Run `equator generate` again after an upgrade. Generated output that is stale, or that was produced
+Run `thoth generate` again after an upgrade. Generated output that is stale, or that was produced
 by tooling which no longer matches, reports a diagnostic rather than being used. Install, import and
 watch mode migrate nothing on their own.
 
@@ -90,14 +90,14 @@ yours, and the output comes back from them.
 ## Formats that outlive a release
 
 Two things your project produces can be kept or sent somewhere and read back later: the interchange
-documents your translators work in, and the machine output of the `equator` command when you record
+documents your translators work in, and the machine output of the `thoth` command when you record
 it.
 
 Each carries its own identity and version, independent of the package version. An incompatible
 change to one increments that format's own major version and arrives with a migration or a refusal.
 A reader that cannot open a document says so.
 
-Everything else Equator generates regenerates with matching tooling and is not read across versions.
+Everything else Thoth generates regenerates with matching tooling and is not read across versions.
 
 ## Hosts and platforms
 
@@ -113,7 +113,7 @@ application that works on an untested combination is evidence about that applica
 
 ## Locale data updates
 
-Equator pins the standards data it renders with, so the same input produces the same output for the
+Thoth pins the standards data it renders with, so the same input produces the same output for the
 life of a release.
 
 Updating that pin regenerates what it affects. A migration comes with the update only when it
@@ -140,7 +140,7 @@ Generated output is regenerated rather than migrated in place.
 
 ## Deprecation
 
-Deprecation is proportional to how much a surface is used and what replacing it costs. Equator runs
+Deprecation is proportional to how much a surface is used and what replacing it costs. Thoth runs
 no fixed deprecation window and maintains no alias tables or compatibility shims.
 
 Where a deprecation is warranted rather than a clean removal, it names the affected surface, gives a

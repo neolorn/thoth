@@ -7,13 +7,13 @@ import {
   Localization,
   withRouting,
   withFormattingContext,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import {
   LocalizedPageOutcome,
   LocalizedTitleStrategy,
   provideLocalizedRouter,
-} from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+} from '@neolorn/thoth/router';
+import { provideLocalizationTesting } from '@neolorn/thoth/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -54,7 +54,7 @@ const ARABIC = 'ar-EG';
 /**
  * A host with an outlet, because the declaration comes from the route's own component.
  *
- * Without a rendered outlet nothing declares and every assertion below reads the head Equator built
+ * Without a rendered outlet nothing declares and every assertion below reads the head Thoth built
  * from the address alone, which is the head this file exists to say is not enough.
  */
 @Component({
@@ -353,7 +353,7 @@ describe('a response that reached no route at all', () => {
       await TestBed.inject(Localization).changeLocale(ARABIC);
       await settle();
       expect(document.title).toBe('الصفحة غير موجودة');
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
     },
   );
 

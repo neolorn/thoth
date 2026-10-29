@@ -4,7 +4,7 @@ import type {
   MessageFunctionInvocation,
   MessageFunctionResult,
   RuntimeMessageFunctionDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import {
   messageCustomFunctions,
   defineExtensionRegistry,
@@ -20,7 +20,7 @@ import { parse, renderSemantics } from './message-harness.js';
  *
  * MessageFormat defines two operations on a resolved value that supports selection:
  * *"Match(`rv`, `k`) returns true for any key `k` that matches `rv`"* and *"BetterThan(`rv`, `k1`,
- * `k2`) returns true ... and `k1` is a better match than `k2`"*, and an Equator extension could
+ * `k2`) returns true ... and `k1` is a better match than `k2`"*, and a Thoth extension could
  * express neither. `MessageFunctionResult` carried one `selectKey`, so a function could not match
  * `1.0` and `1` at once and could not say which of the two it preferred, and the evaluator pinned
  * `betterThan` to false for every extension result. Both are read off one ordered `selectKeys` now:
@@ -231,7 +231,7 @@ describe('an extension that selects', () => {
 /**
  * MessageFormat resolves an operand that is itself an annotated expression to a value carrying its
  * options, *"with options on the expression taking priority over any options of the operand"*.
- * Equator does this for extensions as for its own numeric functions, so a message answers the same
+ * Thoth does this for extensions as for its own numeric functions, so a message answers the same
  * whichever function it names.
  */
 describe('an extension that inherits its operand', () => {
@@ -268,7 +268,7 @@ describe('an extension that inherits its operand', () => {
   });
 
   /**
-   * The narrowing that is Equator's rather than MessageFormat's. A descriptor is a closed statement
+   * The narrowing that is Thoth's rather than MessageFormat's. A descriptor is a closed statement
    * of what a function accepts, so inheritance must not be a second door an undeclared name walks
    * through: `:number`'s `signDisplay` reaches the chain but not this function's hands.
    */
@@ -295,7 +295,7 @@ describe('an extension that inherits its operand', () => {
  * What an extension declaration carries into the rest of the message.
  *
  * MessageFormat resolves an expression's options against its operand's, *"with options on the
- * expression taking priority over any options of the operand"*, and Equator's rule for a custom
+ * expression taking priority over any options of the operand"*, and Thoth's rule for a custom
  * function is that the resolved value carries the whole merged mapping while the descriptor narrows
  * only what the function is *called* with. The compiler builds the same profile from the
  * descriptor; a compiler that knew only a registered function's name and whether it selects would

@@ -32,7 +32,7 @@ import {
   type PlainDateValue,
   type PlainTimeValue,
   type TimeZoneValue,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 import {
   decimal,
   duration,

@@ -17,15 +17,15 @@ The initial files are the browser entry and every file it imports statically. La
 
 The bytes of each entry point's own module in each build, before compression, as the build's metafile attributes them. An entry point that reaches another counts only its own bytes.
 
-| Entry point                | Minimal consumer, initial | Minimal consumer, lazy | Minimal consumer, server | Full consumer, initial | Full consumer, lazy | Full consumer, server |
-| -------------------------- | ------------------------: | ---------------------: | -----------------------: | ---------------------: | ------------------: | --------------------: |
-| `@neolorn/equator`         |                   222,419 |                      0 |                        0 |                294,838 |                   0 |               252,832 |
-| `@neolorn/equator/core`    |                    30,322 |                      0 |                        0 |                 69,757 |                   0 |               121,208 |
-| `@neolorn/equator/forms`   |                         0 |                      0 |                        0 |                  4,385 |                   0 |                 3,549 |
-| `@neolorn/equator/http`    |                         0 |                      0 |                        0 |                      0 |                   0 |                 6,886 |
-| `@neolorn/equator/router`  |                         0 |                      0 |                        0 |                 41,325 |                   0 |                34,360 |
-| `@neolorn/equator/ssr`     |                         0 |                      0 |                        0 |                      0 |                   0 |                   153 |
-| `@neolorn/equator/testing` |                         0 |                      0 |                        0 |                      0 |                   0 |                     0 |
+| Entry point              | Minimal consumer, initial | Minimal consumer, lazy | Minimal consumer, server | Full consumer, initial | Full consumer, lazy | Full consumer, server |
+| ------------------------ | ------------------------: | ---------------------: | -----------------------: | ---------------------: | ------------------: | --------------------: |
+| `@neolorn/thoth`         |                   222,364 |                      0 |                        0 |                294,916 |                   0 |               252,766 |
+| `@neolorn/thoth/core`    |                    30,312 |                      0 |                        0 |                 69,759 |                   0 |               121,160 |
+| `@neolorn/thoth/forms`   |                         0 |                      0 |                        0 |                  4,383 |                   0 |                 3,547 |
+| `@neolorn/thoth/http`    |                         0 |                      0 |                        0 |                      0 |                   0 |                 6,874 |
+| `@neolorn/thoth/router`  |                         0 |                      0 |                        0 |                 41,282 |                   0 |                34,316 |
+| `@neolorn/thoth/ssr`     |                         0 |                      0 |                        0 |                      0 |                   0 |                   153 |
+| `@neolorn/thoth/testing` |                         0 |                      0 |                        0 |                      0 |                   0 |                     0 |
 
 ## Locale data in the runtime
 
@@ -42,12 +42,12 @@ Everything each build emits, including Angular and the application itself.
 
 | Application      | Part    | Files |     Bytes |    gzip |  Brotli |
 | ---------------- | ------- | ----: | --------: | ------: | ------: |
-| Minimal consumer | initial |     1 |   342,716 | 104,224 |  89,354 |
-| Minimal consumer | lazy    |     4 |     8,758 |   4,299 |   3,521 |
+| Minimal consumer | initial |     1 |   342,586 | 104,230 |  89,271 |
+| Minimal consumer | lazy    |     4 |     8,718 |   4,294 |   3,506 |
 | Minimal consumer | server  |     0 |         0 |       0 |       0 |
-| Full consumer    | initial |     1 |   739,049 | 214,466 | 179,441 |
-| Full consumer    | lazy    |     6 |    63,161 |  17,538 |  15,368 |
-| Full consumer    | server  |    20 | 1,638,033 | 479,837 | 413,131 |
+| Full consumer    | initial |     1 |   738,897 | 214,449 | 179,493 |
+| Full consumer    | lazy    |     6 |    63,097 |  17,545 |  15,376 |
+| Full consumer    | server  |    20 | 1,637,345 | 479,817 | 413,344 |
 
 ## Generated contracts
 
@@ -55,50 +55,50 @@ The generated code in the initial files, and each lazily loaded catalog: one sco
 
 ### Minimal consumer
 
-Generated code in the initial files: 13,836 bytes.
+Generated code in the initial files: 13,763 bytes.
 
 | Scope | Locale | Bytes |  gzip | Brotli |
 | ----- | ------ | ----: | ----: | -----: |
-| shell | ar     | 2,333 | 1,138 |    916 |
-| shell | ar-EG  | 2,042 | 1,040 |    851 |
-| shell | en-US  | 2,259 | 1,037 |    862 |
-| shell | th     | 2,124 | 1,084 |    892 |
+| shell | ar     | 2,323 | 1,138 |    916 |
+| shell | ar-EG  | 2,032 | 1,040 |    845 |
+| shell | en-US  | 2,249 | 1,034 |    858 |
+| shell | th     | 2,114 | 1,082 |    887 |
 
 ### Full consumer
 
-Generated code in the initial files: 51,271 bytes.
+Generated code in the initial files: 50,986 bytes.
 
 | Scope | Locale |  Bytes |  gzip | Brotli |
 | ----- | ------ | -----: | ----: | -----: |
-| lazy  | ar-EG  |    944 |   603 |    493 |
-| lazy  | en-US  |    926 |   568 |    464 |
-| shell | ar-EG  | 25,962 | 6,353 |  5,514 |
-| shell | en-US  | 24,040 | 5,807 |  5,170 |
+| lazy  | ar-EG  |    936 |   599 |    493 |
+| lazy  | en-US  |    918 |   564 |    465 |
+| shell | ar-EG  | 25,938 | 6,362 |  5,502 |
+| shell | en-US  | 24,016 | 5,815 |  5,169 |
 
 ## Compiler output
 
-What `equator generate` writes for each application. A second run over unchanged inputs writes nothing, which the consumer stages assert.
+What `thoth generate` writes for each application. A second run over unchanged inputs writes nothing, which the consumer stages assert.
 
 | Application      | Files |   Bytes |
 | ---------------- | ----: | ------: |
-| Minimal consumer |    15 |  42,310 |
-| Full consumer    |    16 | 179,696 |
+| Minimal consumer |    15 |  42,124 |
+| Full consumer    |    16 | 179,288 |
 
 ## Packages
 
 Each entry point as published, unminified, and each package as installed, source maps and declarations included.
 
-| Entry point                |   Bytes |   gzip | Brotli |
-| -------------------------- | ------: | -----: | -----: |
-| `@neolorn/equator`         | 431,921 | 91,669 | 73,739 |
-| `@neolorn/equator/core`    | 118,781 | 30,879 | 24,969 |
-| `@neolorn/equator/forms`   |   7,177 |  2,251 |  1,958 |
-| `@neolorn/equator/http`    |  13,826 |  4,159 |  3,624 |
-| `@neolorn/equator/router`  |  56,922 | 13,446 | 11,576 |
-| `@neolorn/equator/ssr`     |     658 |    310 |    275 |
-| `@neolorn/equator/testing` |   9,654 |  3,218 |  2,753 |
+| Entry point              |   Bytes |   gzip | Brotli |
+| ------------------------ | ------: | -----: | -----: |
+| `@neolorn/thoth`         | 431,849 | 91,659 | 73,781 |
+| `@neolorn/thoth/core`    | 118,741 | 30,877 | 25,009 |
+| `@neolorn/thoth/forms`   |   7,171 |  2,250 |  1,957 |
+| `@neolorn/thoth/http`    |  13,810 |  4,157 |  3,618 |
+| `@neolorn/thoth/router`  |  56,872 | 13,444 | 11,575 |
+| `@neolorn/thoth/ssr`     |     654 |    310 |    286 |
+| `@neolorn/thoth/testing` |   9,646 |  3,216 |  2,760 |
 
-| Package                    | Files |     Bytes |
-| -------------------------- | ----: | --------: |
-| `@neolorn/equator`         |    38 | 3,212,728 |
-| `@neolorn/equator-toolkit` |   238 | 4,004,618 |
+| Package                  | Files |     Bytes |
+| ------------------------ | ----: | --------: |
+| `@neolorn/thoth`         |    38 | 3,210,973 |
+| `@neolorn/thoth-toolkit` |   238 | 4,001,342 |

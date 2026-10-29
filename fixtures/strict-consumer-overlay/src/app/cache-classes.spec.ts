@@ -1,7 +1,7 @@
 import {
   resolveLocalizedRoute,
   routeHttpDescriptor,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { cacheLogField, redirectLogField } from './cache-classes';
 import { appRouteProjection, routePolicy } from './localization.routes';
@@ -23,7 +23,7 @@ describe('the cache class read by a host', () => {
     expect(cacheLogField(routeHttpDescriptor(entry).cache)).toBe(
       'browser-revalidated',
     );
-    claimCapability('entry:@neolorn/equator/core', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth/core', { policy: routePolicy });
   });
 
   it('reads an address that states its locale as shared', () => {
@@ -34,6 +34,6 @@ describe('the cache class read by a host', () => {
         ).cache,
       ),
     ).toBe('shared');
-    claimCapability('entry:@neolorn/equator/core', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth/core', { policy: routePolicy });
   });
 });

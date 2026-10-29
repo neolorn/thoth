@@ -10,12 +10,12 @@ import {
   type LocalizedAddressContext,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * Where the address translation hands an address back, and what it reads one against.
  *
- * `toInternalPath` and `toExternalPath` rewrite an address Equator can place and return any other
+ * `toInternalPath` and `toExternalPath` rewrite an address Thoth can place and return any other
  * as it was given, so the application's own routes still answer for it. Only a permanent
  * correction is followed on the way: a redirect that depends on a preference is the server's to
  * answer. Under a host policy the address is read at the origin in the context.
@@ -29,7 +29,7 @@ const TEXT: RouteParameterCodec<string> = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-AddressTranslationDeclinesTestIdentity01234',
     routes: [
       { id: 'home', path: '', parameterNames: [] },

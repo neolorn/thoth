@@ -34,7 +34,7 @@ function expectFailureCode(
   ).toBe(true);
 }
 
-describe('Equator project configuration', () => {
+describe('Thoth project configuration', () => {
   it('canonicalizes locale declarations and builds a prototype-safe alias table', () => {
     const result = parseConfiguration(
       JSON.stringify({
@@ -104,7 +104,7 @@ describe('Equator project configuration', () => {
     expect(
       malformed.diagnostics.some(
         ({ code, path }) =>
-          code === 'EQ1003' && path[0] === 'personNameLocales' && path[1] === 1,
+          code === 'TH1003' && path[0] === 'personNameLocales' && path[1] === 1,
       ),
     ).toBe(true);
 
@@ -122,7 +122,7 @@ describe('Equator project configuration', () => {
     expect(
       repeated.diagnostics.some(
         ({ code, path }) =>
-          code === 'EQ1004' && path[0] === 'personNameLocales',
+          code === 'TH1004' && path[0] === 'personNameLocales',
       ),
     ).toBe(true);
   });
@@ -178,18 +178,18 @@ describe('Equator project configuration', () => {
     ['trailing commas', '{"schemaVersion":1,}'],
     ['empty input', ''],
   ])('rejects JSON extensions: %s', (_label, source) => {
-    expectFailureCode(parseConfiguration(source), 'EQ1001');
+    expectFailureCode(parseConfiguration(source), 'TH1001');
   });
 
   it('detects duplicate keys before configuration construction', () => {
     const result = parseConfiguration(
       '{"schemaVersion":1,"schemaVersion":1,"sourceLocale":"en","defaultLocale":"en","locales":["en"]}',
-      { sourcePath: 'equator.config.json' },
+      { sourcePath: 'thoth.config.json' },
     );
 
-    expectFailureCode(result, 'EQ1001');
+    expectFailureCode(result, 'TH1001');
     expect(result.diagnostics[0]?.path).toEqual(['schemaVersion']);
-    expect(result.diagnostics[0]?.span?.sourcePath).toBe('equator.config.json');
+    expect(result.diagnostics[0]?.span?.sourcePath).toBe('thoth.config.json');
     expect(result.diagnostics[0]?.span?.start.line).toBe(0);
   });
 
@@ -197,12 +197,12 @@ describe('Equator project configuration', () => {
     const result = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en","defaultLocale":"en","locales":["en"],"remoteCatalog":"https://example.test"}',
     );
-    expectFailureCode(result, 'EQ1002');
+    expectFailureCode(result, 'TH1002');
   });
 
   it('rejects the withdrawn `profile` declaration', () => {
-    // `profile` was a second version marker beside `schemaVersion` that told Equator nothing it did
-    // not already know, and the standards bundle it named is a property of the Equator release
+    // `profile` was a second version marker beside `schemaVersion` that told Thoth nothing it did
+    // not already know, and the standards bundle it named is a property of the Thoth release
     // rather than of the consumer's project: it is recorded on compiled artifacts, where
     // compatibility checking actually reads it.
     //
@@ -210,42 +210,42 @@ describe('Equator project configuration', () => {
     // to `schemas.ts` would pass every other test in the suite, because nothing else in the
     // codebase would notice a field that is merely accepted and ignored.
     const result = parseConfiguration(
-      '{"schemaVersion":1,"profile":"equator-1","sourceLocale":"en","defaultLocale":"en","locales":["en"]}',
+      '{"schemaVersion":1,"profile":"thoth-1","sourceLocale":"en","defaultLocale":"en","locales":["en"]}',
     );
-    expectFailureCode(result, 'EQ1002');
+    expectFailureCode(result, 'TH1002');
   });
 
   it('rejects duplicate canonical locales and undeclared source/default locales', () => {
     const duplicate = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en-US","defaultLocale":"en-US","locales":["en-US","EN-us"]}',
     );
-    expectFailureCode(duplicate, 'EQ1004');
+    expectFailureCode(duplicate, 'TH1004');
 
     const undeclared = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en","defaultLocale":"ar","locales":["en"]}',
     );
-    expectFailureCode(undeclared, 'EQ1004');
+    expectFailureCode(undeclared, 'TH1004');
   });
 
   it('rejects malformed, shadowing, and unsupported aliases', () => {
     const malformed = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en","defaultLocale":"en","locales":["en"],"aliases":{"bad_alias":"en"}}',
     );
-    expectFailureCode(malformed, 'EQ1005');
+    expectFailureCode(malformed, 'TH1005');
 
     const shadowing = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en-US","defaultLocale":"en-US","locales":["en-US"],"aliases":{"en-us":"en-US"}}',
     );
-    expectFailureCode(shadowing, 'EQ1006');
+    expectFailureCode(shadowing, 'TH1006');
 
     const unsupported = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en","defaultLocale":"en","locales":["en"],"aliases":{"arabic":"ar"}}',
     );
-    expectFailureCode(unsupported, 'EQ1006');
+    expectFailureCode(unsupported, 'TH1006');
   });
 });
 
-describe('Equator canonical catalogs', () => {
+describe('Thoth canonical catalogs', () => {
   it('normalizes source shorthand, structured messages, inputs, slots, and empty output', () => {
     const result = parseCatalog(
       [
@@ -336,13 +336,13 @@ describe('Equator canonical catalogs', () => {
       'messages:\n  account.greeting:\n    message: "مرحبًا {$name}"\n    inputs:\n      name: string\n',
       targetCatalogOptions,
     );
-    expectFailureCode(inputs, 'EQ1105');
+    expectFailureCode(inputs, 'TH1105');
 
     const slots = parseCatalog(
       'messages:\n  account.greeting:\n    message: "مرحبًا"\n    slots:\n      strong: strong\n',
       targetCatalogOptions,
     );
-    expectFailureCode(slots, 'EQ1105');
+    expectFailureCode(slots, 'TH1105');
   });
 
   it.each([
@@ -357,7 +357,7 @@ describe('Equator canonical catalogs', () => {
     ],
     ['non-finite numbers', 'messages:\n  title: !!float .inf\n'],
   ])('rejects unsafe YAML structure: %s', (_label, source) => {
-    expectFailureCode(parseCatalog(source, sourceCatalogOptions), 'EQ1101');
+    expectFailureCode(parseCatalog(source, sourceCatalogOptions), 'TH1101');
   });
 
   it('detects duplicate YAML keys before construction', () => {
@@ -365,7 +365,7 @@ describe('Equator canonical catalogs', () => {
       'messages:\n  title: "First"\n  title: "Second"\n',
       sourceCatalogOptions,
     );
-    expectFailureCode(result, 'EQ1103');
+    expectFailureCode(result, 'TH1103');
     expect(result.diagnostics[0]?.path).toEqual(['messages', 'title']);
     expect(result.diagnostics[0]?.span?.start.line).toBe(2);
   });
@@ -375,13 +375,13 @@ describe('Equator canonical catalogs', () => {
       'messages:\n  title: "Hi"\nfuture-feature:\n  status: "status.{value}"\n',
       sourceCatalogOptions,
     );
-    expectFailureCode(deferredFeature, 'EQ1102');
+    expectFailureCode(deferredFeature, 'TH1102');
 
     const identity = parseCatalog(
       'messages:\n  Not.Valid: "Hi"\n',
       sourceCatalogOptions,
     );
-    expectFailureCode(identity, 'EQ1102');
+    expectFailureCode(identity, 'TH1102');
   });
 
   it('rejects malformed provider, scope, and locale context independently of content', () => {
@@ -390,21 +390,21 @@ describe('Equator canonical catalogs', () => {
         ...sourceCatalogOptions,
         providerId: 'Bad Provider',
       }),
-      'EQ1104',
+      'TH1104',
     );
     expectFailureCode(
       parseCatalog('messages:\n  title: "Hi"\n', {
         ...sourceCatalogOptions,
         scopeId: 'BadScope',
       }),
-      'EQ1104',
+      'TH1104',
     );
     expectFailureCode(
       parseCatalog('messages:\n  title: "Hi"\n', {
         ...sourceCatalogOptions,
         locale: 'en_US',
       }),
-      'EQ1003',
+      'TH1003',
     );
   });
 });

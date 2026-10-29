@@ -1,6 +1,6 @@
 // Server rendering, configured once, from the same projection the client was.
 //
-// A secondary entry point rather than part of `@neolorn/equator`, because this is the only Equator
+// A secondary entry point rather than part of `@neolorn/thoth`, because this is the only Thoth
 // code that imports `@angular/ssr`, and `specs/02-packages-and-platform.spec.md` section 6 states
 // that an optional integration must not put its peer on the primary entry point.
 // `specs/02-packages-and-platform.spec.md` section 2 permits the entry point on exactly this
@@ -17,8 +17,8 @@
 //
 // The three arguments come from the one place they are already declared. Passing a *different*
 // policy or projection here than `withRouting()` received is the mistake worth preventing, and it
-// is the one Equator cannot see from inside a single call, so it stays a consumer discipline. The
-// configuration is the one third of it Equator can see: a configuration that does not list the
+// is the one Thoth cannot see from inside a single call, so it stays a consumer discipline. The
+// configuration is the one third of it Thoth can see: a configuration that does not list the
 // locale its own policy makes default is refused rather than quietly emitting a table with no
 // addresses in it.
 //
@@ -42,7 +42,7 @@ import {
   type LocalizedServerRouteDeclaration,
   type LocalizedServerRoutesOptions,
   type RouteRuntimeProjection,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 
 /**
  * What `provideLocalizedServerRendering` accepts beyond the routes themselves.
@@ -55,13 +55,13 @@ export interface LocalizedServerRenderingOptions extends LocalizedServerRoutesOp
   /**
    * The application shell, and the only Angular server-rendering feature a consumer can supply.
    *
-   * Equator owns `withRoutes`, so a second one cannot be passed and there is no variadic feature
+   * Thoth owns `withRoutes`, so a second one cannot be passed and there is no variadic feature
    * list to admit one. The type is read off `withAppShell` rather than restated: `@angular/ssr`
    * exports no `ServerRenderingFeature` or `ServerRenderingFeatureKind`, and a hand-written copy
-   * of a shape Angular does not publish would be Equator asserting a contract it does not have.
+   * of a shape Angular does not publish would be Thoth asserting a contract it does not have.
    */
   readonly appShell?: Parameters<typeof withAppShell>[0];
-  /** Passed through to `provideServerRendering` unchanged. Equator reads nothing in it. */
+  /** Passed through to `provideServerRendering` unchanged. Thoth reads nothing in it. */
   readonly rendering?: ServerRenderingOptions;
 }
 

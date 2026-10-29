@@ -7,7 +7,7 @@ import {
   plainDateTime,
   plainTime,
 } from '../src/formatting.js';
-import { type FormattingContext } from '@neolorn/equator/core';
+import { type FormattingContext } from '@neolorn/thoth/core';
 
 /**
  * The fields a plain time and a plain date-time are written with where the caller names none.

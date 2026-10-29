@@ -5,7 +5,7 @@ import {
   type LocalizationContextOptions,
   type LocalizationParticipantContext,
   type LocalizationSetup,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { loadersFor } from './catalog-store-harness.js';
 import { compiled } from './transaction-runtime-harness.js';

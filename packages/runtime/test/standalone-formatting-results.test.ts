@@ -25,7 +25,7 @@ import {
   type FormattingContext,
   type FormattingResult,
   type LocalizationDiagnostic,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * What a standalone formatting call hands back, on both sides of `ok`.

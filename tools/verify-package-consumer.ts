@@ -4,7 +4,7 @@
  * `specs/02-packages-and-platform.spec.md` section 11 lists what a distributable has to establish,
  * and most of it is only visible from outside: whether the export map resolves, whether one Angular
  * instance ends up in the graph, whether server rendering and the browser agree. The consumer is
- * materialized from a fixture and installs Equator the way anyone else would, because a consumer
+ * materialized from a fixture and installs Thoth the way anyone else would, because a consumer
  * wired to the workspace would resolve the sources instead of the published files.
  */
 import assert from 'node:assert/strict';
@@ -142,7 +142,7 @@ interface BuildStats {
   >;
 }
 
-/** One event `equator watch --json` prints, as far as this reads it. */
+/** One event `thoth watch --json` prints, as far as this reads it. */
 interface WatchEvent {
   readonly status: string;
 }
@@ -234,7 +234,7 @@ const readJson = async (path: string) =>
 const verifyWatchCommand = async () => {
   const cliPath = resolve(
     consumerRoot,
-    'node_modules/@neolorn/equator-toolkit/cli.js',
+    'node_modules/@neolorn/thoth-toolkit/cli.js',
   );
   const sourcePath = resolve(consumerRoot, 'src/app/app.ts');
   const originalSource = await readFile(sourcePath, 'utf8');
@@ -270,7 +270,7 @@ const verifyWatchCommand = async () => {
       child.kill('SIGTERM');
       rejectPromise(
         new Error(
-          `Equator watch probe ran past its ${CEILING_MILLISECONDS / 1000}s ceiling. ${
+          `Thoth watch probe ran past its ${CEILING_MILLISECONDS / 1000}s ceiling. ${
             editWritten
               ? `The platform reported the edit to a second watcher ${editsReported} time(s).`
               : 'The edit had not been written.'
@@ -280,14 +280,14 @@ const verifyWatchCommand = async () => {
     }, CEILING_MILLISECONDS);
     child.stdout.on('data', (chunk) => {
       stdout += chunk.toString();
-      if (!changed && /Equator watch cycle 1:/u.test(stdout)) {
+      if (!changed && /Thoth watch cycle 1:/u.test(stdout)) {
         changed = true;
         setTimeout(() => {
           editWritten = true;
           void writeFile(sourcePath, `${originalSource}\n`, 'utf8');
         }, 100);
       }
-      if (/Equator watch cycle 2:/u.test(stdout)) {
+      if (/Thoth watch cycle 2:/u.test(stdout)) {
         void restore().then(() => child.kill('SIGTERM'));
       }
     });
@@ -306,8 +306,8 @@ const verifyWatchCommand = async () => {
     witness.close();
     await restore();
   }
-  assert.match(stdout, /Equator watch cycle 1:/u, stderr);
-  assert.match(stdout, /Equator watch cycle 2:/u, stderr);
+  assert.match(stdout, /Thoth watch cycle 1:/u, stderr);
+  assert.match(stdout, /Thoth watch cycle 2:/u, stderr);
 };
 
 // The consumer names the package manager it is installed with, and it is the one this process was
@@ -329,7 +329,7 @@ assert.equal(
   "The consumer's tools start on a Node other than the one this row runs on.",
 );
 
-const help = run(['run', 'equator:help']);
+const help = run(['run', 'thoth:help']);
 assert.match(
   help.stdout,
   /Compile and safely publish generated #i18n artifacts/,
@@ -338,22 +338,22 @@ assert.match(help.stdout, /Reconcile changes in one foreground process/);
 
 const parseMachineResult = (result: SpawnSyncReturns<string>) => {
   const value = JSON.parse(result.stdout.trim()) as MachineResult;
-  assert.equal(value.profile, 'equator-cli-result/1');
+  assert.equal(value.profile, 'thoth-cli-result/1');
   return value;
 };
 
 const invalidInvocation = parseMachineResult(
-  run(['exec', 'equator', 'check', '--unknown-option', '--json'], 2),
+  run(['exec', 'thoth', 'check', '--unknown-option', '--json'], 2),
 );
 assert.equal(invalidInvocation.status, 'invocation-or-configuration-failure');
-assert.equal(invalidInvocation.diagnostics[0]?.code, 'EQ1701');
+assert.equal(invalidInvocation.diagnostics[0]?.code, 'TH1701');
 
-// Invoked directly rather than through a consumer script. Running `pnpm run equator:init` would
-// prove that a human had typed that script into the fixture manifest, because Equator writes no
+// Invoked directly rather than through a consumer script. Running `pnpm run thoth:init` would
+// prove that a human had typed that script into the fixture manifest, because Thoth writes no
 // such entry.
 const initArguments = [
   'exec',
-  'equator',
+  'thoth',
   'init',
   '--source-locale',
   INIT_REQUEST.sourceLocale,
@@ -362,27 +362,27 @@ const initArguments = [
   ...INIT_REQUEST.locales.flatMap((locale) => ['--locale', locale]),
 ];
 const initialized = run(initArguments);
-// The template ships none of the Equator-owned scripts, so the first init has real work to do. That
+// The template ships none of the Thoth-owned scripts, so the first init has real work to do. That
 // is the point: a fixture that pre-types them answers the question this gate is asking. Both files,
 // because the template ships neither: init is what authors them.
 assert.match(
   initialized.stdout,
-  /Equator init updated: equator\.config\.json, package\.json/u,
+  /Thoth init updated: package\.json, thoth\.config\.json/u,
 );
 const reinitialized = run(initArguments);
-assert.match(reinitialized.stdout, /Equator init is already complete/u);
+assert.match(reinitialized.stdout, /Thoth init is already complete/u);
 
 // The minimal declaration `specs/10-compiler-and-tooling.spec.md` section 10 specifies: exactly
 // these keys, no more, and every value traceable to what init was asked for. The run around it
 // is section 14 of `specs/10-compiler-and-tooling.spec.md`, an ordinary first run through the
-// built packages and their public exports. An extra key Equator started writing would fail here,
+// built packages and their public exports. An extra key Thoth started writing would fail here,
 // which comparing against a fixture's own file could never do.
 //
 // Asserted here rather than after the build. What it states is what *init* authored, and after
 // the build the file also carries the consumer's own declarations, so asserting it there would
-// mean either weakening it to tolerate them or forbidding a consumer from adding a key Equator
+// mean either weakening it to tolerate them or forbidding a consumer from adding a key Thoth
 // supports.
-assert.deepEqual(await readJson(resolve(consumerRoot, 'equator.config.json')), {
+assert.deepEqual(await readJson(resolve(consumerRoot, 'thoth.config.json')), {
   schemaVersion: 1,
   sourceLocale: INIT_REQUEST.sourceLocale,
   defaultLocale: INIT_REQUEST.defaultLocale,
@@ -392,7 +392,7 @@ assert.deepEqual(await readJson(resolve(consumerRoot, 'equator.config.json')), {
 // Two consumer edits to the configuration, and the only ones this gate makes: the pseudo-locales
 // and how one locale is written, both from `package-consumer-locales.ts`.
 await writeFile(
-  resolve(consumerRoot, 'equator.config.json'),
+  resolve(consumerRoot, 'thoth.config.json'),
   `${JSON.stringify(
     {
       schemaVersion: 1,
@@ -407,13 +407,13 @@ await writeFile(
   )}\n`,
   'utf8',
 );
-// And the script entries Equator claims to own are asserted against Equator's own declaration, so
-// this fails if Equator stops writing one rather than if a fixture stops listing one.
+// And the script entries Thoth claims to own are asserted against Thoth's own declaration, so
+// this fails if Thoth stops writing one rather than if a fixture stops listing one.
 const { PACKAGE_SCRIPTS } = await import(
   pathToFileURL(
     resolve(
       consumerRoot,
-      'node_modules/@neolorn/equator-toolkit/project-host.js',
+      'node_modules/@neolorn/thoth-toolkit/project-host.js',
     ),
   ).href
 );
@@ -423,18 +423,18 @@ for (const [name, command] of Object.entries(PACKAGE_SCRIPTS)) {
   assert.equal(
     consumerScripts?.[name],
     command,
-    `equator init did not write the ${name} script it declares`,
+    `thoth init did not write the ${name} script it declares`,
   );
 }
-run(['exec', 'equator', 'format']);
+run(['exec', 'thoth', 'format']);
 const canonicalFormat = parseMachineResult(
-  run(['exec', 'equator', 'format', '--dry-run', '--json']),
+  run(['exec', 'thoth', 'format', '--dry-run', '--json']),
 );
 assert.equal(canonicalFormat.status, 'success');
 assert.equal(canonicalFormat.result.changed, false);
 
 const firstGeneration = parseMachineResult(
-  run(['exec', 'equator', 'generate', '--json']),
+  run(['exec', 'thoth', 'generate', '--json']),
 );
 assert.equal(firstGeneration.status, 'success');
 assert.equal(firstGeneration.result.changed, true);
@@ -443,11 +443,11 @@ assert.ok((firstGeneration.result.catalogs as number) >= 2);
 assert.ok(firstGeneration.result.messages >= 4);
 assert.ok(firstGeneration.result.routes >= 2);
 
-// EQ1401 forwards a TypeScript finding from the consumer's own program, so one raised here is a
+// TH1401 forwards a TypeScript finding from the consumer's own program, so one raised here is a
 // report against the application's own lines. The fixture compiles under its own build, which
 // leaves the generated modules the analysis reads in place of them as the thing that does not.
 const forwardedTypeFindings = firstGeneration.diagnostics.filter(
-  ({ code }) => code === 'EQ1401',
+  ({ code }) => code === 'TH1401',
 );
 assert.deepEqual(
   forwardedTypeFindings,
@@ -457,11 +457,11 @@ assert.deepEqual(
 
 const generatedManifestPath = resolve(
   consumerRoot,
-  'src/generated/i18n/.equator-manifest.json',
+  'src/generated/i18n/.thoth-manifest.json',
 );
 const firstManifestTimestamp = (await lstat(generatedManifestPath)).mtimeMs;
 const unchangedGeneration = parseMachineResult(
-  run(['exec', 'equator', 'generate', '--json']),
+  run(['exec', 'thoth', 'generate', '--json']),
 );
 assert.equal(unchangedGeneration.result.changed, false);
 assert.equal(unchangedGeneration.result.invalidation.kind, 'none');
@@ -470,30 +470,30 @@ assert.equal(
   firstManifestTimestamp,
 );
 
-const checked = parseMachineResult(run(['exec', 'equator', 'check', '--json']));
+const checked = parseMachineResult(run(['exec', 'thoth', 'check', '--json']));
 assert.equal(checked.status, 'success');
 assert.equal(checked.result.fresh, true);
 
 const dryClean = parseMachineResult(
-  run(['exec', 'equator', 'clean', '--dry-run', '--json']),
+  run(['exec', 'thoth', 'clean', '--dry-run', '--json']),
 );
 assert.equal(dryClean.result.changed, true);
 assert.ok(dryClean.result.removed.length > 0);
-const cleaned = parseMachineResult(run(['exec', 'equator', 'clean', '--json']));
+const cleaned = parseMachineResult(run(['exec', 'thoth', 'clean', '--json']));
 assert.equal(cleaned.result.changed, true);
 await assert.rejects(lstat(resolve(consumerRoot, 'src/generated/i18n')), {
   code: 'ENOENT',
 });
-await assert.rejects(lstat(resolve(consumerRoot, '.equator')), {
+await assert.rejects(lstat(resolve(consumerRoot, '.thoth')), {
   code: 'ENOENT',
 });
 const regenerated = parseMachineResult(
-  run(['exec', 'equator', 'generate', '--json']),
+  run(['exec', 'thoth', 'generate', '--json']),
 );
 assert.equal(regenerated.result.changed, true);
 
 const generatedManifest = await readJson(generatedManifestPath);
-assert.equal(generatedManifest.profile, 'equator-completion-manifest/1');
+assert.equal(generatedManifest.profile, 'thoth-completion-manifest/1');
 for (const required of [
   'index.ts',
   'shell.ts',
@@ -509,7 +509,7 @@ for (const required of [
     generatedManifest.files.some(
       ({ path }: { path: string }) => path === required,
     ),
-    `Generated Equator output is missing ${required}`,
+    `Generated Thoth output is missing ${required}`,
   );
 }
 const generatedShell = await readFile(
@@ -540,7 +540,7 @@ assert.ok(
 );
 assert.match(
   await readFile(resolve(consumerRoot, 'src/generated/i18n/routes.ts'), 'utf8'),
-  /profile: 'equator-route-projection\/1'/,
+  /profile: 'thoth-route-projection\/1'/,
 );
 const generatedRoutes = await readFile(
   resolve(consumerRoot, 'src/generated/i18n/routes.ts'),
@@ -559,29 +559,29 @@ assert.match(
 assert.match(generatedRoutes, /identity: "sha256-[A-Za-z0-9_-]{43}"/);
 assert.match(
   await readFile(
-    resolve(consumerRoot, '.equator/cache/compiler-state.json'),
+    resolve(consumerRoot, '.thoth/cache/compiler-state.json'),
     'utf8',
   ),
-  /equator-compiler-cache\/1/,
+  /thoth-compiler-cache\/1/,
 );
 
 const negativeCatalogPath = resolve(consumerRoot, 'i18n/shell/ar-EG.yaml');
 const validNegativeCatalog = await readFile(negativeCatalogPath, 'utf8');
 await writeFile(negativeCatalogPath, 'messages:\n  app-title: [\n', 'utf8');
 const invalidCheck = parseMachineResult(
-  run(['exec', 'equator', 'check', '--json'], 1),
+  run(['exec', 'thoth', 'check', '--json'], 1),
 );
 assert.equal(invalidCheck.status, 'diagnostic-failure');
 assert.ok(
   invalidCheck.diagnostics.some(
     ({ code, span }) =>
-      code === 'EQ1101' && span?.sourcePath === 'i18n/shell/ar-EG.yaml',
+      code === 'TH1101' && span?.sourcePath === 'i18n/shell/ar-EG.yaml',
   ),
   'Machine-readable catalog diagnostics are not source-located',
 );
 await writeFile(negativeCatalogPath, validNegativeCatalog, 'utf8');
 assert.equal(
-  parseMachineResult(run(['exec', 'equator', 'check', '--json'])).status,
+  parseMachineResult(run(['exec', 'thoth', 'check', '--json'])).status,
   'success',
 );
 
@@ -595,12 +595,12 @@ assert.equal(
 // which is the failure this gate exists to avoid.
 const translationStatePath = resolve(
   consumerRoot,
-  '.equator-translation-state.json',
+  '.thoth-translation-state.json',
 );
 const recordedState = JSON.parse(await readFile(translationStatePath, 'utf8'));
 assert.equal(
   recordedState.profile,
-  'equator-translation-state/1',
+  'thoth-translation-state/1',
   'No translation state was recorded by the runs above',
 );
 // Keyed by provider, scope, message and target locale, so the assertion names the parts it
@@ -617,8 +617,8 @@ const originalSourceCatalog = await readFile(sourceCatalogPath, 'utf8');
 await writeFile(
   sourceCatalogPath,
   originalSourceCatalog.replace(
-    'app-title: Equator feature lab',
-    'app-title: Equator feature laboratory',
+    'app-title: Thoth feature lab',
+    'app-title: Thoth feature laboratory',
   ),
   'utf8',
 );
@@ -645,14 +645,14 @@ assert.notEqual(
 // translation record alone; `generate` publishes and re-stamps it, which retires the staleness.
 // Running these after the `generate` below would assert against a condition it had consumed.
 const gatedRun = parseMachineResult(
-  run(['exec', 'equator', 'check', '--require-complete', '--json'], 1),
+  run(['exec', 'thoth', 'check', '--require-complete', '--json'], 1),
 );
 // Both members, and not only the first one found. A run that returns as soon as an escalated
-// `EQ1307` fails the catalog analysis inspects neither output freshness nor the translation
+// `TH1307` fails the catalog analysis inspects neither output freshness nor the translation
 // record, so the missing translation and the superseded one arrive as one finding rather than two,
 // and turning the gate on gives the pipeline that asked for more information less. A run reports
 // every member it can observe.
-for (const code of ['EQ1307', 'EQ1309']) {
+for (const code of ['TH1307', 'TH1309']) {
   assert.ok(
     gatedRun.diagnostics.some(
       (diagnostic) =>
@@ -664,7 +664,7 @@ for (const code of ['EQ1307', 'EQ1309']) {
   );
 }
 
-const consumerConfigurationPath = resolve(consumerRoot, 'equator.config.json');
+const consumerConfigurationPath = resolve(consumerRoot, 'thoth.config.json');
 const consumerConfiguration = await readFile(consumerConfigurationPath, 'utf8');
 await writeFile(
   consumerConfigurationPath,
@@ -681,9 +681,9 @@ await writeFile(
   'utf8',
 );
 const exemptRun = parseMachineResult(
-  run(['exec', 'equator', 'check', '--require-complete', '--json'], 0),
+  run(['exec', 'thoth', 'check', '--require-complete', '--json'], 0),
 );
-for (const code of ['EQ1307', 'EQ1309']) {
+for (const code of ['TH1307', 'TH1309']) {
   assert.ok(
     exemptRun.diagnostics.some(
       (diagnostic) =>
@@ -697,16 +697,16 @@ for (const code of ['EQ1307', 'EQ1309']) {
     )}`,
   );
 }
-// The fourth member is in the family because the declaration reached it. `EQ1309` is raised from
+// The fourth member is in the family because the declaration reached it. `TH1309` is raised from
 // the project host rather than the catalog analysis, so nothing but this says the two halves read
 // the same rule.
 await writeFile(consumerConfigurationPath, consumerConfiguration, 'utf8');
 
 const staleRun = parseMachineResult(
-  run(['exec', 'equator', 'generate', '--json']),
+  run(['exec', 'thoth', 'generate', '--json']),
 );
 const staleReport = staleRun.diagnostics.filter(
-  ({ code }) => code === 'EQ1309',
+  ({ code }) => code === 'TH1309',
 );
 assert.ok(
   staleReport.some(
@@ -721,8 +721,8 @@ assert.ok(
 await writeFile(sourceCatalogPath, originalSourceCatalog, 'utf8');
 assert.equal(
   parseMachineResult(
-    run(['exec', 'equator', 'generate', '--json']),
-  ).diagnostics.filter(({ code }) => code === 'EQ1309').length,
+    run(['exec', 'thoth', 'generate', '--json']),
+  ).diagnostics.filter(({ code }) => code === 'TH1309').length,
   0,
   'A translation was still reported stale after its source was restored',
 );
@@ -734,11 +734,11 @@ assert.equal(
  * interface is ordered correctly, English's own data says Japanese names are surname-first,
  * and spaced wrongly, because the spacing belongs to `ja` and `ja` was never generated. Nothing
  * errors, nothing is reported, and only a reader of the language sees it. So the check is that
- * declaring the locale actually changes the artifact, run through `equator generate` rather than
+ * declaring the locale actually changes the artifact, run through `thoth generate` rather than
  * through the library.
  */
 async function verifyDeclaredPersonNameLocales() {
-  const configurationPath = resolve(consumerRoot, 'equator.config.json');
+  const configurationPath = resolve(consumerRoot, 'thoth.config.json');
   const original = await readFile(configurationPath, 'utf8');
   const personNamesPath = resolve(
     consumerRoot,
@@ -764,7 +764,7 @@ async function verifyDeclaredPersonNameLocales() {
     `${JSON.stringify({ ...declared, personNameLocales: ['ja'] }, null, 2)}\n`,
     'utf8',
   );
-  run(['exec', 'equator', 'generate', '--json']);
+  run(['exec', 'thoth', 'generate', '--json']);
   assert.deepEqual(
     await rowTags(),
     ['ar', 'en', 'ja'],
@@ -779,8 +779,8 @@ async function verifyDeclaredPersonNameLocales() {
     'utf8',
   );
   const uncovered = parseMachineResult(
-    run(['exec', 'equator', 'generate', '--json']),
-  ).diagnostics.filter(({ code }) => code === 'EQ1004');
+    run(['exec', 'thoth', 'generate', '--json']),
+  ).diagnostics.filter(({ code }) => code === 'TH1004');
   assert.ok(
     uncovered.some(
       ({ severity, summary }) =>
@@ -790,7 +790,7 @@ async function verifyDeclaredPersonNameLocales() {
   );
 
   await writeFile(configurationPath, original, 'utf8');
-  run(['exec', 'equator', 'generate', '--json']);
+  run(['exec', 'thoth', 'generate', '--json']);
   assert.deepEqual(
     await rowTags(),
     ['ar', 'en'],
@@ -931,15 +931,15 @@ assert.ok(
 // without the flag is what returns the generated output to production shape, and doing it here
 // rather than trusting the build to is the difference between asserting the switch works and
 // assuming it does: every check below reads what this produced.
-run(['exec', 'equator', 'generate']);
+run(['exec', 'thoth', 'generate']);
 const siteBuild = run(['exec', 'ng', 'build', '--stats-json']);
 
 const configuration = await readJson(
-  resolve(consumerRoot, 'equator.config.json'),
+  resolve(consumerRoot, 'thoth.config.json'),
 );
 // What init wrote is asserted above, at init. What is asserted here is that nothing since has
 // changed it except the two declarations this gate made, so a key appearing from anywhere else
-// still fails. `equator format` rewrote the file between those two points and both survived it.
+// still fails. `thoth format` rewrote the file between those two points and both survived it.
 assert.deepEqual(configuration, {
   schemaVersion: 1,
   sourceLocale: INIT_REQUEST.sourceLocale,
@@ -949,7 +949,7 @@ assert.deepEqual(configuration, {
   formatting: LOCALE_FORMATTING,
 });
 
-// The production build ran a plain `equator generate`, so neither pseudo-locale is in what it
+// The production build ran a plain `thoth generate`, so neither pseudo-locale is in what it
 // produced: declared and not generated, which is the whole separation. The control is `ar-EG`
 // in the same text: without it these two absences would pass for a file that was never read.
 //
@@ -978,14 +978,14 @@ assert.deepEqual(consumerPackage.imports, {
   '#i18n': './src/generated/i18n/index.ts',
   '#i18n/*': './src/generated/i18n/*.ts',
 });
-// Checked against Equator's own declaration above, not against a list copied here. This block used
-// to hardcode an `equator:init` entry with the fixture's exact locale flags: a value Equator never
+// Checked against Thoth's own declaration above, not against a list copied here. This block used
+// to hardcode an `thoth:init` entry with the fixture's exact locale flags: a value Thoth never
 // writes and a human had typed.
 for (const [name, command] of Object.entries(PACKAGE_SCRIPTS)) {
   assert.equal(
     consumerPackage.scripts[name],
     command,
-    `The generated manifest lost the ${name} script Equator declares`,
+    `The generated manifest lost the ${name} script Thoth declares`,
   );
 }
 for (const locale of configuration.locales) {
@@ -1030,21 +1030,18 @@ assert.equal(
 assert.equal(
   (
     await readJson(
-      resolve(consumerRoot, 'node_modules/@neolorn/equator/package.json'),
+      resolve(consumerRoot, 'node_modules/@neolorn/thoth/package.json'),
     )
   ).name,
-  '@neolorn/equator',
+  '@neolorn/thoth',
 );
 assert.equal(
   (
     await readJson(
-      resolve(
-        consumerRoot,
-        'node_modules/@neolorn/equator-toolkit/package.json',
-      ),
+      resolve(consumerRoot, 'node_modules/@neolorn/thoth-toolkit/package.json'),
     )
   ).name,
-  '@neolorn/equator-toolkit',
+  '@neolorn/thoth-toolkit',
 );
 
 const stats = readBuildStats(resolve(consumerRoot, 'dist/feature-lab')) as
@@ -1058,10 +1055,10 @@ assert.equal(
 );
 
 const installedRuntimeRoot = await realpath(
-  resolve(consumerRoot, 'node_modules/@neolorn/equator'),
+  resolve(consumerRoot, 'node_modules/@neolorn/thoth'),
 );
 const installedToolkitRoot = await realpath(
-  resolve(consumerRoot, 'node_modules/@neolorn/equator-toolkit'),
+  resolve(consumerRoot, 'node_modules/@neolorn/thoth-toolkit'),
 );
 const installedRuntimePackage = await readJson(
   resolve(installedRuntimeRoot, 'package.json'),
@@ -1121,12 +1118,12 @@ const canonicalProductionInputs = new Set(
 assert.equal(
   canonicalProductionInputs.has(formsEntry),
   true,
-  'Production feature lab did not consume the Equator Forms entrypoint',
+  'Production feature lab did not consume the Thoth Forms entrypoint',
 );
 assert.equal(
   canonicalProductionInputs.has(routerEntry),
   true,
-  'Production feature lab did not consume the Equator Router entrypoint',
+  'Production feature lab did not consume the Thoth Router entrypoint',
 );
 for (const input of productionInputs) {
   const canonicalInput = await resolveStatsInput(input);
@@ -1142,7 +1139,7 @@ for (const input of productionInputs) {
   assert.notEqual(
     canonicalInput,
     testingEntry,
-    `Production output contains the Equator testing entrypoint: ${input}`,
+    `Production output contains the Thoth testing entrypoint: ${input}`,
   );
 }
 
@@ -1365,7 +1362,7 @@ async function verifyPrerendered(
     );
   }
 
-  // One declaration per route, expanded to every locale by the policy Equator already has. The
+  // One declaration per route, expanded to every locale by the policy Thoth already has. The
   // article route is the one that is hard by hand: its slug is spelled differently per locale, so
   // its two prerendered addresses share no path segment. A hand-written table that missed one
   // would not fail anywhere: it would ship a page that exists in English and 404s in Arabic.
@@ -1385,7 +1382,7 @@ async function verifyPrerendered(
     );
     // The measurement the server-side locale source rests on.
     //
-    // Equator reads the address being rendered from `PlatformLocation`, because `@angular/ssr`
+    // Thoth reads the address being rendered from `PlatformLocation`, because `@angular/ssr`
     // provides `REQUEST` and `REQUEST_CONTEXT` only when the render mode is `Server`: a
     // prerendered page has neither. Two things have to be true for that to work: that
     // `PlatformLocation` is injectable from an application-config-level factory, and that under
@@ -1497,7 +1494,7 @@ function verifyServerAnswers() {
     assert.equal(
       headers['content-language'],
       locale,
-      `${where}: the language the @neolorn/equator/http request handler resolved`,
+      `${where}: the language the @neolorn/thoth/http request handler resolved`,
     );
     assert.match(body, new RegExp(`<html[^>]* lang="${locale}"`, 'u'), where);
     assert.match(
@@ -1507,7 +1504,7 @@ function verifyServerAnswers() {
     );
     recordCapabilityClaim(
       `${consumerName}: server answers`,
-      'entry:@neolorn/equator/http',
+      'entry:@neolorn/thoth/http',
       { document: body },
     );
   });
@@ -1548,7 +1545,7 @@ function verifyLocaleSources() {
   const { defaultLocale, locales } = INIT_REQUEST;
   const other = locales.find((locale) => locale !== defaultLocale)!;
   // The cookie src/app/locale-cookie.ts declares, which the server reads as the stored locale.
-  const stored = (locale: string) => ({ cookie: `equator-locale=${locale}` });
+  const stored = (locale: string) => ({ cookie: `thoth-locale=${locale}` });
   const unsupported = 'ja';
   assert.ok(
     !locales.some((locale) => new Intl.Locale(locale).language === unsupported),
@@ -1633,7 +1630,7 @@ const installedCore = await import(
   pathToFileURL(
     resolve(
       consumerRoot,
-      'node_modules/@neolorn/equator/fesm2022/neolorn-equator-core.mjs',
+      'node_modules/@neolorn/thoth/fesm2022/neolorn-thoth-core.mjs',
     ),
   ).href
 );
@@ -1687,13 +1684,13 @@ function verifyRouteDeclarations() {
   assert.equal(
     header('home', 'x-robots-tag'),
     undefined,
-    'home declares equatorIndexing indexable and was answered noindex',
+    'home declares thothIndexing indexable and was answered noindex',
   );
   assert.equal(status('item'), 200, 'item was not answered');
   assert.equal(
     header('item', 'x-robots-tag'),
     'noindex',
-    'item declares equatorIndexing non-indexable and was answered without noindex',
+    'item declares thothIndexing non-indexable and was answered without noindex',
   );
   recordCapabilityClaim(
     check,
@@ -1705,7 +1702,7 @@ function verifyRouteDeclarations() {
   assert.equal(
     header('lazy', 'cache-control'),
     'private, no-cache',
-    'lazy declares equatorCaching per-visitor and a shared cache may keep it',
+    'lazy declares thothCaching per-visitor and a shared cache may keep it',
   );
   recordCapabilityClaim(
     check,
@@ -2400,12 +2397,12 @@ function verifyAddressDeclarations() {
         location: undefined,
         robots: undefined,
       },
-      `${check}: an address under a segment localeNeutralRoots declares was answered by Equator rather than left to the server that owns it`,
+      `${check}: an address under a segment localeNeutralRoots declares was answered by Thoth rather than left to the server that owns it`,
     );
     assert.ok(
       taken.headers['content-language'] !== undefined ||
         taken.headers.location !== undefined,
-      `${check}: an address under ${segment}-elsewhere, which is no root, was not answered by Equator, so the root's answer shows nothing`,
+      `${check}: an address under ${segment}-elsewhere, which is no root, was not answered by Thoth, so the root's answer shows nothing`,
     );
     recordCapabilityClaim(check, 'declaration:locale-neutral-roots', {
       policy,
@@ -2526,13 +2523,9 @@ async function verifyCommandLine() {
   const { policy } = sheetInDocument(answer.body);
   const cliPath = resolve(
     consumerRoot,
-    'node_modules/@neolorn/equator-toolkit/cli.js',
+    'node_modules/@neolorn/thoth-toolkit/cli.js',
   );
-  const equator = (
-    cwd: string,
-    args: readonly string[],
-    expectedStatus = 0,
-  ) => {
+  const thoth = (cwd: string, args: readonly string[], expectedStatus = 0) => {
     const result = spawnSync(process.execPath, [cliPath, ...args], {
       cwd,
       encoding: 'utf8',
@@ -2542,7 +2535,7 @@ async function verifyCommandLine() {
       result.status,
       expectedStatus,
       [
-        `equator ${args.join(' ')}`,
+        `thoth ${args.join(' ')}`,
         result.error?.message,
         result.stdout,
         result.stderr,
@@ -2553,7 +2546,7 @@ async function verifyCommandLine() {
     return result;
   };
   const machine = (cwd: string, args: readonly string[], expectedStatus = 0) =>
-    parseMachineResult(equator(cwd, [...args, '--json'], expectedStatus));
+    parseMachineResult(thoth(cwd, [...args, '--json'], expectedStatus));
   const catalogPath = 'i18n/shell/en-US.yaml';
   const catalogFile = resolve(consumerRoot, catalogPath);
   const catalog = await readFile(catalogFile, 'utf8');
@@ -2576,19 +2569,16 @@ async function verifyCommandLine() {
 
   const toolkitVersion = (
     await readJson(
-      resolve(
-        consumerRoot,
-        'node_modules/@neolorn/equator-toolkit/package.json',
-      ),
+      resolve(consumerRoot, 'node_modules/@neolorn/thoth-toolkit/package.json'),
     )
   ).version;
   assert.equal(
-    equator(consumerRoot, ['--version']).stdout.trim(),
+    thoth(consumerRoot, ['--version']).stdout.trim(),
     toolkitVersion,
-    'equator --version does not print the installed toolkit version',
+    'thoth --version does not print the installed toolkit version',
   );
 
-  await verifyUninstall(equator, machine);
+  await verifyUninstall(thoth, machine);
 
   // A comment, because it changes no message and so leaves every later check reading what it read
   // before, while still being a change the migration has to carry, preview and apply.
@@ -2596,7 +2586,7 @@ async function verifyCommandLine() {
   const tamperedPath = resolve(consumerRoot, 'tmp/migration-tampered.json');
   const { createMigrationPlan } = await import(
     pathToFileURL(
-      resolve(consumerRoot, 'node_modules/@neolorn/equator-toolkit/index.js'),
+      resolve(consumerRoot, 'node_modules/@neolorn/thoth-toolkit/index.js'),
     ).href
   );
   const migratedCatalog = `# The source messages of the application shell.\n${catalog}`;
@@ -2631,11 +2621,11 @@ async function verifyCommandLine() {
     );
   const beforeMigration = await treeDigest(consumerRoot);
   const tampered = migrate(tamperedPath, [], 2);
-  assert.equal(tampered.diagnostics[0]?.code, 'EQ1805');
+  assert.equal(tampered.diagnostics[0]?.code, 'TH1805');
   assert.deepEqual(
     await treeDigest(consumerRoot),
     beforeMigration,
-    'equator migrate wrote to the project under a plan whose content does not match its digest',
+    'thoth migrate wrote to the project under a plan whose content does not match its digest',
   );
   const previewed = migrate(planPath, ['--dry-run']);
   assert.equal(previewed.result.changed, true);
@@ -2643,7 +2633,7 @@ async function verifyCommandLine() {
   assert.deepEqual(
     await treeDigest(consumerRoot),
     beforeMigration,
-    'equator migrate --dry-run wrote to the project',
+    'thoth migrate --dry-run wrote to the project',
   );
   const migrated = migrate(planPath);
   assert.deepEqual(migrated.result.files, [catalogPath]);
@@ -2651,7 +2641,7 @@ async function verifyCommandLine() {
   assert.deepEqual(
     await treeDigest(consumerRoot),
     { ...beforeMigration, [catalogPath]: digestOf(migratedCatalog) },
-    'equator migrate changed a file its plan does not name',
+    'thoth migrate changed a file its plan does not name',
   );
   const reapplied = migrate(planPath);
   assert.equal(reapplied.result.changed, false, 'the migration applied twice');
@@ -2659,13 +2649,13 @@ async function verifyCommandLine() {
   const afterMigration = machine(consumerRoot, ['generate']);
   assert.equal(afterMigration.status, 'success');
   recordCapabilityClaim(
-    `${consumerName}: equator generate after a migration`,
+    `${consumerName}: thoth generate after a migration`,
     'cli:generate',
     { policy },
   );
   assert.equal(machine(consumerRoot, ['check']).result.fresh, true);
   recordCapabilityClaim(
-    `${consumerName}: equator migrate over the seat's catalog`,
+    `${consumerName}: thoth migrate over the seat's catalog`,
     'cli:migrate',
     {},
   );
@@ -2676,7 +2666,7 @@ async function verifyCommandLine() {
   // route policy its analysis read is the one the application runs, which the page above reports.
   const { compileProjectFromDisk } = await import(
     pathToFileURL(
-      resolve(consumerRoot, 'node_modules/@neolorn/equator-toolkit/index.js'),
+      resolve(consumerRoot, 'node_modules/@neolorn/thoth-toolkit/index.js'),
     ).href
   );
   const beforeCompile = await treeDigest(consumerRoot);
@@ -2708,7 +2698,7 @@ async function verifyCommandLine() {
   );
   recordCapabilityClaim(
     `${consumerName}: compileProjectFromDisk over the seat`,
-    'entry:@neolorn/equator-toolkit',
+    'entry:@neolorn/thoth-toolkit',
     { policy },
   );
 
@@ -2725,11 +2715,11 @@ async function verifyCommandLine() {
     assert.equal(
       await readFile(catalogFile, 'utf8'),
       `# Kept by hand.\n${catalog}`,
-      'equator format did not keep the comment and the order and drop only the quotes',
+      'thoth format did not keep the comment and the order and drop only the quotes',
     );
     assert.equal(machine(consumerRoot, ['format']).result.changed, false);
     recordCapabilityClaim(
-      `${consumerName}: equator format over a catalog written by hand`,
+      `${consumerName}: thoth format over a catalog written by hand`,
       'cli:format',
       {},
     );
@@ -2741,14 +2731,14 @@ async function verifyCommandLine() {
     assert.deepEqual(
       fixed.result.fixedFiles,
       [catalogPath],
-      'equator check --fix did not report the catalog it rewrote',
+      'thoth check --fix did not report the catalog it rewrote',
     );
     assert.equal(
       await readFile(catalogFile, 'utf8'),
       catalog,
-      'equator check --fix did not rewrite the catalog to its canonical form',
+      'thoth check --fix did not rewrite the catalog to its canonical form',
     );
-    recordCapabilityClaim(`${consumerName}: equator check --fix`, 'cli:check', {
+    recordCapabilityClaim(`${consumerName}: thoth check --fix`, 'cli:check', {
       policy,
     });
   });
@@ -2761,7 +2751,7 @@ async function verifyCommandLine() {
     const fresh = machine(consumerRoot, ['check', '--require-fresh']);
     assert.equal(fresh.result.fresh, true);
     recordCapabilityClaim(
-      `${consumerName}: equator check --require-fresh`,
+      `${consumerName}: thoth check --require-fresh`,
       'cli:check',
       { policy },
     );
@@ -2811,12 +2801,12 @@ async function treeDigest(root: string) {
 }
 
 /**
- * `equator clean` and `equator uninstall` on a copy of this seat, because every step after this one
+ * `thoth clean` and `thoth uninstall` on a copy of this seat, because every step after this one
  * reads the seat. The copy reaches the seat's packages through a junction, so `init` and
  * `generate` can put it back.
  */
 async function verifyUninstall(
-  equator: (
+  thoth: (
     cwd: string,
     args: readonly string[],
     expectedStatus?: number,
@@ -2857,14 +2847,14 @@ async function verifyUninstall(
     await assert.rejects(
       lstat(resolve(copy, 'src/generated/i18n')),
       { code: 'ENOENT' },
-      'equator clean left the generated files',
+      'thoth clean left the generated files',
     );
     machine(copy, ['generate']);
 
-    const editedScript = `${PACKAGE_SCRIPTS['equator:check']} --json`;
+    const editedScript = `${PACKAGE_SCRIPTS['thoth:check']} --json`;
     const manifestPath = resolve(copy, 'package.json');
     const manifest = await readJson(manifestPath);
-    manifest.scripts['equator:check'] = editedScript;
+    manifest.scripts['thoth:check'] = editedScript;
     await writeFile(
       manifestPath,
       `${JSON.stringify(manifest, null, 2)}\n`,
@@ -2875,28 +2865,24 @@ async function verifyUninstall(
     );
     assert.ok(catalogs.length > 0);
 
-    const configuration = await readJson(resolve(copy, 'equator.config.json'));
+    const configuration = await readJson(resolve(copy, 'thoth.config.json'));
     const before = await treeDigest(copy);
     const preview = machine(copy, ['uninstall', '--dry-run']);
     assert.equal(preview.result.changed, true);
     assert.deepEqual(
       await treeDigest(copy),
       before,
-      'equator uninstall --dry-run wrote to the project',
+      'thoth uninstall --dry-run wrote to the project',
     );
     const uninstalled = machine(copy, ['uninstall']);
     assert.deepEqual(uninstalled.result.removed, preview.result.removed);
-    assert.deepEqual(uninstalled.result.retained, ['scripts.equator:check']);
+    assert.deepEqual(uninstalled.result.retained, ['scripts.thoth:check']);
     assert.deepEqual(uninstalled.result.catalogs, []);
-    for (const gone of [
-      'equator.config.json',
-      'src/generated/i18n',
-      '.equator',
-    ]) {
+    for (const gone of ['thoth.config.json', 'src/generated/i18n', '.thoth']) {
       await assert.rejects(
         lstat(resolve(copy, gone)),
         { code: 'ENOENT' },
-        `equator uninstall left ${gone}`,
+        `thoth uninstall left ${gone}`,
       );
     }
     const left = await readJson(manifestPath);
@@ -2905,31 +2891,31 @@ async function verifyUninstall(
         specifier.startsWith('#i18n'),
       ),
       [],
-      'equator uninstall left a #i18n import mapping',
+      'thoth uninstall left a #i18n import mapping',
     );
     for (const name of Object.keys(PACKAGE_SCRIPTS)) {
       assert.equal(
         left.scripts?.[name],
-        name === 'equator:check' ? editedScript : undefined,
-        `equator uninstall did not take back ${name}, or did not keep it once edited`,
+        name === 'thoth:check' ? editedScript : undefined,
+        `thoth uninstall did not take back ${name}, or did not keep it once edited`,
       );
     }
     const after = await treeDigest(copy);
     for (const [path, digest] of catalogs) {
-      assert.equal(after[path], digest, `equator uninstall changed ${path}`);
+      assert.equal(after[path], digest, `thoth uninstall changed ${path}`);
     }
-    // With its configuration gone the owner is no longer an Equator project, so a second run is
+    // With its configuration gone the owner is no longer a Thoth project, so a second run is
     // refused as one, and writes nothing.
     const again = machine(copy, ['uninstall'], 2);
-    assert.equal(again.diagnostics[0]?.code, 'EQ1702');
+    assert.equal(again.diagnostics[0]?.code, 'TH1702');
     assert.deepEqual(
       await treeDigest(copy),
       after,
-      'a second equator uninstall wrote to the project',
+      'a second thoth uninstall wrote to the project',
     );
 
-    // The edited script is its author's to settle before Equator is set up again.
-    delete left.scripts['equator:check'];
+    // The edited script is its author's to settle before Thoth is set up again.
+    delete left.scripts['thoth:check'];
     await writeFile(manifestPath, `${JSON.stringify(left, null, 2)}\n`, 'utf8');
     // Every field the configuration held, as flags, which is how a person sets each one.
     const optionFlags = (
@@ -2942,31 +2928,31 @@ async function verifyUninstall(
           `${locale}.${option}=${value}`,
         ]),
       );
-    equator(copy, [
+    thoth(copy, [
       'init',
       ...initArguments.slice(3),
       ...optionFlags('--pseudo-locale', PSEUDO_LOCALES),
       ...optionFlags('--formatting', LOCALE_FORMATTING),
     ]);
     assert.deepEqual(
-      await readJson(resolve(copy, 'equator.config.json')),
+      await readJson(resolve(copy, 'thoth.config.json')),
       configuration,
-      'equator init did not write back the configuration equator uninstall removed',
+      'thoth init did not write back the configuration thoth uninstall removed',
     );
     assert.equal(machine(copy, ['generate']).status, 'success');
     await lstat(resolve(copy, 'src/generated/i18n/index.ts'));
     recordCapabilityClaim(
-      `${consumerName}: equator clean on a copy of the seat`,
+      `${consumerName}: thoth clean on a copy of the seat`,
       'cli:clean',
       {},
     );
     recordCapabilityClaim(
-      `${consumerName}: equator uninstall on a copy of the seat`,
+      `${consumerName}: thoth uninstall on a copy of the seat`,
       'cli:uninstall',
       {},
     );
     recordCapabilityClaim(
-      `${consumerName}: equator init after equator uninstall`,
+      `${consumerName}: thoth init after thoth uninstall`,
       'cli:init',
       {},
     );
@@ -2976,7 +2962,7 @@ async function verifyUninstall(
 }
 
 /**
- * `equator watch --json`: every event it prints is one the published schema accepts, a catalog
+ * `thoth watch --json`: every event it prints is one the published schema accepts, a catalog
  * that stops parsing is reported as an event rather than ending the watch, and the next good
  * version is generated.
  */
@@ -2988,7 +2974,7 @@ async function verifyWatchEvents(
 ) {
   const toolkitRoot = resolve(
     consumerRoot,
-    'node_modules/@neolorn/equator-toolkit',
+    'node_modules/@neolorn/thoth-toolkit',
   );
   // From the package's real location, which pnpm links into `node_modules`: its own dependencies
   // sit beside the target, not beside the link.
@@ -3020,7 +3006,7 @@ async function verifyWatchEvents(
       child.kill('SIGTERM');
       rejectPromise(
         new Error(
-          `equator watch --json ran past its ${CEILING_MILLISECONDS / 1000}s ceiling at step ${step}.\n${JSON.stringify(events)}\n${pending}\n${stderr}`,
+          `thoth watch --json ran past its ${CEILING_MILLISECONDS / 1000}s ceiling at step ${step}.\n${JSON.stringify(events)}\n${pending}\n${stderr}`,
         ),
       );
     }, CEILING_MILLISECONDS);
@@ -3069,7 +3055,7 @@ async function verifyWatchEvents(
     assert.equal(
       validate(event),
       true,
-      `equator watch --json printed an event its schema refuses: ${JSON.stringify(validate.errors)}\n${JSON.stringify(event)}`,
+      `thoth watch --json printed an event its schema refuses: ${JSON.stringify(validate.errors)}\n${JSON.stringify(event)}`,
     );
   }
   // One event for startup and one for each of the two edits. A read can itself raise a filesystem
@@ -3083,9 +3069,9 @@ async function verifyWatchEvents(
   );
   assert.ok(
     aliveAfterFailure,
-    'equator watch stopped when a catalog stopped parsing',
+    'thoth watch stopped when a catalog stopped parsing',
   );
-  recordCapabilityClaim(`${consumerName}: equator watch --json`, 'cli:watch', {
+  recordCapabilityClaim(`${consumerName}: thoth watch --json`, 'cli:watch', {
     policy,
   });
 }
@@ -3111,7 +3097,7 @@ async function verifyExerciseSheets() {
     assert.equal(sheet.locale, locale, `${check} shows ${sheet.locale}`);
     assert.ok(
       document.includes(`ng-server-context="${rendered}"`),
-      `${check} was not written by the ${rendered === 'ssr' ? 'server' : 'build'} that provideLocalizedServerRendering from @neolorn/equator/ssr sets up`,
+      `${check} was not written by the ${rendered === 'ssr' ? 'server' : 'build'} that provideLocalizedServerRendering from @neolorn/thoth/ssr sets up`,
     );
     const sources = await readExerciseSources(consumerRoot, locale, inputs);
     const expected = exerciseAuthority({ inputs, locale, ...sources });
@@ -3121,13 +3107,13 @@ async function verifyExerciseSheets() {
       'feature:provideLocalizedServerRendering',
       observed,
     );
-    recordCapabilityClaim(check, 'entry:@neolorn/equator/ssr', observed);
+    recordCapabilityClaim(check, 'entry:@neolorn/thoth/ssr', observed);
     assert.equal(
       new JSDOM(document).window.document
         .querySelector('meta[name="robots"]')
         ?.getAttribute('content'),
       'noindex',
-      `${check}: the exercise route declares equatorIndexing non-indexable, and its head does not keep it out of an index`,
+      `${check}: the exercise route declares thothIndexing non-indexable, and its head does not keep it out of an index`,
     );
     recordCapabilityClaim(check, 'declaration:route-indexing-class', observed);
     // A build has no request, so no stored choice and no language to read, and the default would
@@ -3209,9 +3195,9 @@ const browserText = (
   await Promise.all(browserFiles.map((path) => readFile(path, 'utf8')))
 ).join('\n');
 for (const forbidden of [
-  '@neolorn/equator-toolkit',
+  '@neolorn/thoth-toolkit',
   'supported testing entry point remains intentionally empty',
-  'equator-cli-result/1',
+  'thoth-cli-result/1',
   'node:fs',
 ]) {
   assert.equal(
@@ -3225,7 +3211,7 @@ for (const forbidden of [
  * The pseudo-locale outside the browser.
  *
  * Everything above ran against a production build. This rebuilds the same consumer, unchanged
- * except for the flag on `equator generate`, and asks whether a pseudo-locale renders where there
+ * except for the flag on `thoth generate`, and asks whether a pseudo-locale renders where there
  * is no browser to switch in: prerendering, which has no request and therefore no negotiation, so
  * every locale's copy has to be a separate address that exists in the build.
  *
@@ -3236,7 +3222,7 @@ for (const forbidden of [
  * consumer's server bundle installs Angular's `attachNodeGlobalErrorHandlers` and a log-only
  * `uncaughtException` handler stops Node exiting non-zero.
  */
-run(['exec', 'equator', 'generate', '--pseudo']);
+run(['exec', 'thoth', 'generate', '--pseudo']);
 
 // One pseudo build for each origin the two pages read below are served at, which is one under a
 // path policy. The address set is exact for the same reason as above: a prerendered route whose
@@ -3291,7 +3277,7 @@ async function verifyPseudoServed() {
   assert.equal(sheet.locale, locale, `${check} shows ${sheet.locale}`);
   assert.ok(
     answer.body.includes('⟦'),
-    `${check} carries no message that equator generate --pseudo transformed`,
+    `${check} carries no message that thoth generate --pseudo transformed`,
   );
   const { numberingSystem } = LOCALE_FORMATTING[locale];
   assert.equal(
@@ -3356,7 +3342,7 @@ async function verifyPseudoPages() {
   const englishText = routeViewText(englishPage, 'second');
   assert.ok(
     pseudoText.startsWith('⟦') && pseudoText.endsWith('⟧'),
-    `The prerendered pseudo-locale page carried text that equator generate --pseudo did not transform: ${JSON.stringify(pseudoText)}`,
+    `The prerendered pseudo-locale page carried text that thoth generate --pseudo did not transform: ${JSON.stringify(pseudoText)}`,
   );
   assert.notEqual(
     pseudoText,
@@ -3437,7 +3423,7 @@ async function verifyPseudoPages() {
   /*
    * Criterion 2, on a page nobody rendered in a browser.
    *
-   * The article's title is content this application owns. Equator never sees it, so nothing could
+   * The article's title is content this application owns. Thoth never sees it, so nothing could
    * pseudo-localize it, and the source supplies the English representation for a locale it has no
    * article in, which is what makes this page the clearest case the criterion has: an
    * application-owned string sitting untransformed beside shell messages that all carry markers.
@@ -3452,10 +3438,10 @@ async function verifyPseudoPages() {
     'utf8',
   );
   assert.ok(
-    pseudoArticle.includes('The Equator localization handbook'),
+    pseudoArticle.includes('The Thoth localization handbook'),
     'The application-owned article title is not on the prerendered pseudo-locale page',
   );
-  // And the shell around it did go through Equator. Without this the assertion above passes for a
+  // And the shell around it did go through Thoth. Without this the assertion above passes for a
   // page where the transform never ran at all.
   assert.ok(
     pseudoArticle.includes('⟦'),
@@ -3513,7 +3499,7 @@ if (
 // And the generated source goes back to production shape, because the steps after this one rebuild
 // this consumer from it. The `dist/` they read was never touched; this is the other half of the
 // same tree.
-run(['exec', 'equator', 'generate']);
+run(['exec', 'thoth', 'generate']);
 const restoredLocaleTable = await readFile(
   resolve(generatedRoot, 'index.ts'),
   'utf8',
@@ -3792,12 +3778,12 @@ const runEmbedded = (
   );
   return result;
 };
-const equatorEntry = resolve(
+const thothEntry = resolve(
   consumerRoot,
-  'node_modules/@neolorn/equator-toolkit/cli.js',
+  'node_modules/@neolorn/thoth-toolkit/cli.js',
 );
-runEmbedded(equatorEntry, ['generate'], 'equator generate');
-runEmbedded(equatorEntry, ['check'], 'equator check');
+runEmbedded(thothEntry, ['generate'], 'thoth generate');
+runEmbedded(thothEntry, ['check'], 'thoth check');
 runEmbedded(
   resolve(consumerRoot, 'node_modules/@angular/cli/bin/ng.js'),
   ['build'],
@@ -3972,5 +3958,5 @@ function holdDefaultPage(
 }
 
 process.stdout.write(
-  `Equator package consumer verified: ${consumerProfile.label}, Angular ${consumerProfile.angular}, TypeScript ${consumerProfile.typescript}, RxJS ${consumerProfile.rxjs}, ${collectedFiles[2]} spec file(s) and ${collectedCases[1]} case(s) passing.\n`,
+  `Thoth package consumer verified: ${consumerProfile.label}, Angular ${consumerProfile.angular}, TypeScript ${consumerProfile.typescript}, RxJS ${consumerProfile.rxjs}, ${collectedFiles[2]} spec file(s) and ${collectedCases[1]} case(s) passing.\n`,
 );

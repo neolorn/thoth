@@ -8,7 +8,7 @@ import {
   resolveLocalizedRoute,
   type Localization,
   type PlainMessageHandle,
-} from '@neolorn/equator';
+} from '@neolorn/thoth';
 import { configuration } from '#i18n';
 import { messages } from '#i18n/shell';
 
@@ -99,7 +99,7 @@ describe('type contracts', () => {
     );
 
     expect(rebuilt).toBe(address);
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it('the identity is a literal union rather than string', () => {
@@ -120,7 +120,7 @@ describe('type contracts', () => {
     // is what rules it out.
     const declared: typeof resolved.routeId = 'item';
     expect(typeof declared).toBe('string');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 
   it("The server table is Angular's own ServerRoute[], with no cast", () => {
@@ -149,6 +149,6 @@ describe('type contracts', () => {
     // And the array itself is the caller's to hand on, which `withRoutes` requires.
     expect(Object.isFrozen(table)).toBe(false);
     expect(table.at(-1)).toEqual({ path: '**', renderMode: RenderMode.Server });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/thoth', { policy: routePolicy });
   });
 });

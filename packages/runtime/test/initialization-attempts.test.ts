@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { GENERATED_ABI } from '@neolorn/equator/core';
+import { GENERATED_ABI } from '@neolorn/thoth/core';
 
 import {
   PROVIDER,
@@ -46,7 +46,7 @@ describe('the first snapshot', () => {
       loadedScopes: [SHELL],
       degraded: false,
       generatedAbi: GENERATED_ABI,
-      standardsProfile: 'equator-1',
+      standardsProfile: 'thoth-1',
       catalogSetIds: {
         [PROVIDER]: compiled().descriptor.providers[0]?.catalogSetId,
       },

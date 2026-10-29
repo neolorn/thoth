@@ -16,7 +16,7 @@ import type { LocalizationCommitHook } from '../src/localization.js';
 import type {
   LocalizationParticipant,
   LocalizationParticipantReport,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 import { catalogKey } from './catalog-store-harness.js';
 import {

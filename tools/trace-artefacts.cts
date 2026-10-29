@@ -44,8 +44,8 @@ const {
   isInternalThread,
 }: typeof import('node:worker_threads') = require('node:worker_threads');
 
-const traceFile = process.env['EQUATOR_TRACE_FILE'];
-const workspaceRoot = process.env['EQUATOR_TRACE_ROOT'];
+const traceFile = process.env['THOTH_TRACE_FILE'];
+const workspaceRoot = process.env['THOTH_TRACE_ROOT'];
 
 /**
  * The launcher is not the stage, and it was being measured as one.
@@ -77,8 +77,8 @@ const workspaceRoot = process.env['EQUATOR_TRACE_ROOT'];
  * wherever it was installed, so the rule names where the stage lives instead: one installed inside
  * the tree would be traced, and its workspace scan would turn the run red rather than pass unseen.
  */
-const first = process.env['EQUATOR_TRACE_LAUNCHER'] === '1';
-if (first) delete process.env['EQUATOR_TRACE_LAUNCHER'];
+const first = process.env['THOTH_TRACE_LAUNCHER'] === '1';
+if (first) delete process.env['THOTH_TRACE_LAUNCHER'];
 const insideTree = (script: string): boolean => {
   const relative = path.relative(path.resolve(workspaceRoot!), script);
   return !relative.startsWith('..') && !path.isAbsolute(relative);

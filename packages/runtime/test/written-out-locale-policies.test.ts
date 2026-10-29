@@ -25,7 +25,7 @@ import {
   type LocaleUrlPolicy,
   type PathPrefixLocalePolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/equator/core';
+} from '@neolorn/thoth/core';
 
 /**
  * A policy written out as an object instead of built by a constructor.
@@ -37,7 +37,7 @@ import {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'equator-route-projection/1',
+    profile: 'thoth-route-projection/1',
     identity: 'sha256-WrittenOutLocalePoliciesTestIdentity0123456',
     routes: [
       { id: 'home', path: '', parameterNames: [] },
@@ -47,7 +47,7 @@ const PROJECTION: RouteRuntimeProjection = {
 };
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'equator-generated/1',
+  generatedAbi: 'thoth-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],

@@ -1,24 +1,24 @@
 /**
- * What a new project costs Equator between `equator init` and its second scope.
+ * What a new project costs Thoth between `thoth init` and its second scope.
  *
- * Adding a scope is ordinary localization work and must cost no Equator step. A generated-owner
+ * Adding a scope is ordinary localization work and must cost no Thoth step. A generated-owner
  * identity taken as a digest over the scope list costs one: it moves the first time a consumer
  * writes a catalog and again every time they add another, the work root still records the identity
- * of the run before, and `equator generate` refuses with `EQ1602` until `equator clean` removes the
+ * of the run before, and `thoth generate` refuses with `TH1602` until `thoth clean` removes the
  * marker. A new project meets that on its second command: `generate` on an empty project prints
- * `EQ1702`, which names the exact next step, write `i18n/shell/en-US.yaml`, and doing exactly
+ * `TH1702`, which names the exact next step, write `i18n/shell/en-US.yaml`, and doing exactly
  * that breaks the next `generate`.
  *
  * So this is the sequence a new project actually performs, run cold:
  *
- *   1. `equator init`
- *   2. `equator generate`: no catalogs yet
- *   3. write the first catalog, in the scope `EQ1702` names
- *   4. `equator generate`
+ *   1. `thoth init`
+ *   2. `thoth generate`: no catalogs yet
+ *   3. write the first catalog, in the scope `TH1702` names
+ *   4. `thoth generate`
  *   5. write a second scope
- *   6. `equator generate`
+ *   6. `thoth generate`
  *
- * Every one must succeed, and `equator clean` appears nowhere.
+ * Every one must succeed, and `thoth clean` appears nowhere.
  *
  * **The identity is checked against what it is supposed to be made of, not merely against itself.**
  * "The three generates all passed" would also be true of an identity that still moved and a refusal
@@ -53,7 +53,7 @@ import type { SpawnedText } from './spawned-text.ts';
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const installedToolkit = resolve(
   workspaceRoot,
-  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/equator-toolkit',
+  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/thoth-toolkit',
 );
 if (!existsSync(installedToolkit)) {
   process.stderr.write(
@@ -61,7 +61,7 @@ if (!existsSync(installedToolkit)) {
   );
   process.exit(1);
 }
-// The modules rather than the package entry. The ownership marker is Equator's own bookkeeping
+// The modules rather than the package entry. The ownership marker is Thoth's own bookkeeping
 // rather than something a build script writes, so it is not published, and this reads it from where
 // it is declared.
 const { WORK_OWNER_PATH, WORK_OWNER_PROFILE } = await import(
@@ -95,7 +95,7 @@ interface CliResult {
 const steps: string[] = [];
 
 function run(...args: string[]) {
-  const label = `equator ${args.join(' ')}`;
+  const label = `thoth ${args.join(' ')}`;
   const finished: SpawnedText = spawnSync(
     process.execPath,
     [cli, ...args, '--json'],
@@ -119,7 +119,7 @@ function run(...args: string[]) {
   return { label, result, exitCode: finished.status };
 }
 
-function equator(...args: string[]) {
+function thoth(...args: string[]) {
   const { label, result, exitCode } = run(...args);
   assert.equal(
     result.status,
@@ -134,12 +134,12 @@ function equator(...args: string[]) {
 }
 
 async function recordedOwnerId() {
-  const markerPath = resolve(projectRoot, '.equator', WORK_OWNER_PATH);
+  const markerPath = resolve(projectRoot, '.thoth', WORK_OWNER_PATH);
   const marker = JSON.parse(await readFile(markerPath, 'utf8'));
   assert.equal(
     marker.profile,
     WORK_OWNER_PROFILE,
-    'The work-root marker is not the profile this version of Equator writes.',
+    'The work-root marker is not the profile this version of Thoth writes.',
   );
   return marker.ownerId;
 }
@@ -190,7 +190,7 @@ await writeFile(
   'utf8',
 );
 
-equator(
+thoth(
   'init',
   '--source-locale',
   'en-US',
@@ -202,15 +202,15 @@ equator(
   'ar-EG',
 );
 
-equator('generate');
+thoth('generate');
 const afterFirstGenerate = await recordedOwnerId();
 
-await writeScope('shell', 'app-title', 'Equator', 'Equator');
-equator('generate');
+await writeScope('shell', 'app-title', 'Thoth', 'Thoth');
+thoth('generate');
 const afterFirstCatalog = await recordedOwnerId();
 
 await writeScope('checkout', 'pay-now', 'Pay now', 'ادفع الآن');
-equator('generate');
+thoth('generate');
 const afterSecondScope = await recordedOwnerId();
 
 assert.equal(
@@ -221,12 +221,12 @@ assert.equal(
 assert.equal(
   afterFirstCatalog,
   expectedOwnerId,
-  'The owner identity moved when the first catalog was written. That is the defect EQ1602 reports.',
+  'The owner identity moved when the first catalog was written. That is the defect TH1602 reports.',
 );
 assert.equal(
   afterSecondScope,
   expectedOwnerId,
-  'The owner identity moved when a second scope was added. Adding a scope must cost no Equator step.',
+  'The owner identity moved when a second scope was added. Adding a scope must cost no Thoth step.',
 );
 
 // And then the case where ownership genuinely is foreign, because the refusal has to stay a refusal.
@@ -259,9 +259,9 @@ assert.equal(
   'A work root marked by another project was adopted rather than refused.',
 );
 const refusal = foreign.result.diagnostics.find(
-  (diagnostic) => diagnostic.code === 'EQ1602',
+  (diagnostic) => diagnostic.code === 'TH1602',
 );
-assert.ok(refusal, 'The refusal did not report EQ1602.');
+assert.ok(refusal, 'The refusal did not report TH1602.');
 // Read from the machine output on purpose. The summary passes through the redaction that keeps a
 // consumer's absolute paths out of published JSON, and a redaction running to the end of the line
 // takes everything after the path with it, which is both identities and the recovery, leaving them
@@ -269,18 +269,18 @@ assert.ok(refusal, 'The refusal did not report EQ1602.');
 for (const [what, expected] of [
   ['the identity it found', expectedOwnerId],
   ['the identity this project computes', renamedOwnerId],
-  ['the recovery', 'equator clean'],
+  ['the recovery', 'thoth clean'],
 ]) {
   assert.ok(
     refusal.summary.includes(expected),
-    `EQ1602 does not name ${what}. It says: ${refusal.summary}`,
+    `TH1602 does not name ${what}. It says: ${refusal.summary}`,
   );
 }
 
-// The recovery the message names, performed. A diagnostic that prescribes a step Equator does not
+// The recovery the message names, performed. A diagnostic that prescribes a step Thoth does not
 // actually accept is worse than one that prescribes none.
-equator('clean');
-equator('generate');
+thoth('clean');
+thoth('generate');
 assert.equal(
   await recordedOwnerId(),
   renamedOwnerId,
@@ -290,5 +290,5 @@ assert.equal(
 await rm(scratchRoot, { recursive: true, force: true });
 
 process.stdout.write(
-  `Equator cold start: ${steps.join(', ')}. Six steps green on one owner identity (${expectedOwnerId}) with no clean, and a foreign work root refused by name with its recovery.\n`,
+  `Thoth cold start: ${steps.join(', ')}. Six steps green on one owner identity (${expectedOwnerId}) with no clean, and a foreign work root refused by name with its recovery.\n`,
 );

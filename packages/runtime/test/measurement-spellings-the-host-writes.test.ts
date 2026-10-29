@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { parseLocalizedInput } from '../src/localized-input.js';
-import { type LocalizedInputProfile } from '@neolorn/equator/core';
+import { type LocalizedInputProfile } from '@neolorn/thoth/core';
 
 /**
  * A measurement field learns the spellings of its unit from the platform's formatter, and what the

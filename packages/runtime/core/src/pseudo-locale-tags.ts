@@ -10,7 +10,7 @@
  * pseudo-locales: `XA`, Pseudo-Accents, a "derived testing locale with English + added accents and
  * lengthened", and `XB`, Pseudo-Bidi, a "derived testing locale with forced RTL English". Its table
  * of private use codes lists `XC` to `XJ` and `XL` to `XZ` as excluded: CLDR will never give them a
- * meaning, so an application can. Every pseudo-locale Equator derives is accented, so a region
+ * meaning, so an application can. Every pseudo-locale Thoth derives is accented, so a region
  * states the rest: `XA` for English lengthened left to right, `XB` for English right to left, and an
  * excluded code for anything else.
  */
@@ -51,7 +51,7 @@ export const PSEUDO_LOCALE_ACCENTED = 'en-Latn-XA';
  * tag is rejected as a catalog identity. This is recorded here because the private-use form looks
  * correct from outside: it passes `Intl.getCanonicalLocales`, it survives `Intl.Locale.maximize()`,
  * and the runtime's direction lookup returns `rtl` for it. Three external authorities accept it and
- * the one validator that belongs to Equator does not.
+ * the one validator that belongs to Thoth does not.
  * `specs/03-locale-identity-and-resolution.spec.md` section 3 is the reason the validator is right:
  * a private-use subtag carries no application semantics, so admitting one into a catalog identity
  * would let two catalogs differ only in a part that no lookup reads.
