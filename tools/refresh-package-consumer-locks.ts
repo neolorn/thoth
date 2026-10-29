@@ -37,6 +37,19 @@ const documentScaffoldRoot = resolve(
   'fixtures/document-consumer-scaffold',
 );
 
+// A re-resolution from the committed lockfile keeps every version it already records, which is
+// what keeps a refresh from moving packages nobody asked to move. A security fix in a package the
+// fixtures reach only through another one needs the opposite for that package alone, so `--update`
+// names the packages to move to the newest version their ranges allow, and nothing else moves.
+const updateAt = process.argv.indexOf('--update');
+const updates =
+  updateAt === -1
+    ? []
+    : (process.argv[updateAt + 1] ?? '').split(',').filter((name) => name);
+if (updateAt !== -1 && updates.length === 0) {
+  throw new Error('--update needs a comma-separated list of package names.');
+}
+
 const assertContained = (path: string, owner: string) => {
   if (path !== owner && !path.startsWith(`${owner}${sep}`)) {
     throw new Error(`Refusing path outside ${owner}: ${path}`);
@@ -77,6 +90,13 @@ const resolveLockfile = (consumerRoot: string) => {
     ['install', '--lockfile-only', '--no-frozen-lockfile'],
     consumerRoot,
   );
+  if (updates.length > 0) {
+    run(
+      'pnpm',
+      ['update', ...updates, '--lockfile-only', '--no-save'],
+      consumerRoot,
+    );
+  }
 };
 
 const packageLocator = (consumerRoot: string, outputRoot: string) => {
@@ -285,6 +305,22 @@ run(
   ],
   npmStagingRoot,
 );
+if (updates.length > 0) {
+  run(
+    'npm',
+    [
+      'update',
+      ...updates,
+      '--package-lock-only',
+      '--no-save',
+      '--no-audit',
+      '--no-fund',
+      '--no-update-notifier',
+      '--ignore-scripts',
+    ],
+    npmStagingRoot,
+  );
+}
 await cp(
   resolve(npmStagingRoot, 'package-lock.json'),
   resolve(npmFixtureRoot, 'package-lock.json'),

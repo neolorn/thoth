@@ -94,7 +94,11 @@ pnpm run refresh:consumer-locks
 
 `refresh:consumer` hands the consumer fixtures the packages that are in `dist/` right now. A fixture takes Thoth as a `file:` dependency, which pnpm copies into its store, so a fixture that is already installed goes on running the build it was installed with until this runs.
 
-`refresh:consumer-locks` regenerates the committed lockfiles of the consumer fixtures. It reaches the network, so run it when a fixture manifest or a dependency range changes and commit what it writes.
+`refresh:consumer-locks` regenerates the committed lockfiles of the consumer fixtures. It reaches the network, so run it when a fixture manifest or a dependency range changes and commit what it writes. It keeps every version a lockfile already records; to move a package the fixtures reach through another one, for a security fix, name it with `--update`, which moves the named packages to the newest version their ranges allow and nothing else:
+
+```sh
+pnpm run refresh:consumer-locks --update fast-uri,undici
+```
 
 The suite fetches nothing while it runs, so what it installs and the Node releases it runs on have to be on the machine first. Three commands fetch them, and each reaches the network:
 
