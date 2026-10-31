@@ -101,4 +101,4 @@ Each entry point as published, unminified, and each package as installed, source
 | Package                  | Files |     Bytes |
 | ------------------------ | ----: | --------: |
 | `@neolorn/thoth`         |    38 | 3,213,176 |
-| `@neolorn/thoth-toolkit` |   280 | 4,428,829 |
+| `@neolorn/thoth-toolkit` |   288 | 4,678,704 |
