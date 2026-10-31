@@ -20,13 +20,16 @@ import { TestingArchitectHost } from '@angular-devkit/architect/testing';
 import { Observable } from 'rxjs';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import build from '../src/angular-builder-build.js';
-import serve from '../src/angular-builder-serve.js';
-import test from '../src/angular-builder-test.js';
 import { WRAPPED_BUILDER_OPTIONS } from '../src/angular-builder-options.generated.js';
+import { runAngularCommand } from '../src/angular-builders.js';
+import {
+  angularCliRegistry,
+  angularTargetScheduler,
+} from '../src/angular-target-architect.js';
 import {
   ANGULAR_TARGET_OPTION,
   angularBuilderSchema,
+  givenAngularOptions,
   type AngularCommand,
 } from '../src/angular-builder-schemas.js';
 import { initializeProject } from '../src/project-host.js';
@@ -167,6 +170,8 @@ class WorkspaceHost extends TestingArchitectHost {
 
 interface Workspace {
   readonly architect: Architect;
+  /** The Architect `ng run` would run a target through. */
+  readonly alone: (target: Target) => Promise<Architect>;
   readonly logs: string[];
   readonly starts: TargetStart[];
   /** How many long-running Angular sessions are open now. */
@@ -177,11 +182,15 @@ interface Workspace {
  * What `angular.json` sets on the Thoth build target and on the Angular build target it runs, and
  * on the Thoth serve and test targets.
  */
+type Json = boolean | number | string | null | Json[] | { [key: string]: Json };
+
 interface BuildOptions {
-  readonly thoth?: Readonly<Record<string, boolean | number | string>>;
-  readonly angular?: Readonly<Record<string, boolean | number | string>>;
-  readonly serve?: Readonly<Record<string, boolean | number | string>>;
-  readonly test?: Readonly<Record<string, boolean | number | string>>;
+  readonly thoth?: Readonly<Record<string, Json>>;
+  readonly angular?: Readonly<Record<string, Json>>;
+  readonly angularServe?: Readonly<Record<string, Json>>;
+  readonly angularTest?: Readonly<Record<string, Json>>;
+  readonly serve?: Readonly<Record<string, Json>>;
+  readonly test?: Readonly<Record<string, Json>>;
 }
 
 /** The workspace at `workspaceRoot`, whose one project `app` has its root at `projectRoot` within it. */
@@ -194,30 +203,38 @@ function workspace(
   const root = resolve(workspaceRoot, projectRoot);
   const starts: TargetStart[] = [];
   let open = 0;
+  // Each Thoth builder runs its Angular target as it does under the Angular CLI, through an Architect
+  // made for that target, over this in-memory workspace rather than one on disk.
+  const scheduleTarget = angularTargetScheduler(() => Promise.resolve(host));
+  for (const command of ['build', 'serve', 'test'] as const) {
+    host.addBuilder(
+      `@neolorn/thoth-toolkit:${command}`,
+      createBuilder((options, context) =>
+        runAngularCommand(command, options, context, scheduleTarget),
+      ),
+      `Thoth ${command}`,
+      optionSchema(command),
+    );
+  }
+  const once = createBuilder(async (options) => {
+    starts.push({ generated: await generatedText(root), options });
+    return { success: true };
+  });
+  host.addBuilder('@example/angular:once', once);
+  // Named as Angular's application builder is, which the Angular CLI validates without filling in
+  // its arrays, with an array and an object that have no default, as `conditions` and `define` have
+  // none in Angular's schema.
   host.addBuilder(
-    '@neolorn/thoth-toolkit:build',
-    build,
-    'Thoth build',
-    optionSchema('build'),
-  );
-  host.addBuilder(
-    '@neolorn/thoth-toolkit:serve',
-    serve,
-    'Thoth serve',
-    optionSchema('serve'),
-  );
-  host.addBuilder(
-    '@neolorn/thoth-toolkit:test',
-    test,
-    'Thoth test',
-    optionSchema('test'),
-  );
-  host.addBuilder(
-    '@example/angular:once',
-    createBuilder(async (options) => {
-      starts.push({ generated: await generatedText(root), options });
-      return { success: true };
-    }),
+    '@angular/build:application',
+    once,
+    'A stand-in for the application builder',
+    {
+      type: 'object',
+      properties: {
+        conditions: { type: 'array', items: { type: 'string' } },
+        define: { type: 'object', additionalProperties: { type: 'string' } },
+      },
+    },
   );
   host.addBuilder(
     '@example/angular:session',
@@ -253,6 +270,7 @@ function workspace(
   host.addTarget(
     { project: 'app', target: 'angular-serve' },
     '@example/angular:session',
+    { ...options.angularServe },
   );
   host.addTarget(
     { project: 'app', target: 'test' },
@@ -262,10 +280,28 @@ function workspace(
   host.addTarget(
     { project: 'app', target: 'angular-test' },
     '@example/angular:once',
+    { ...options.angularTest },
+  );
+  host.addTarget(
+    { project: 'app', target: 'angular-application' },
+    '@angular/build:application',
   );
   const logs: string[] = [];
   return {
-    architect: new Architect(host),
+    // As the Angular CLI makes it for a target whose builder is a Thoth builder.
+    architect: new Architect(
+      host,
+      angularCliRegistry('@neolorn/thoth-toolkit:build', () => undefined),
+    ),
+    // As `ng run` makes it for a target, from the target's builder.
+    alone: async (target) =>
+      new Architect(
+        host,
+        angularCliRegistry(
+          (await host.getBuilderNameForTarget(target)) ?? '',
+          () => undefined,
+        ),
+      ),
     logs,
     starts,
     open: () => open,
@@ -275,7 +311,7 @@ function workspace(
 async function schedule(
   { architect, logs }: Workspace,
   target: Target,
-  overrides: Readonly<Record<string, boolean | number | string>> = {},
+  overrides: Readonly<Record<string, Json>> = {},
 ): Promise<{ run: BuilderRun; outputs: BuilderOutput[] }> {
   const logger = {
     createChild: () => ({
@@ -501,12 +537,16 @@ describe('the Angular builders take the options of the Angular builder they run'
     expect(host.starts[0]?.options['port']).toBe(4300);
   });
 
-  it('leave what angular.json sets on the Angular build target as it is under a plain ng build', async () => {
+  it('leave what angular.json sets on the Angular build target as it is under a plain ng build, its lists and objects included', async () => {
     const root = await project();
     const angular = {
       optimization: false,
       outputHashing: 'all',
       tsConfig: 'tsconfig.app.json',
+      styles: ['src/styles.css'],
+      assets: [{ glob: 'arrival.txt', input: 'public' }],
+      budgets: [{ type: 'initial', maximumWarning: '1kB' }],
+      define: { BUILT: 'true' },
     };
     const host = workspace(root, '', { angular });
 
@@ -532,6 +572,144 @@ describe('the Angular builders take the options of the Angular builder they run'
 
     expect(result.success, host.logs.join('\n')).toBe(true);
     expect(host.starts[0]?.options).toEqual({
+      optimization: false,
+      outputHashing: 'none',
+    });
+  });
+
+  it('pass a list ng build is given over the one the Angular target sets, and keep the other lists the target sets', async () => {
+    const root = await project();
+    const host = workspace(root, '', {
+      angular: {
+        styles: ['src/styles.css'],
+        budgets: [{ type: 'initial', maximumWarning: '1kB' }],
+      },
+    });
+
+    const { run } = await schedule(
+      host,
+      { project: 'app', target: 'build' },
+      { styles: ['src/other.css'] },
+    );
+    const result = await run.result;
+
+    expect(result.success, host.logs.join('\n')).toBe(true);
+    expect(host.starts[0]?.options).toEqual({
+      styles: ['src/other.css'],
+      budgets: [{ type: 'initial', maximumWarning: '1kB' }],
+    });
+  });
+
+  it('leave what angular.json sets on the Angular serve and test targets as it is under a plain ng serve and ng test', async () => {
+    const root = await project();
+    const angularServe = { headers: { 'X-Arrival': 'angular-serve' } };
+    const angularTest = {
+      setupFiles: ['src/setup.ts'],
+      include: ['src/**/*.spec.ts'],
+      reporters: ['dot'],
+    };
+    const host = workspace(root, '', { angularServe, angularTest });
+
+    const tested = await schedule(
+      host,
+      { project: 'app', target: 'test' },
+      { watch: false },
+    );
+    const result = await tested.run.result;
+    await schedule(host, { project: 'app', target: 'serve' });
+
+    expect(result.success, host.logs.join('\n')).toBe(true);
+    expect(await until(() => host.starts.length === 2)).toBe(true);
+    expect(host.starts[0]?.options).toEqual({ ...angularTest, watch: false });
+    expect(host.starts[1]?.options).toEqual(angularServe);
+  });
+
+  it('end a builder started by its name rather than from a target, which cannot tell the options it was given', async () => {
+    const root = await project();
+    const host = workspace(root);
+
+    const run = await host.architect.scheduleBuilder(
+      '@neolorn/thoth-toolkit:build',
+      { buildTarget: 'app:angular-build' },
+    );
+    runs.push(run);
+    const result = await run.result;
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "Thoth's build builder runs from a target in angular.json, and it was started without one, so it cannot tell the options it was given from those the Angular CLI filled in.",
+    );
+    expect(host.starts).toHaveLength(0);
+  });
+
+  it('run the Angular target as ng run runs it on its own, with no array filled in that the Angular CLI leaves out for its builder', async () => {
+    const root = await project();
+    const host = workspace(root);
+    const target = { project: 'app', target: 'angular-application' };
+
+    const alone = await (await host.alone(target)).scheduleTarget(target);
+    runs.push(alone);
+    expect((await alone.result).success).toBe(true);
+    const { run } = await schedule(
+      host,
+      { project: 'app', target: 'build' },
+      { buildTarget: 'app:angular-application' },
+    );
+    const result = await run.result;
+
+    expect(result.success, host.logs.join('\n')).toBe(true);
+    expect(host.starts).toHaveLength(2);
+    // The object is filled in and the array is not, under `ng run` and under Thoth's builder alike.
+    expect(host.starts[0]?.options).toEqual({ define: {} });
+    expect(host.starts[0]?.options['conditions']).toBeUndefined();
+    expect(host.starts[1]?.options).toStrictEqual(host.starts[0]?.options);
+  });
+
+  it.each([
+    ['@angular/build:application', { define: {} }],
+    ['@example/angular:once', { conditions: [], define: {} }],
+  ])(
+    'validate the options of %s as the Angular CLI does, filling in what it fills in',
+    async (builderName, filled) => {
+      const registry = angularCliRegistry(builderName, () => undefined);
+      const validate = await registry.compile({
+        type: 'object',
+        properties: {
+          conditions: { type: 'array', items: { type: 'string' } },
+          define: { type: 'object' },
+        },
+      });
+
+      const { success, data } = await validate({});
+
+      expect(success).toBe(true);
+      expect(JSON.parse(JSON.stringify(data))).toStrictEqual(filled);
+    },
+  );
+
+  it('leave out of what it passes on each option the Angular CLI filled in, and keep every one the command gave', () => {
+    const fills = {
+      buildTarget: 'app:angular-build',
+      styles: [],
+      assets: [],
+      define: {},
+      security: { autoCsp: undefined },
+    };
+
+    expect(
+      givenAngularOptions(
+        {
+          styles: [],
+          assets: ['src/favicon.ico'],
+          define: {},
+          security: {},
+          optimization: false,
+          outputHashing: 'none',
+        },
+        fills,
+      ),
+    ).toStrictEqual({
+      assets: ['src/favicon.ico'],
       optimization: false,
       outputHashing: 'none',
     });

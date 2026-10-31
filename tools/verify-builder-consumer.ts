@@ -10,6 +10,11 @@
  * Every command is started with the installed Angular CLI's own entry file and a bound of its own,
  * and the serve session is ended by this process once it has shown what it is run for.
  *
+ * First, the options the Angular targets set in `angular.json` reach Angular through the three
+ * builders, lists and objects included, and each target runs as `ng run` runs it on its own: a
+ * production build resolves a package with the same export conditions, and the reporters of the
+ * Vitest configuration reach Vitest.
+ *
  * Last, the consumer declares a pseudo-locale, as section 16 of the same specification lets a project
  * do: `ng serve`, whose target asks for the pseudo-locales as `ng add` sets it, serves it with
  * nothing run beside it, and a production `ng build` of the same project holds none of it.
@@ -99,6 +104,14 @@ assert.equal(
   ),
 );
 
+// A package whose every export condition leaves its own mark, which the Angular build target names
+// in `polyfills`. Put in place after the install, which installs only what the lockfile records.
+await cp(
+  resolve(workspaceRoot, 'fixtures/builder-consumer-condition-probe'),
+  resolve(consumerRoot, 'node_modules/thoth-condition-probe'),
+  { recursive: true },
+);
+
 const ngEntry = resolve(consumerRoot, 'node_modules/@angular/cli/bin/ng.js');
 
 /** Ends a command and everything it started, which on Windows a signal to the parent does not. */
@@ -172,6 +185,183 @@ assert.notEqual(
   originalCatalog,
   'The catalog plant did not apply.',
 );
+
+/** Text without the colour codes the Angular CLI writes even without a terminal. */
+const uncoloured = (text: string): string =>
+  text.replace(/\u001b\[[0-9;]*m/gu, '');
+
+/** Starts ng serve, gives its address to `check` once it serves, and ends it after. */
+const whileServing = <T>(check: (origin: string) => Promise<T>): Promise<T> =>
+  new Promise<T>((resolvePromise, rejectPromise) => {
+    process.stdout.write('$ ng serve\n');
+    const child = spawn(process.execPath, [ngEntry, 'serve'], {
+      cwd: consumerRoot,
+      env: { ...process.env, CI: 'true', NG_CLI_ANALYTICS: 'false' },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let output = '';
+    let checking = false;
+    const bound = setTimeout(() => {
+      end(child.pid);
+      rejectPromise(
+        new Error(
+          `ng serve ran past its ${COMMAND_BOUND_MILLISECONDS / 1000}s bound.\n${output}`,
+        ),
+      );
+    }, COMMAND_BOUND_MILLISECONDS);
+    const record = (chunk: Buffer) => {
+      output += uncoloured(chunk.toString());
+      process.stdout.write(chunk);
+      const origin = /Local:\s+(http:\/\/localhost:\d+\/)/u.exec(output)?.[1];
+      if (origin === undefined || checking) return;
+      checking = true;
+      check(origin).then(
+        (value) => {
+          clearTimeout(bound);
+          end(child.pid);
+          resolvePromise(value);
+        },
+        (error: unknown) => {
+          clearTimeout(bound);
+          end(child.pid);
+          rejectPromise(error);
+        },
+      );
+    };
+    child.stdout.on('data', record);
+    child.stderr.on('data', record);
+    child.once('error', rejectPromise);
+    child.once('close', (status) => {
+      if (!checking) {
+        clearTimeout(bound);
+        rejectPromise(
+          new Error(
+            `ng serve ended with status ${status} before it served.\n${output}`,
+          ),
+        );
+      }
+    });
+  });
+
+const browserRoot = resolve(consumerRoot, 'dist/minimal/browser');
+
+/** The export conditions `thoth-condition-probe` was resolved with in the scripts a build wrote. */
+const probedConditions = async (): Promise<string> => {
+  const marks = new Set<string>();
+  for (const name of await readdir(browserRoot)) {
+    if (!name.endsWith('.js')) continue;
+    const text = await readFile(resolve(browserRoot, name), 'utf8');
+    for (const match of text.matchAll(/thoth-condition-probe:(\w+)/gu)) {
+      marks.add(match[1] as string);
+    }
+  }
+  return marks.size === 0 ? 'nothing' : [...marks].sort().join(' and ');
+};
+
+/** Whether the Vitest configuration's JSON reporter wrote its report. */
+const runnerReport = resolve(consumerRoot, 'runner-config-report.json');
+const reported = async (): Promise<boolean> =>
+  lstat(runnerReport).then(
+    () => true,
+    () => false,
+  );
+
+// The options each Angular target sets in angular.json reach Angular through Thoth's builder when
+// the command line does not give them: arrays and objects as much as the rest. And the Angular
+// target runs as it runs on its own, where the Angular CLI fills no array option it was not given:
+// a production build resolves packages with the same conditions as `ng run` of the build target,
+// and the reporters of the Vitest configuration reach Vitest. The verdicts are taken together, so
+// one that fails does not hide the others.
+const arrivals: string[] = [];
+{
+  await rm(resolve(consumerRoot, 'dist'), { recursive: true, force: true });
+  const arrivalBuild = await ng(['build']);
+  const throughThoth =
+    arrivalBuild.status === 0
+      ? await probedConditions()
+      : `status ${arrivalBuild.status}`;
+  if (arrivalBuild.status !== 0) {
+    arrivals.push(`ng build ended with status ${arrivalBuild.status}.`);
+  } else {
+    const names = await readdir(browserRoot);
+    const stylesheet = names.find((name) => /^styles-[^.]+\.css$/u.test(name));
+    if (stylesheet === undefined) {
+      arrivals.push(
+        `ng build wrote no stylesheet, so the styles option of minimal:angular-build did not reach Angular: ${names.join(', ')}`,
+      );
+    } else if (
+      !(await readFile(resolve(browserRoot, 'index.html'), 'utf8')).includes(
+        `href="${stylesheet}"`,
+      )
+    ) {
+      arrivals.push(
+        `ng build wrote ${stylesheet}, and index.html does not link it.`,
+      );
+    }
+    if (!names.includes('arrival.txt')) {
+      arrivals.push(
+        `ng build did not copy public/arrival.txt, so the assets option of minimal:angular-build did not reach Angular: ${names.join(', ')}`,
+      );
+    }
+    if (
+      !/Budget 1\.00 kB was not met by /u.test(uncoloured(arrivalBuild.output))
+    ) {
+      arrivals.push(
+        'ng build gave no budget warning, so the budgets option of minimal:angular-build:production did not reach Angular.',
+      );
+    }
+  }
+  await rm(resolve(consumerRoot, 'dist'), { recursive: true, force: true });
+  const aloneBuild = await ng(['run', 'minimal:angular-build:production']);
+  const onItsOwn =
+    aloneBuild.status === 0
+      ? await probedConditions()
+      : `status ${aloneBuild.status}`;
+  if (onItsOwn !== 'production') {
+    arrivals.push(
+      `ng run minimal:angular-build:production resolved thoth-condition-probe with ${onItsOwn}, where Angular's default conditions for a production build pick production, so the probe does not show what it is there for.`,
+    );
+  }
+  if (throughThoth !== onItsOwn) {
+    arrivals.push(
+      `ng build resolved thoth-condition-probe with ${throughThoth}, and ng run minimal:angular-build:production with ${onItsOwn}: the Angular target does not run through Thoth's builder as it runs on its own.`,
+    );
+  }
+
+  await rm(runnerReport, { force: true });
+  const arrivalTest = await ng(['test', '--watch=false']);
+  if (arrivalTest.status !== 0) {
+    arrivals.push(
+      `ng test ended with status ${arrivalTest.status}, so src/setup-arrival.spec.ts failed or did not run: the setupFiles option of minimal:angular-test did not reach Angular.`,
+    );
+  }
+  const reportedThroughThoth = await reported();
+  await rm(runnerReport, { force: true });
+  const aloneTest = await ng(['run', 'minimal:angular-test', '--watch=false']);
+  const reportedOnItsOwn = aloneTest.status === 0 && (await reported());
+  await rm(runnerReport, { force: true });
+  if (!reportedOnItsOwn) {
+    arrivals.push(
+      `ng run minimal:angular-test (status ${aloneTest.status}) wrote no report from the reporters vitest-base.config.mjs sets, so the probe does not show what it is there for.`,
+    );
+  }
+  if (reportedThroughThoth !== reportedOnItsOwn) {
+    arrivals.push(
+      `ng test ${reportedThroughThoth ? 'wrote' : 'wrote no'} report from the reporters vitest-base.config.mjs sets, and ng run minimal:angular-test ${reportedOnItsOwn ? 'did' : 'did not'}: the Angular target does not run through Thoth's builder as it runs on its own.`,
+    );
+  }
+  const header = await whileServing(async (origin) =>
+    (await fetch(origin)).headers.get('x-thoth-arrival'),
+  );
+  if (header !== 'angular-serve') {
+    arrivals.push(
+      `ng serve answered with X-Thoth-Arrival ${String(header)}, so the headers option of minimal:angular-serve did not reach Angular.`,
+    );
+  }
+}
+assert.deepEqual(arrivals, [], arrivals.join('\n'));
+await rm(resolve(consumerRoot, 'dist'), { recursive: true, force: true });
+await ungenerated();
 
 // ng build, from nothing generated.
 await absent(generatedRoot);

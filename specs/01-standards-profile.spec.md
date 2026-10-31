@@ -375,12 +375,16 @@ behavior, XLIFF mapping, identity, or canonicalization through an ordinary depen
 The runtime package depends on `tslib` and nothing else. Everything else it needs is a peer
 dependency, listed in `02-packages-and-platform.spec.md`.
 
-The toolkit package depends on `tslib` and seven packages, each bounded to one responsibility:
+The toolkit package depends on `tslib` and eight packages, each bounded to one responsibility:
 
 - `@angular-devkit/architect` 0.2202.1 supplies the Angular CLI builder API the toolkit's builders
   are written against: `createBuilder`, the context a builder runs in, and target scheduling. It is
   the version `@angular/build` 22.2.1 depends on. Only the builder modules and the `ng add` schematic
   import it, so neither the programmatic API nor the command line loads it.
+- `@angular-devkit/core` 22.2.1 supplies the schema registry, its transforms and the workspace
+  reader the builders run their Angular target through, so the target's options are validated as
+  the Angular CLI validates them for that target's builder. It is the version
+  `@angular-devkit/architect` 0.2202.1 depends on. Only the builder modules import it.
 - `@angular-devkit/schematics` 22.2.1 supplies the Angular CLI schematic API the `ng add` schematic
   is written against: the tree it edits and the rules it chains. It is the version `@angular/cli`
   22.2.1 depends on. Only the schematic loads it.

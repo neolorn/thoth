@@ -28,7 +28,7 @@ The standards profile is `thoth-1`: Unicode 17.0.0, CLDR and LDML 48.2, MessageF
 defines it, the ECMA-402 13th edition for the options of a numeric function, XLIFF 2.2 Committee
 Specification 01, the sitemaps.org 0.9 protocol, the IANA Language Subtag Registry dated 2026-09-17,
 and the IANA Time Zone Database 2026e. The runtime depends on `tslib` and nothing else. The toolkit
-depends on `@angular-devkit/architect` 0.2202.1, `@angular-devkit/schematics` 22.2.1,
+depends on `@angular-devkit/architect` 0.2202.1, `@angular-devkit/core` 22.2.1, `@angular-devkit/schematics` 22.2.1,
 `@schematics/angular` 22.2.1, `yaml` 2.9.1, `ajv` 8.20.0, `jsonc-parser` 3.3.1, `messageformat`
 4.0.0 and `tslib`.
 

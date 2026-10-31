@@ -8,12 +8,15 @@
  * `@angular/build:unit-test` go on reading an `@angular/build:application` target, as they
  * require. What the command line gives for the Angular builder is passed on to it through the
  * overrides `scheduleTarget` takes, and Angular validates it against its own schema, so an option
- * the installed Angular lacks is refused in Angular's words.
+ * the installed Angular lacks is refused in Angular's words. The target runs through an Architect
+ * made for it as the Angular CLI makes its own (`angular-target-architect.ts`), so it runs as
+ * `ng run` runs it.
  *
- * Only what `@angular-devkit/architect` publishes is used: `createBuilder`, `scheduleTarget` and
+ * Only what `@angular-devkit/architect` publishes is used: `createBuilder` and
  * `targetFromTargetString` as the Angular CLI builder guide documents them, and `getProjectMetadata`,
- * `getTargetOptions` and `addTeardown` from the same published `BuilderContext` interface. Section
- * 10 of `specs/02-packages-and-platform.spec.md` rules out anything private.
+ * `getTargetOptions`, `getBuilderNameForTarget`, `validateOptions` and `addTeardown` from the same
+ * published `BuilderContext` interface. Section 10 of `specs/02-packages-and-platform.spec.md` rules out
+ * anything private.
  */
 
 import {
@@ -30,10 +33,16 @@ import { humanDiagnostic, orderedDiagnostics } from './diagnostic-text.js';
 import { diagnosticsBlock, type ToolkitResult } from './diagnostics.js';
 import type { GenerateProjectResult, WatchCycle } from './project-host.js';
 import {
+  ANGULAR_TARGET_OPTION,
   angularBuilderOptions,
+  givenAngularOptions,
   misplacedAngularOptions,
   type AngularCommand,
 } from './angular-builder-schemas.js';
+import {
+  scheduleAngularTarget,
+  type AngularTargetScheduler,
+} from './angular-target-architect.js';
 
 /**
  * A queue the builder waits on, fed by the Angular run, the watch, and the builder's own stop.
@@ -176,6 +185,7 @@ export async function* runAngularCommand(
   command: AngularCommand,
   rawOptions: Readonly<Record<string, unknown>>,
   context: BuilderContext,
+  scheduleTarget: AngularTargetScheduler = scheduleAngularTarget,
 ): AsyncGenerator<BuilderOutput> {
   const options = angularBuilderOptions(command, rawOptions);
   let target: Target;
@@ -188,6 +198,28 @@ export async function* runAngularCommand(
   const misplaced = await misplacedOptionsError(context, command, target);
   if (misplaced !== undefined) {
     yield { success: false, error: misplaced };
+    return;
+  }
+  // What the Angular CLI filled in among the options this builder received, found by the same
+  // validation through the same registry: Architect's, given only the option no command leaves out.
+  // The builder is named as the host names it for its target, which `validateOptions` takes. Under
+  // the Angular CLI's host, the name in `context.builder` is only the part after the colon, which
+  // that host cannot resolve.
+  if (context.target === undefined) {
+    yield {
+      success: false,
+      error: `Thoth's ${command} builder runs from a target in angular.json, and it was started without one, so it cannot tell the options it was given from those the Angular CLI filled in.`,
+    };
+    return;
+  }
+  let fills: Readonly<Record<string, unknown>>;
+  try {
+    fills = await context.validateOptions(
+      { [ANGULAR_TARGET_OPTION[command]]: options.target },
+      await context.getBuilderNameForTarget(context.target),
+    );
+  } catch (error) {
+    yield { success: false, error: errorText(error) };
     return;
   }
   const events = new RunEvents();
@@ -207,8 +239,9 @@ export async function* runAngularCommand(
     options.watch,
   );
   // Read from the options Architect parsed out of the command line and `angular.json`, so every
-  // value is JSON.
-  const overrides = options.angular as NonNullable<
+  // value is JSON. Only what the command gave is passed on, so the Angular target's own value
+  // stands for everything else.
+  const overrides = givenAngularOptions(options.angular, fills) as NonNullable<
     Parameters<BuilderContext['scheduleTarget']>[1]
   >;
   const { generateProject, watchProject } = await import('./project-host.js');
@@ -250,7 +283,7 @@ export async function* runAngularCommand(
       return;
     }
     if (wasStopped()) return;
-    run = await context.scheduleTarget(target, overrides);
+    run = await scheduleTarget(context, target, overrides);
     const subscription = run.output.subscribe({
       next: (output) => events.push({ kind: 'output', output }),
       error: (error: unknown) => events.push({ kind: 'target-ended', error }),

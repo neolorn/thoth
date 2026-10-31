@@ -4665,13 +4665,32 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
   },
   {
+    id: 'builder-passes-on-the-cli-fills',
+    invariant:
+      'An Angular builder does not pass the Angular target the empty lists and objects the Angular CLI fills in for options the command does not give, so the target keeps its own values.',
+    source: 'packages/toolkit/src/angular-builder-schemas.ts',
+    find: '        ([name, value]) => !sameJson(value, fills[name]),',
+    replace:
+      '        ([name, value]) => true || !sameJson(value, fills[name]),',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'builder-runs-the-target-through-the-builders-registry',
+    invariant:
+      "An Angular builder runs its Angular target with the options validated as the Angular CLI validates them for that target's builder, so an @angular/build builder receives no array option the command and the target leave out.",
+    source: 'packages/toolkit/src/angular-target-architect.ts',
+    find: '    builderName.startsWith(ANGULAR_BUILD_BUILDERS)',
+    replace: '    builderName.startsWith(ANGULAR_BUILD_BUILDERS) && false',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
     id: 'builder-passes-on-its-own-target-option',
     invariant:
       "An Angular builder passes the Angular target nothing but options of the Angular target's builder, so a plain ng build leaves that target's options as angular.json sets them.",
-    source: 'packages/toolkit/src/angular-builder-schemas.ts',
-    find: '  for (const name of angularOptionNames(command)) {',
+    source: 'packages/toolkit/src/angular-builders.ts',
+    find: '  const overrides = givenAngularOptions(options.angular, fills) as NonNullable<',
     replace:
-      '  for (const name of [...angularOptionNames(command), ANGULAR_TARGET_OPTION[command]]) {',
+      '  const overrides = { ...givenAngularOptions(options.angular, fills), [ANGULAR_TARGET_OPTION[command]]: options.target } as NonNullable<',
     caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
   },
   {

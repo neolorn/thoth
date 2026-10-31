@@ -514,12 +514,18 @@ Angular target is `@angular/build:application` for `ng build`, `@angular/build:d
 - declare in each builder's option schema every option of the Angular builder its command runs, in
   every `@angular/build` release a verification row of section 9 of
   `02-packages-and-platform.spec.md` installs, generated from those releases, with no default
-  anywhere in them and none required, so an option the command does not give leaves the Angular
-  target's own value in place;
+  anywhere in them and none required;
 - pass the Angular target, through the overrides of the builder API, the options of its builder
   that the command line gives, and `watch` when the command gives it, and nothing else, so Angular
   validates them against its own schema and refuses one the installed release lacks in its own
-  words;
+  words. The Angular CLI fills in each array and object option the command does not give, with an
+  empty list or object, before a builder outside `@angular/build` receives its options. Those fills
+  MUST NOT be passed on, so an option the command does not give leaves the Angular target's own
+  value in place;
+- run the Angular target as it runs on its own under `ng run`: its options are validated as the
+  Angular CLI validates them for that target's builder, so an `@angular/build` builder receives no
+  array option the command and the target leave out, where a builder outside `@angular/build`
+  would receive an empty list;
 - refuse an option of the Angular builder that `angular.json` sets on the Thoth target, with a
   failed result that names the option and the Angular target it belongs on, before generating;
 - take `pseudoLocales`, an option of their own that is not passed on, and generate the

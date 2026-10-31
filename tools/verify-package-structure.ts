@@ -630,6 +630,7 @@ assert.deepEqual(toolkitPackage.engines, { node: nodeRange });
 assert.deepEqual(toolkitPackage.bin, { thoth: './cli.js' });
 assert.deepEqual(toolkitPackage.dependencies, {
   '@angular-devkit/architect': '0.2202.1',
+  '@angular-devkit/core': '22.2.1',
   '@angular-devkit/schematics': '22.2.1',
   '@schematics/angular': '22.2.1',
   ajv: '8.20.0',
@@ -874,6 +875,10 @@ for (const [specifier, sourceRoot] of [
   [
     '@angular-devkit/architect',
     'packages/toolkit/node_modules/@angular-devkit/architect',
+  ],
+  [
+    '@angular-devkit/core',
+    'packages/toolkit/node_modules/@angular-devkit/core',
   ],
   [
     '@angular-devkit/schematics',

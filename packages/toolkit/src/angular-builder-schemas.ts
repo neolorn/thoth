@@ -28,7 +28,10 @@ export interface AngularBuilderOptions {
   readonly target: string;
   readonly watch?: boolean;
   readonly pseudoLocales?: boolean;
-  /** Every option of the Angular builder the builder was given, `watch` included. */
+  /**
+   * Every option of the Angular builder the builder received, `watch` included, with what the
+   * Angular CLI filled in among them. `givenAngularOptions` leaves those out.
+   */
   readonly angular: Readonly<Record<string, unknown>>;
 }
 
@@ -55,8 +58,9 @@ const TARGET_DESCRIPTION: Readonly<Record<AngularCommand, string>> =
  * It holds the builder's own options and every option of the Angular builder its target runs, so
  * the Angular CLI, which parses a command's options from the schema of the builder the target
  * names, accepts every option it accepts without Thoth. Those options have no default and none is
- * required, so one the command does not give is absent and the Angular target's own value stands.
- * Closed, so a mistyped option is refused by the Angular CLI before anything runs. `watch` is
+ * required. The Angular CLI still fills in each array and object option the command does not give,
+ * with `[]` and `{}`, for every builder that is not one of `@angular/build`'s; the builder leaves
+ * those out (`givenAngularOptions`), so the Angular target's own value stands. Closed, so a mistyped option is refused by the Angular CLI before anything runs. `watch` is
  * Thoth's own on the two commands it changes the session of, so `ng build --watch` and
  * `ng test --watch=false` mean what they mean without Thoth.
  */
@@ -150,4 +154,58 @@ export function angularBuilderOptions(
     ...(pseudoLocales === true ? { pseudoLocales } : {}),
     angular: Object.freeze(angular),
   });
+}
+
+/**
+ * The Angular options the command gave, out of those the builder received.
+ *
+ * Before a builder that is not one of `@angular/build`'s receives its options, the Angular CLI
+ * validates them with a transform that fills in every option the command did not give: an array
+ * becomes `[]`, an object `{}` whose own properties are set the same way, and anything else its
+ * schema's default, which here is none. Passed on to the Angular target, those fills would replace
+ * what the target sets, its `styles`, `assets` and `budgets` among them. `fills` is what the same
+ * validation makes of the builder's target option alone, so an option equal to its fill is one the
+ * command did not give, and it is left out.
+ *
+ * A command that gives an option the very value of its fill, an empty list or an empty object, has
+ * it left out too, and the Angular target's own value stands.
+ */
+export function givenAngularOptions(
+  angular: Readonly<Record<string, unknown>>,
+  fills: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> {
+  return Object.freeze(
+    Object.fromEntries(
+      Object.entries(angular).filter(
+        ([name, value]) => !sameJson(value, fills[name]),
+      ),
+    ),
+  );
+}
+
+/**
+ * Whether two JSON values are the same, a property set to `undefined` counting as absent, as it
+ * does once the options are written out as JSON.
+ */
+function sameJson(left: unknown, right: unknown): boolean {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((item, index) => sameJson(item, right[index]))
+    );
+  }
+  if (isJsonObject(left) && isJsonObject(right)) {
+    return [...new Set([...Object.keys(left), ...Object.keys(right)])].every(
+      (key) => sameJson(left[key], right[key]),
+    );
+  }
+  return Object.is(left, right);
+}
+
+function isJsonObject(
+  value: unknown,
+): value is Readonly<Record<string, unknown>> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

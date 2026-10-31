@@ -222,7 +222,10 @@ Toolkit integration with Angular and TypeScript MUST use documented, supported A
 toolkit-owned adapters.
 
 The Angular CLI builders use the builder API the Angular CLI documents and the published
-`BuilderContext` interface of `@angular-devkit/architect`. They MUST NOT call a builder's
+`BuilderContext` interface of `@angular-devkit/architect`. They run the Angular target through an
+`Architect` of their own, over the host class the Angular CLI uses (`WorkspaceNodeModulesArchitectHost`)
+and the schema registry `@angular-devkit/core` publishes, made as the Angular CLI makes its own for
+that target. They MUST NOT call a builder's
 programmatic entry point that Angular marks experimental, import a private module of
 `@angular/build`, replace a member of the context they are given, or copy an Angular builder's
 option schema.

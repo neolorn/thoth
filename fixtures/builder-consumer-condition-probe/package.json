@@ -1,0 +1,13 @@
+{
+  "name": "thoth-condition-probe",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Installed into the builder consumer by verify:builder-consumer. Each export condition leaves its own mark, so a build shows which conditions it resolved packages with.",
+  "exports": {
+    ".": {
+      "production": "./production.js",
+      "module": "./module.js",
+      "default": "./default.js"
+    }
+  }
+}
