@@ -22,6 +22,7 @@ import {
   replaceUnansweringBrowser,
   replacementSignature,
   stepClosingItsOwnPages,
+  type UnansweringBrowser,
 } from './browser-call-bound.ts';
 import { navigateWithScriptGate } from './browser-script-gate.ts';
 import { recordOccurrence } from './gate-occurrences.ts';
@@ -5769,8 +5770,9 @@ const stalledEngines = new Set<string>();
 
 /**
  * Close a page and its own context. A close the browser never finishes is recorded as an
- * occurrence and ended by closing the context; a context whose close does not settle either is
- * thrown as an unanswering browser, which the row replaces.
+ * occurrence and ended by closing the context; a context whose close does not settle either, or
+ * that the browser refuses with a protocol error, is thrown as an unanswering browser, which the
+ * row replaces.
  */
 async function closeIsolated(isolatedPage: Page, isolated: BrowserContext) {
   if (
@@ -7055,10 +7057,11 @@ async function verifyBrowserRow(row: BrowserRow) {
   };
   await openRow();
 
-  // A browser that left a page's close and then its context's close outstanding is not answering,
-  // and the checks of the step that met it had passed. It is ended, the occurrence is recorded,
-  // and the row is opened again in a fresh one, so the stages that follow run there.
-  const replaceBrowser = async (unanswering: Error) => {
+  // A browser that left a page's close outstanding, and then its context's close as well or refused
+  // it with a protocol error, is not answering, and the checks of the step that met it had passed.
+  // It is ended, the occurrence is recorded, and the row is opened again in a fresh one, so the
+  // stages that follow run there.
+  const replaceBrowser = async (unanswering: UnansweringBrowser) => {
     const stage = verificationStage;
     enterStage(`${row.id}-browser-replacement`);
     // A copy, taken before the browser is ended: its pages go on writing to the one they were
@@ -7082,8 +7085,9 @@ async function verifyBrowserRow(row: BrowserRow) {
             stage,
             timeoutMs: callTimeoutMs,
             processEnded,
+            contextClose: unanswering.contextClose,
           }),
-          detail: unanswering.message.split('\n')[0]!,
+          detail: unanswering.detail,
         }),
       launch: openRow,
     });

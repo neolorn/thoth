@@ -1,6 +1,7 @@
 /**
  * The bound on every Playwright call a browser row makes, and the teardown that survives a page
- * the browser never finishes closing, or a browser that stops answering its closes altogether.
+ * the browser never finishes closing, or a browser that stops answering its closes altogether or
+ * refuses the close of that page's context.
  *
  * Kept apart from the row so its self-test drives the same bound the rows run under, with objects
  * of its own in place of a browser.
@@ -13,10 +14,48 @@ export class UnsettledCall extends Error {
   override name = 'UnsettledCall';
 }
 
-/** A browser that left the close of a page, and then of that page's context, outstanding. */
+/**
+ * A browser that left the close of a page outstanding, and then left the close of that page's
+ * context outstanding as well (`unsettled`) or refused it with a protocol error (`refused`).
+ * `detail` is the first line of each close's message, the page's and then the context's.
+ */
 export class UnansweringBrowser extends Error {
   override name = 'UnansweringBrowser';
+  declare readonly contextClose: 'unsettled' | 'refused';
+  declare readonly detail: string;
+  constructor(
+    message: string,
+    {
+      cause,
+      contextClose,
+      detail,
+    }: {
+      readonly cause: unknown;
+      readonly contextClose: 'unsettled' | 'refused';
+      readonly detail: string;
+    },
+  ) {
+    super(message, { cause });
+    this.contextClose = contextClose;
+    this.detail = detail;
+  }
 }
+
+/**
+ * Whether the browser refused a context's close with a protocol error.
+ *
+ * Playwright marks a protocol error on its server side only (`ProtocolError`), and what reaches the
+ * client is a plain `Error` carrying the message, with the error's name `Error`, so nothing but the
+ * text tells it. The form is the one the server writes, `Protocol error (<Domain>.<method>): `,
+ * behind the prefix the client puts on the message of the call that failed, `browserContext.close: `.
+ * Anchored at both, so an error that only mentions a protocol error, or one the client raised
+ * itself (a closed target, a timeout), is not taken for it.
+ */
+export const isRefusedContextClose = (error: unknown): boolean =>
+  error instanceof Error &&
+  /^browserContext\.close: Protocol error \([A-Za-z]+\.[A-Za-z]+\): /u.test(
+    error.message,
+  );
 
 export interface Closable {
   close(): Promise<unknown>;
@@ -170,9 +209,12 @@ export function createCallBound({
  * driver's teardown failing rather than a verification, and closing the context disposes of the
  * page with it. `record` is handed the unsettled close once the context has closed and returns what
  * it recorded; the result is that record, or `undefined` when the page closed. A context whose
- * close does not settle either means the browser is not answering, and that throws an
- * `UnansweringBrowser` naming both, with nothing recorded: what the caller does about the browser
- * is the occurrence. A context that fails to close in any other way is the row's failure.
+ * close does not settle either, or that the browser refuses to close with a protocol error, means
+ * the browser is not answering, and that throws an `UnansweringBrowser` naming both closes, with
+ * nothing recorded: what the caller does about the browser is the occurrence. Firefox has been seen
+ * refusing it from its own session store, after every check on the page had passed. A context that
+ * fails to close in any other way, and any failure of a context's close after its page closed, is
+ * the row's failure.
  *
  * Only for a page whose context holds nothing else: closing a context the row goes on using would
  * turn a teardown into a failure of whatever runs next.
@@ -189,10 +231,24 @@ export async function closePageWithItsContext<Recorded>(
     try {
       await context.close();
     } catch (contextError) {
-      const message = `${error.message}\n\nThe page's own context was closed in its place, and that did not settle either:\n${(contextError as Error).message}`;
-      throw contextError instanceof UnsettledCall
-        ? new UnansweringBrowser(message, { cause: contextError })
-        : new Error(message, { cause: contextError });
+      const contextMessage = (contextError as Error).message;
+      const detail = `${error.message.split('\n')[0]}\n${contextMessage.split('\n')[0]}`;
+      if (contextError instanceof UnsettledCall) {
+        throw new UnansweringBrowser(
+          `${error.message}\n\nThe page's own context was closed in its place, and that did not settle either:\n${contextMessage}`,
+          { cause: contextError, contextClose: 'unsettled', detail },
+        );
+      }
+      if (isRefusedContextClose(contextError)) {
+        throw new UnansweringBrowser(
+          `${error.message}\n\nThe page's own context was closed in its place, and the browser refused that with a protocol error:\n${contextMessage}`,
+          { cause: contextError, contextClose: 'refused', detail },
+        );
+      }
+      throw new Error(
+        `${error.message}\n\nThe page's own context was closed in its place, and that failed:\n${contextMessage}`,
+        { cause: contextError },
+      );
     }
     return record(error);
   }
@@ -222,18 +278,25 @@ export async function stepClosingItsOwnPages(
 
 /**
  * How a replaced browser is named where occurrences are counted: the stage it stalled in, the bound
- * both closes ran past, and whether its process had to be ended.
+ * the page's close ran past, whether the context's close ran past it too or was refused, and whether
+ * its process had to be ended.
  */
 export const replacementSignature = ({
   stage,
   timeoutMs,
   processEnded,
+  contextClose,
 }: {
   readonly stage: string;
   readonly timeoutMs: number;
   readonly processEnded: boolean;
+  readonly contextClose: UnansweringBrowser['contextClose'];
 }) =>
-  `${stage}: page.close and then context.close did not settle within ${timeoutMs}ms, so the browser was closed${
+  `${stage}: ${
+    contextClose === 'refused'
+      ? `page.close did not settle within ${timeoutMs}ms and the browser refused context.close with a protocol error`
+      : `page.close and then context.close did not settle within ${timeoutMs}ms`
+  }, so the browser was closed${
     processEnded
       ? ', which did not settle either, so its process was ended,'
       : ''

@@ -99,7 +99,7 @@ node tools/cap.ts mode night
 
 A mutation reading scores a mutant that runs out of time as detected, and on a machine doing other work that can be the load rather than the mutant. `node tools/mutation-reading.ts doubtful <report.json> <base configuration> <folder>` writes a configuration that reads each such mutant of a report again with one runner, `merge` puts the second reading's verdicts back into the first reading's report and baseline, and `survivors` and `skeletons` list what a report did not detect, the second as entries for `tools/mutation-reasons.json`. `changed` says, for every line two commits changed, whether a reading or an injection shows it runs. The file's own description gives every command.
 
-When a browser engine never finishes closing a page in a browser row, the suite closes that page's browser context instead and carries on. When the context does not close either, the suite closes that browser, ends its process if the browser's own close does not finish, and runs the rest of the row in a fresh one. The verdict line and the attempt ledger count each time it did either, so a rising rate shows there.
+When a browser engine never finishes closing a page in a browser row, the suite closes that page's browser context instead and carries on. When the context does not close either, or the browser refuses to close it with a protocol error, the suite closes that browser, ends its process if the browser's own close does not finish, and runs the rest of the row in a fresh one. The verdict line and the attempt ledger count each time it did either, so a rising rate shows there.
 
 Three commands are maintenance rather than checks:
 

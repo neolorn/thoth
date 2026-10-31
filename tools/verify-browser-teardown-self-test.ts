@@ -44,35 +44,49 @@ class Page {
     return Promise.resolve(1);
   }
 }
+// What Firefox answered a context's close with in three browser rows, after the close of the
+// context's only page had not settled: a protocol error out of its own session store, in the form
+// Playwright gives such an error.
+const refusedContextClose =
+  'browserContext.close: Protocol error (Browser.removeBrowserContext): can\'t access property "_maybeDontRestoreTabs", this._windows[aWindow.__SSi] is undefined';
 class Context {
   closed = false;
-  declare readonly closes: boolean;
-  constructor(closes: boolean) {
+  declare readonly closes: boolean | 'refuses';
+  constructor(closes: boolean | 'refuses') {
     this.closes = closes;
   }
   close() {
+    if (this.closes === 'refuses') {
+      return Promise.reject(new Error(refusedContextClose));
+    }
     if (!this.closes) return never();
     this.closed = true;
     return Promise.resolve();
   }
 }
 // A browser whose pages and contexts close or not as it is told, and whose own close does the same.
+// `contextsRefuse` makes its contexts refuse their close with a protocol error rather than leave it
+// outstanding.
 class Browser {
   closed = false;
   declare readonly answers: boolean;
   declare readonly closes: boolean;
+  declare readonly contextsRefuse: boolean;
   constructor({
     answers,
     closes = true,
+    contextsRefuse = false,
   }: {
     readonly answers: boolean;
     readonly closes?: boolean;
+    readonly contextsRefuse?: boolean;
   }) {
     this.answers = answers;
     this.closes = closes;
+    this.contextsRefuse = contextsRefuse;
   }
   newContext() {
-    return new Context(this.answers);
+    return new Context(this.contextsRefuse ? 'refuses' : this.answers);
   }
   newPage() {
     return new Page(this.answers);
@@ -195,6 +209,54 @@ try {
     );
   }
 
+  // A context the browser refuses to close with a protocol error, after its page's close did not
+  // settle: the browser is not answering either, and the error names both closes and the refusal,
+  // with nothing recorded.
+  {
+    const context = boundCalls(new Context('refuses'), 'context');
+    const page = boundCalls(new Page(false), 'page');
+    const before = collectOccurrences(['row'], () => file).length;
+    await assert.rejects(
+      closePageWithItsContext(page, context, record),
+      (error) => {
+        assert.ok(
+          error instanceof UnansweringBrowser,
+          'a context close the browser refused after an unsettled page close was not reported as a browser that is not answering',
+        );
+        assert.equal(error.contextClose, 'refused');
+        assert.match(error.message, /page\.close did not settle within 50ms/u);
+        assert.match(error.message, /Browser\.removeBrowserContext/u);
+        assert.equal(
+          error.detail,
+          `page.close did not settle within 50ms\n${refusedContextClose}`,
+        );
+        return true;
+      },
+    );
+    assert.equal(
+      collectOccurrences(['row'], () => file).length,
+      before,
+      'the refused context close was recorded as worked around although the browser was not replaced',
+    );
+  }
+
+  // The same refusal after a page close that settled is the row's failure: nothing stalled.
+  {
+    const context = boundCalls(new Context('refuses'), 'context');
+    const page = boundCalls(new Page(true), 'page');
+    await assert.rejects(
+      closePageWithItsContext(page, context, record),
+      (error) => {
+        assert.equal(error instanceof UnansweringBrowser, false);
+        assert.match(
+          (error as Error).message,
+          /Browser\.removeBrowserContext/u,
+        );
+        return true;
+      },
+    );
+  }
+
   // A context that fails to close in any other way is the row's failure, not a browser to replace.
   {
     const failing = {
@@ -215,9 +277,11 @@ try {
   // the browser rows drive theirs. The browser stops answering at the end of the first step.
   const runRow = async ({
     stalledCloses,
+    contextsRefuse = false,
     rowFile,
   }: {
     readonly stalledCloses: boolean;
+    readonly contextsRefuse?: boolean;
     readonly rowFile: string;
   }) => {
     const rowEnvironment = { [OCCURRENCES_FILE_VARIABLE]: rowFile };
@@ -230,7 +294,7 @@ try {
       launched.push(browser);
       return Promise.resolve(browser);
     };
-    await launch({ answers: false, closes: stalledCloses });
+    await launch({ answers: false, closes: stalledCloses, contextsRefuse });
     const replace = (unanswering: UnansweringBrowser) => {
       const stalled = browser;
       return replaceUnansweringBrowser({
@@ -247,8 +311,9 @@ try {
                 stage: 'firefox-localized-not-found',
                 timeoutMs: 50,
                 processEnded,
+                contextClose: unanswering.contextClose,
               }),
-              detail: unanswering.message.split('\n')[0],
+              detail: unanswering.detail,
             },
             rowEnvironment,
           ),
@@ -359,6 +424,45 @@ try {
           'firefox-localized-not-found: page.close and then context.close did not settle within 50ms, so the browser was closed, which did not settle either, so its process was ended, and a fresh one launched in its place',
         ],
       ],
+    );
+  }
+
+  // Its contexts refuse their close with a protocol error once a page's close has not settled: it is
+  // replaced all the same, the signature names the refusal apart from two stalled closes, the
+  // occurrence carries both messages, and the row goes on in the fresh browser.
+  {
+    const row = await runRow({
+      stalledCloses: true,
+      contextsRefuse: true,
+      rowFile: join(runs, 'refused.occurrences.jsonl'),
+    });
+    assert.equal(row.launched.length, 2, 'no fresh browser was launched');
+    assert.equal(
+      row.launched[0]!.closed,
+      true,
+      'the browser that refused the context close was left open',
+    );
+    assert.deepEqual(row.processesEnded, []);
+    assert.deepEqual(
+      row.stepsRunIn.map(([, browserIndex]) => browserIndex),
+      [0, 1, 1],
+      'the rest of the row did not run in the fresh browser',
+    );
+    assert.deepEqual(ledgerOccurrences(row.occurrences), [
+      {
+        stage: 'row',
+        kind: 'browser-replaced',
+        signature:
+          'firefox-localized-not-found: page.close did not settle within 50ms and the browser refused context.close with a protocol error, so the browser was closed and a fresh one launched in its place',
+      },
+    ]);
+    assert.equal(
+      row.occurrences[0]!.detail,
+      `page.close did not settle within 50ms\n${refusedContextClose}`,
+    );
+    assert.equal(
+      verdictOccurrences(row.occurrences),
+      ', 1 occurrence(s) worked around',
     );
   }
 
