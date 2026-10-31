@@ -494,7 +494,9 @@ Generation runs inside the Angular commands that consume generated contracts. Th
 publishes three Angular CLI builders, `@neolorn/thoth-toolkit:build`, `@neolorn/thoth-toolkit:serve`
 and `@neolorn/thoth-toolkit:test`, which a workspace names, or `ng add` names for it, as the builders of
 the targets `ng build`, `ng serve` and `ng test` run. Each names the Angular target it runs, in `buildTarget`,
-`serveTarget` or `testTarget`, and that target keeps its own builder and options. A release MUST:
+`serveTarget` or `testTarget`, and that target keeps its own builder and options. The builder of the
+Angular target is `@angular/build:application` for `ng build`, `@angular/build:dev-server` for
+`ng serve` and `@angular/build:unit-test` for `ng test`. A release MUST:
 
 - generate before the Angular target starts, and start it only when generation succeeds;
 - end the command when that generation fails, with a failed result and every diagnostic in the
@@ -504,7 +506,17 @@ the targets `ng build`, `ng serve` and `ng test` run. Each names the Angular tar
   toolkit's watch in the same process for as long as the target runs, write each cycle's
   diagnostics to the command's output, report a failed cycle as a failed result without stopping
   the target, and stop the watch when the target ends;
-- pass the Angular target no option but `watch`, and only when the command gives one;
+- declare in each builder's option schema every option of the Angular builder its command runs, in
+  every `@angular/build` release a verification row of section 9 of
+  `02-packages-and-platform.spec.md` installs, generated from those releases, with no default
+  anywhere in them and none required, so an option the command does not give leaves the Angular
+  target's own value in place;
+- pass the Angular target, through the overrides of the builder API, the options of its builder
+  that the command line gives, and `watch` when the command gives it, and nothing else, so Angular
+  validates them against its own schema and refuses one the installed release lacks in its own
+  words;
+- refuse an option of the Angular builder that `angular.json` sets on the Thoth target, with a
+  failed result that names the option and the Angular target it belongs on, before generating;
 - generate the project whose configuration is at the Angular project's root, so each application
   of a workspace builds from its own.
 

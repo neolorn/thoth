@@ -23,7 +23,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import build from '../src/angular-builder-build.js';
 import serve from '../src/angular-builder-serve.js';
 import test from '../src/angular-builder-test.js';
+import { WRAPPED_BUILDER_OPTIONS } from '../src/angular-builder-options.generated.js';
 import {
+  ANGULAR_TARGET_OPTION,
   angularBuilderSchema,
   type AngularCommand,
 } from '../src/angular-builder-schemas.js';
@@ -162,8 +164,18 @@ interface Workspace {
   readonly open: () => number;
 }
 
+/** What `angular.json` sets on the Thoth build target and on the Angular build target it runs. */
+interface BuildOptions {
+  readonly thoth?: Readonly<Record<string, boolean | number | string>>;
+  readonly angular?: Readonly<Record<string, boolean | number | string>>;
+}
+
 /** The workspace at `workspaceRoot`, whose one project `app` has its root at `projectRoot` within it. */
-function workspace(workspaceRoot: string, projectRoot = ''): Workspace {
+function workspace(
+  workspaceRoot: string,
+  projectRoot = '',
+  options: BuildOptions = {},
+): Workspace {
   const host = new WorkspaceHost(workspaceRoot, projectRoot);
   const root = resolve(workspaceRoot, projectRoot);
   const starts: TargetStart[] = [];
@@ -212,11 +224,12 @@ function workspace(workspaceRoot: string, projectRoot = ''): Workspace {
   host.addTarget(
     { project: 'app', target: 'build' },
     '@neolorn/thoth-toolkit:build',
-    { buildTarget: 'app:angular-build' },
+    { buildTarget: 'app:angular-build', ...options.thoth },
   );
   host.addTarget(
     { project: 'app', target: 'angular-build' },
     '@example/angular:once',
+    { ...options.angular },
   );
   host.addTarget(
     { project: 'app', target: 'serve' },
@@ -248,7 +261,7 @@ function workspace(workspaceRoot: string, projectRoot = ''): Workspace {
 async function schedule(
   { architect, logs }: Workspace,
   target: Target,
-  overrides: Readonly<Record<string, boolean>> = {},
+  overrides: Readonly<Record<string, boolean | number | string>> = {},
 ): Promise<{ run: BuilderRun; outputs: BuilderOutput[] }> {
   const logger = {
     createChild: () => ({
@@ -369,5 +382,84 @@ describe('the Angular builders', () => {
 
     await run.stop();
     expect(host.open()).toBe(0);
+  });
+});
+
+describe('the Angular builders take the options of the Angular builder they run', () => {
+  it.each(['build', 'serve', 'test'] as const)(
+    '%s declares every option of its Angular builder, with no default and nothing required but its target',
+    (command) => {
+      const schema = angularBuilderSchema(command);
+      const properties = schema['properties'] as Readonly<
+        Record<string, unknown>
+      >;
+      const wrapped = Object.keys(WRAPPED_BUILDER_OPTIONS[command].properties);
+
+      expect(wrapped.length).toBeGreaterThan(10);
+      expect(wrapped.filter((name) => !(name in properties))).toEqual([]);
+      expect(JSON.stringify(schema)).not.toMatch(/"default":/u);
+      expect(schema['required']).toEqual([ANGULAR_TARGET_OPTION[command]]);
+      expect(schema['additionalProperties']).toBe(false);
+    },
+  );
+
+  it('pass ng serve --port on to the Angular serve target', async () => {
+    const root = await project();
+    const host = workspace(root);
+
+    await schedule(host, { project: 'app', target: 'serve' }, { port: 4300 });
+
+    expect(await until(() => host.starts.length === 1)).toBe(true);
+    expect(host.starts[0]?.options['port']).toBe(4300);
+  });
+
+  it('leave what angular.json sets on the Angular build target as it is under a plain ng build', async () => {
+    const root = await project();
+    const angular = {
+      optimization: false,
+      outputHashing: 'all',
+      tsConfig: 'tsconfig.app.json',
+    };
+    const host = workspace(root, '', { angular });
+
+    const { run } = await schedule(host, { project: 'app', target: 'build' });
+    const result = await run.result;
+
+    expect(result.success, host.logs.join('\n')).toBe(true);
+    expect(host.starts[0]?.options).toEqual(angular);
+  });
+
+  it('pass an option ng build is given over the one the Angular target sets, and no other', async () => {
+    const root = await project();
+    const host = workspace(root, '', {
+      angular: { optimization: false, outputHashing: 'all' },
+    });
+
+    const { run } = await schedule(
+      host,
+      { project: 'app', target: 'build' },
+      { outputHashing: 'none' },
+    );
+    const result = await run.result;
+
+    expect(result.success, host.logs.join('\n')).toBe(true);
+    expect(host.starts[0]?.options).toEqual({
+      optimization: false,
+      outputHashing: 'none',
+    });
+  });
+
+  it('refuse an Angular option set on the Thoth target in angular.json, and name the target it belongs on', async () => {
+    const root = await project();
+    const host = workspace(root, '', { thoth: { optimization: true } });
+
+    const { run } = await schedule(host, { project: 'app', target: 'build' });
+    const result = await run.result;
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      'optimization is an option of app:angular-build. Set it on that target in angular.json, or give it on the command line.',
+    );
+    expect(host.starts).toHaveLength(0);
   });
 });

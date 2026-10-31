@@ -12,7 +12,15 @@
  */
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { cp, lstat, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+  cp,
+  lstat,
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -166,6 +174,26 @@ assert.equal(built.status, 0, built.output);
 assert.match(built.output, /Thoth generated \d+ files/u);
 await present(generatedRoot);
 await present(resolve(consumerRoot, 'dist/minimal/browser'));
+
+// The Angular target's production configuration sets hidden source maps in angular.json, and a
+// plain ng build keeps them; given on the command line, the opposite reaches Angular instead.
+const sourceMaps = async (): Promise<readonly string[]> =>
+  (await readdir(resolve(consumerRoot, 'dist/minimal/browser'))).filter(
+    (name) => name.endsWith('.js.map'),
+  );
+assert.notDeepEqual(
+  await sourceMaps(),
+  [],
+  'A plain ng build wrote no source map, so what angular.json sets on minimal:angular-build:production did not reach Angular.',
+);
+await rm(resolve(consumerRoot, 'dist'), { recursive: true, force: true });
+const withoutMaps = await ng(['build', '--source-map=false']);
+assert.equal(withoutMaps.status, 0, withoutMaps.output);
+assert.deepEqual(
+  await sourceMaps(),
+  [],
+  'ng build --source-map=false wrote source maps, so the option given on the command line did not reach Angular.',
+);
 
 // ng build with a catalog that does not parse: the diagnostic is in the build's output, the exit is
 // a failure, and Angular never starts.

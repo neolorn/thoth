@@ -257,7 +257,8 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   the key order and every entry a unit does not translate. `thoth init` and `ng add` add the
   `thoth:export` and `thoth:import` scripts that run the two.
 - The toolkit's `build`, `serve` and `test` Angular CLI builders run `thoth generate` inside
-  `ng build`, `ng serve` and `ng test`, and keep regenerating while the Angular command watches.
+  `ng build`, `ng serve` and `ng test`, take every option of the Angular builder they run, and keep
+  regenerating while the Angular command watches.
 - `ng add @neolorn/thoth-toolkit` sets an Angular application up in one command: both packages,
   `thoth.config.json` from four questions, the builders in `angular.json`, and the providers in
   `app.config.ts` and, where the application renders on the server, `app.config.server.ts`. It

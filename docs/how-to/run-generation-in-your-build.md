@@ -74,9 +74,23 @@ modules from the last generation that succeeded.
 
 `ng test` generates and runs the tests. When the tests watch, generation does too.
 
-`--watch` on `ng build` and `ng test` is passed on to the Angular target. Every other Angular
-option goes in the Angular target, or on the command line of `ng run my-app:angular-build`, which
-runs Angular alone and does not generate.
+## Pass Angular options
+
+`ng build`, `ng serve` and `ng test` take every option of the Angular builder their target runs,
+and pass the ones you give on the command line to the Angular target:
+
+```text
+ng serve --port 4300
+ng build --source-map
+ng test --watch=false
+```
+
+Angular validates them against its own builder's schema, so it refuses an option your Angular
+version does not have. Options you keep go on the Angular target in `angular.json`, as they do
+without Thoth. An Angular option set on the Thoth target ends the command with an error that names
+the target it belongs on.
+
+`ng run my-app:angular-build` runs Angular alone and does not generate.
 
 ## Generate for other steps
 

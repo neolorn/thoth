@@ -86,6 +86,7 @@ import {
   resolveAngularVersion,
   resolveConsumerProfile,
 } from './package-consumer-profiles.ts';
+import { builderOptionGaps } from './builder-option-gaps.ts';
 
 /** One diagnostic as the command line writes it under `--json`, as far as this reads it. */
 interface MachineDiagnostic {
@@ -1069,6 +1070,18 @@ const installedRuntimeRoot = await realpath(
 );
 const installedToolkitRoot = await realpath(
   resolve(consumerRoot, 'node_modules/@neolorn/thoth-toolkit'),
+);
+
+// The Angular CLI refuses an option the Thoth builder's schema lacks, so every option of the
+// Angular builders this row installs has to be in the schemas of the Thoth builders it installs.
+const builderGaps = await builderOptionGaps(
+  await realpath(resolve(consumerRoot, 'node_modules/@angular/build')),
+  installedToolkitRoot,
+);
+assert.deepEqual(
+  builderGaps,
+  [],
+  `The ${consumerName} row's Thoth builders lack options of its Angular builders:\n${builderGaps.join('\n')}`,
 );
 const installedRuntimePackage = await readJson(
   resolve(installedRuntimeRoot, 'package.json'),

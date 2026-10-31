@@ -278,6 +278,9 @@ const declared: readonly StageDeclaration[] = Object.freeze([
     ],
   },
   { id: 'verify:person-names', reads: ['source:packages'] },
+  // Reads the row releases from the npm cache every stage is handed, offline, and the checked-in
+  // table it compares them with.
+  { id: 'verify:builder-options', reads: ['source:packages'] },
   // The two suites run at the same time, and with a shared vitest results cache both would hash the
   // empty project name and overwrite each other's record. Each has its own `cacheDir`, so the
   // artefacts below are genuinely separate rather than separated by schedule. `source:tools`

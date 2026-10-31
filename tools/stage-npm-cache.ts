@@ -1,5 +1,7 @@
 /**
- * Puts the npm consumer's packages in the npm cache `verify:npm-consumer` installs from offline.
+ * Puts the npm consumer's packages in the npm cache `verify:npm-consumer` installs from offline,
+ * and beside them the `@angular/build` release of every Angular row, which
+ * `generate:builder-options` reads its option schemas from.
  *
  * The same precondition `stage:consumer-store` meets for the pnpm consumers, for the one consumer
  * npm installs: a verifier that fetches its own subject can pass by fetching the wrong one, so the
@@ -20,6 +22,8 @@ import { spawnSync } from 'node:child_process';
 import { mkdir, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { angularBuildRows } from './angular-build-rows.ts';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 /** The fields of an npm lockfile this reads. */
@@ -68,16 +72,25 @@ assert.ok(
   'The npm consumer lock names no registry address for @angular/core, so this reads the lock wrongly.',
 );
 
+// The @angular/build release of every Angular row, which `generate:builder-options` reads offline
+// from this cache, for the same reason the consumer reads its packages from here.
+const builders = angularBuildRows().map(({ version }) => ({
+  path: `@angular/build@${version}`,
+  resolved: `https://registry.npmjs.org/@angular/build/-/build-${version}.tgz`,
+  spec: `@angular/build@${version}`,
+}));
+const staged = [...fetched, ...builders];
+
 await mkdir(cache, { recursive: true });
-npm(['cache', 'add', `--cache=${cache}`, ...fetched.map(({ spec }) => spec)]);
+npm(['cache', 'add', `--cache=${cache}`, ...staged.map(({ spec }) => spec)]);
 
 const listed = npm(['cache', 'ls', `--cache=${cache}`]);
-const missing = fetched.filter(({ resolved }) => !listed.includes(resolved));
+const missing = staged.filter(({ resolved }) => !listed.includes(resolved));
 assert.deepEqual(
   missing.map(({ path }) => path),
   [],
-  `The npm cache at ${cache} does not hold what the lock pins, so the npm consumer cannot install offline.`,
+  `The npm cache at ${cache} does not hold what the locks pin, so the npm consumer cannot install offline or the builder schemas cannot be generated.`,
 );
 console.log(
-  `Thoth npm cache staged: ${fetched.length} package(s) from fixtures/npm-package-consumer/package-lock.json in ${cache}.`,
+  `Thoth npm cache staged: ${fetched.length} package(s) from fixtures/npm-package-consumer/package-lock.json and ${builders.map(({ spec }) => spec).join(', ')} for the builder schemas, in ${cache}.`,
 );

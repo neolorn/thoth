@@ -4,10 +4,11 @@
  * `specs/10-compiler-and-tooling.spec.md` section 14 is what this implements: each builder
  * generates first, then runs an Angular target the workspace names, and in a session that watches
  * it keeps generating in the same process for as long as that target runs. The Angular target
- * keeps its own builder and its own options. Thoth hands it nothing but the target name, so
- * `@angular/build:dev-server` and `@angular/build:unit-test` go on reading an
- * `@angular/build:application` target, as they require, and every option Angular adds in a later
- * version works without a Thoth release.
+ * keeps its own builder and its own options, so `@angular/build:dev-server` and
+ * `@angular/build:unit-test` go on reading an `@angular/build:application` target, as they
+ * require. What the command line gives for the Angular builder is passed on to it through the
+ * overrides `scheduleTarget` takes, and Angular validates it against its own schema, so an option
+ * the installed Angular lacks is refused in Angular's words.
  *
  * Only what `@angular-devkit/architect` publishes is used: `createBuilder`, `scheduleTarget` and
  * `targetFromTargetString` as the Angular CLI builder guide documents them, and `getProjectMetadata`,
@@ -30,6 +31,7 @@ import { diagnosticsBlock, type ToolkitResult } from './diagnostics.js';
 import type { GenerateProjectResult, WatchCycle } from './project-host.js';
 import {
   angularBuilderOptions,
+  misplacedAngularOptions,
   type AngularCommand,
 } from './angular-builder-schemas.js';
 
@@ -119,6 +121,29 @@ async function projectDirectory(
 }
 
 /**
+ * Says which Angular options `angular.json` sets on the Thoth target, in the words the command
+ * fails with, or nothing when it sets none.
+ */
+async function misplacedOptionsError(
+  context: BuilderContext,
+  command: AngularCommand,
+  target: Target,
+): Promise<string | undefined> {
+  if (context.target === undefined) return undefined;
+  const names = misplacedAngularOptions(
+    command,
+    await context.getTargetOptions(context.target),
+  );
+  if (names.length === 0) return undefined;
+  const listed =
+    names.length === 1
+      ? `${names[0]} is an option`
+      : `${names.slice(0, -1).join(', ')} and ${names.at(-1)} are options`;
+  const pronoun = names.length === 1 ? 'it' : 'them';
+  return `${listed} of ${targetStringFromTarget(target)}. Set ${pronoun} on that target in angular.json, or give ${pronoun} on the command line.`;
+}
+
+/**
  * Whether the Angular run will outlive its first result, which is when generation has to keep up.
  *
  * `ng serve` always does. For the other two the builder's own `watch` decides when it is given,
@@ -160,6 +185,11 @@ export async function* runAngularCommand(
     yield { success: false, error: errorText(error) };
     return;
   }
+  const misplaced = await misplacedOptionsError(context, command, target);
+  if (misplaced !== undefined) {
+    yield { success: false, error: misplaced };
+    return;
+  }
   const events = new RunEvents();
   let stopped = false;
   // Raised by the teardown while the generation below is awaited, which is an assignment the
@@ -176,7 +206,11 @@ export async function* runAngularCommand(
     target,
     options.watch,
   );
-  const overrides = options.watch === undefined ? {} : { watch: options.watch };
+  // Read from the options Architect parsed out of the command line and `angular.json`, so every
+  // value is JSON.
+  const overrides = options.angular as NonNullable<
+    Parameters<BuilderContext['scheduleTarget']>[1]
+  >;
   const { generateProject, watchProject } = await import('./project-host.js');
 
   const controller = new AbortController();

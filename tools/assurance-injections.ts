@@ -4635,6 +4635,54 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
   },
   {
+    id: 'builder-schema-lacks-the-angular-options',
+    invariant:
+      "Each Angular builder's schema holds every option of the Angular builder its command runs, so the Angular CLI accepts them on the command line.",
+    source: 'packages/toolkit/src/angular-builder-schemas.ts',
+    find: '    properties: { ...wrapped.properties, ...ownOptions(command) },',
+    replace: '    properties: { ...ownOptions(command) },',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'builder-schema-carries-angular-defaults',
+    invariant:
+      "No option of an Angular builder's schema carries a default, so an option the command does not give leaves the Angular target's own value in place.",
+    source: 'packages/toolkit/src/angular-builder-schemas.ts',
+    find: '    properties: { ...wrapped.properties, ...ownOptions(command) },',
+    replace:
+      '    properties: { ...Object.fromEntries(Object.entries(wrapped.properties).map(([name, option]) => [name, { ...(option as object), default: null }])), ...ownOptions(command) },',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'builder-passes-on-only-watch',
+    invariant:
+      'An Angular builder passes the Angular target every option of its builder that the command line gives.',
+    source: 'packages/toolkit/src/angular-builder-schemas.ts',
+    find: '    if (options[name] !== undefined) angular[name] = options[name];',
+    replace:
+      "    if (options[name] !== undefined && name === 'watch') angular[name] = options[name];",
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'builder-passes-on-its-own-target-option',
+    invariant:
+      "An Angular builder passes the Angular target nothing but options of the Angular target's builder, so a plain ng build leaves that target's options as angular.json sets them.",
+    source: 'packages/toolkit/src/angular-builder-schemas.ts',
+    find: '  for (const name of angularOptionNames(command)) {',
+    replace:
+      '  for (const name of [...angularOptionNames(command), ANGULAR_TARGET_OPTION[command]]) {',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'builder-runs-with-an-angular-option-on-its-own-target',
+    invariant:
+      'An Angular builder refuses an option of the Angular builder that angular.json sets on its own target, and names the target it belongs on.',
+    source: 'packages/toolkit/src/angular-builders.ts',
+    find: '  if (misplaced !== undefined) {',
+    replace: '  if (misplaced !== undefined && false) {',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
     id: 'init-asks-a-fifth-question',
     invariant:
       'Interactive init asks exactly the source locale, the default locale, the supported locales and the aliases, in that order.',

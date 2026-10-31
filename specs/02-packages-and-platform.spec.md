@@ -205,9 +205,10 @@ Verification runs a built-package consumer on the development row, on an Angular
 the row that sits at the declared lower bound of Angular, TypeScript, and RxJS at once, in the
 Chromium, Firefox, and WebKit engines, and it runs the suites on each Node version the engines range
 admits. It also runs the development row's consumer, from install to its server's answers, on the
-lowest version of each Node line the range admits other than the line the development row uses. A
-combination inside a declared range that nothing has executed is installable and not verified, and
-a release MUST NOT describe it as supported.
+lowest version of each Node line the range admits other than the line the development row uses.
+Each Angular row also checks that every option of the `@angular/build` builders it installs is an
+option of the toolkit builder that wraps it. A combination inside a declared range that nothing has
+executed is installable and not verified, and a release MUST NOT describe it as supported.
 
 A release MUST NOT claim a host outside these ranges, and MUST NOT imply that verifying one
 combination verifies every combination a range admits.

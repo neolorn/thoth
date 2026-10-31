@@ -4846,13 +4846,18 @@
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "14. Build integration and the first run",
-      "statement": "A release MUST: - generate before the Angular target starts, and start it only when generation succeeds; - end the command when that generation fails, with a failed result and every diagnostic in the command's output; - while the Angular target watches, which `ng serve` always does and `ng build` and `ng test` do when their `watch` option is set or Angular's unit-test builder decides by the terminal, run the toolkit's watch in the same process for as long as the target runs, write each cycle's diagnostics to the command's output, report a failed cycle as a failed result without stopping the target, and stop the watch when the target ends; - pass the Angular target no option but `watch`, and only when the command gives one; - generate the project whose configuration is at the Angular project's root, so each application of a workspace builds from its own.",
+      "statement": "A release MUST: - generate before the Angular target starts, and start it only when generation succeeds; - end the command when that generation fails, with a failed result and every diagnostic in the command's output; - while the Angular target watches, which `ng serve` always does and `ng build` and `ng test` do when their `watch` option is set or Angular's unit-test builder decides by the terminal, run the toolkit's watch in the same process for as long as the target runs, write each cycle's diagnostics to the command's output, report a failed cycle as a failed result without stopping the target, and stop the watch when the target ends; - declare in each builder's option schema every option of the Angular builder its command runs, in every `@angular/build` release a verification row of section 9 of `02-packages-and-platform.spec.md` installs, generated from those releases, with no default anywhere in them and none required, so an option the command does not give leaves the Angular target's own value in place; - pass the Angular target, through the overrides of the builder API, the options of its builder that the command line gives, and `watch` when the command gives it, and nothing else, so Angular validates them against its own schema and refuses one the installed release lacks in its own words; - refuse an option of the Angular builder that `angular.json` sets on the Thoth target, with a failed result that names the option and the Angular target it belongs on, before generating; - generate the project whose configuration is at the Angular project's root, so each application of a workspace builds from its own.",
       "checks": [
         "assurance:builder-reads-the-workspace-root",
         "assurance:builder-runs-the-target-before-generating",
         "assurance:builder-runs-the-target-after-a-failed-generation",
         "assurance:serve-builder-generates-once",
-        "assurance:builder-failed-cycle-ends-the-session"
+        "assurance:builder-failed-cycle-ends-the-session",
+        "assurance:builder-schema-lacks-the-angular-options",
+        "assurance:builder-schema-carries-angular-defaults",
+        "assurance:builder-passes-on-only-watch",
+        "assurance:builder-passes-on-its-own-target-option",
+        "assurance:builder-runs-with-an-angular-option-on-its-own-target"
       ]
     },
     {
