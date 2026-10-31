@@ -52,6 +52,7 @@ import {
   aboveLevel,
   descendantsOf,
   holdDown,
+  levelForSystem,
   levelInReading,
   liftUp,
   processorsBetween,
@@ -59,6 +60,7 @@ import {
 } from './process-tree.ts';
 import type { PriorityLevel } from './process-tree.ts';
 import { takeHeavyJobLock } from './heavy-job-lock.ts';
+import { followLevel, mutationLevel } from './run-mutation.ts';
 import { startCaptured } from './stage-output.ts';
 import { steps as declaredSteps } from './verify-stages.ts';
 import { workingRoot } from './working-state.ts';
@@ -468,6 +470,62 @@ assert.deepEqual(
   ],
   [8, 6, 0, -10],
   'A level is not read in the units a process reading uses.',
+);
+// A mutation run takes the cap's level as the gate does: normal while the level file says so,
+// below normal for any other text, a file that cannot be read, and a run with no file named.
+const mutationLevelBy = (text: string | undefined): PriorityLevel =>
+  mutationLevel({ THOTH_VERIFY_PRIORITY_FILE: 'level' }, () => {
+    if (text === undefined) throw new Error('ENOENT');
+    return text;
+  });
+assert.deepEqual(
+  [
+    mutationLevelBy('normal'),
+    mutationLevelBy('stage'),
+    mutationLevelBy(undefined),
+    mutationLevel({}, () => 'normal'),
+  ],
+  ['normal', 'below-normal', 'below-normal', 'below-normal'],
+  'A mutation run does not take the cap level: normal at night, below normal otherwise and when run bare.',
+);
+// And it follows the level while it runs: a switch to normal raises the processes of its tree below
+// normal, a switch away lowers the ones at normal, a process above normal is left either way, and
+// one that has ended is not counted.
+const followed: [number, number][] = [];
+const tree = [
+  { pid: 21, priority: 6 },
+  { pid: 22, priority: 8 },
+  { pid: 23, priority: 10 },
+  { pid: 77, priority: 6 },
+  { pid: 78, priority: 8 },
+];
+const follow = (level: PriorityLevel): number =>
+  followLevel(
+    tree,
+    level,
+    (pid, priority) => {
+      if (pid === 77 || pid === 78) throw new Error('gone');
+      followed.push([pid, priority]);
+    },
+    'win32',
+  );
+assert.equal(
+  follow('normal'),
+  1,
+  'A switch to normal did not count the one process it raised.',
+);
+assert.equal(
+  follow('below-normal'),
+  1,
+  'A switch away from normal did not count the one process it lowered.',
+);
+assert.deepEqual(
+  followed,
+  [
+    [21, levelForSystem('normal')],
+    [22, levelForSystem('below-normal')],
+  ],
+  'A mutation run did not follow a switch of the cap level over its own processes.',
 );
 // How a stage is started at its level, with the platform and the priority call planted. On Windows
 // the gate is below normal and a child takes its parent's class, so the gate stands at normal for
