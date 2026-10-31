@@ -1,0 +1,4554 @@
+{
+  "formats": {
+    "thoth-compiled-ir/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/compiled-artifacts.d.ts#CompiledCatalog": {
+          "object": {
+            "applicationContractFingerprint": {
+              "type": "string"
+            },
+            "generatedAbi": {
+              "type": "string"
+            },
+            "key": {
+              "type": {
+                "object": {
+                  "catalogLocale": {
+                    "type": "string"
+                  },
+                  "providerId": {
+                    "type": "string"
+                  },
+                  "scopeId": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "messages": {
+              "type": {
+                "array": {
+                  "object": {
+                    "body": {
+                      "type": {
+                        "union": [
+                          "boolean",
+                          "null",
+                          "number",
+                          "string",
+                          {
+                            "array": {
+                              "union": [
+                                "boolean",
+                                "null",
+                                "number",
+                                "string",
+                                {
+                                  "object": {},
+                                  "index": {
+                                    "union": [
+                                      "boolean",
+                                      "null",
+                                      "number",
+                                      "string",
+                                      {
+                                        "recursive": "CanonicalJsonArray"
+                                      },
+                                      {
+                                        "recursive": "CanonicalJsonObject"
+                                      }
+                                    ]
+                                  }
+                                },
+                                {
+                                  "recursive": "CanonicalJsonArray"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "object": {},
+                            "index": {
+                              "union": [
+                                "boolean",
+                                "null",
+                                "number",
+                                "string",
+                                {
+                                  "array": {
+                                    "union": [
+                                      "boolean",
+                                      "null",
+                                      "number",
+                                      "string",
+                                      {
+                                        "recursive": "CanonicalJsonArray"
+                                      },
+                                      {
+                                        "recursive": "CanonicalJsonObject"
+                                      }
+                                    ]
+                                  }
+                                },
+                                {
+                                  "recursive": "CanonicalJsonObject"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "inputs": {
+                      "type": {
+                        "array": {
+                          "object": {
+                            "description": {
+                              "optional": true,
+                              "type": "string"
+                            },
+                            "enum": {
+                              "optional": true,
+                              "type": {
+                                "array": {
+                                  "union": ["boolean", "number", "string"]
+                                }
+                              }
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "nullable": {
+                              "type": "boolean"
+                            },
+                            "optional": {
+                              "type": "boolean"
+                            },
+                            "type": {
+                              "type": {
+                                "union": [
+                                  {
+                                    "literal": "boolean"
+                                  },
+                                  {
+                                    "literal": "date-time"
+                                  },
+                                  {
+                                    "literal": "integer"
+                                  },
+                                  {
+                                    "literal": "number"
+                                  },
+                                  {
+                                    "literal": "string"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "kind": {
+                      "type": {
+                        "union": [
+                          {
+                            "literal": "empty"
+                          },
+                          {
+                            "literal": "message"
+                          }
+                        ]
+                      }
+                    },
+                    "messageId": {
+                      "type": "string"
+                    },
+                    "resultKind": {
+                      "type": {
+                        "union": [
+                          {
+                            "literal": "plain"
+                          },
+                          {
+                            "literal": "structured"
+                          }
+                        ]
+                      }
+                    },
+                    "slots": {
+                      "type": {
+                        "array": {
+                          "object": {
+                            "description": {
+                              "optional": true,
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "optional": {
+                              "type": "boolean"
+                            },
+                            "repeatable": {
+                              "type": "boolean"
+                            },
+                            "shape": {
+                              "type": {
+                                "union": [
+                                  {
+                                    "literal": "paired"
+                                  },
+                                  {
+                                    "literal": "standalone"
+                                  }
+                                ]
+                              }
+                            },
+                            "within": {
+                              "type": {
+                                "array": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "sourceFingerprint": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-compiled-ir/1"
+              }
+            },
+            "requiredExtensions": {
+              "type": {
+                "array": {
+                  "union": [
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "inputType": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "formatting-adapter"
+                          }
+                        },
+                        "maximumOutputLength": {
+                          "type": "number"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "result": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "parts"
+                              },
+                              {
+                                "literal": "text"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "interactive": {
+                          "type": "boolean"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "rich-slot-kind"
+                          }
+                        },
+                        "options": {
+                          "optional": true,
+                          "type": {
+                            "object": {},
+                            "index": {
+                              "array": "string"
+                            }
+                          }
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "shape": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "paired"
+                              },
+                              {
+                                "literal": "standalone"
+                              }
+                            ]
+                          }
+                        },
+                        "textProjection": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "binding-required"
+                              },
+                              {
+                                "literal": "children"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "identifier-segment"
+                          }
+                        },
+                        "maximumLength": {
+                          "type": "number"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "syntax": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "ascii-token"
+                              },
+                              {
+                                "literal": "lower-kebab"
+                              },
+                              {
+                                "literal": "unicode-token"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "message-function"
+                          }
+                        },
+                        "maximumOutputLength": {
+                          "type": "number"
+                        },
+                        "operandType": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "boolean"
+                              },
+                              {
+                                "literal": "date-time"
+                              },
+                              {
+                                "literal": "integer"
+                              },
+                              {
+                                "literal": "number"
+                              },
+                              {
+                                "literal": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "options": {
+                          "optional": true,
+                          "type": {
+                            "object": {},
+                            "index": {
+                              "object": {
+                                "required": {
+                                  "optional": true,
+                                  "type": "boolean"
+                                },
+                                "type": {
+                                  "type": {
+                                    "union": [
+                                      {
+                                        "literal": "boolean"
+                                      },
+                                      {
+                                        "literal": "date-time"
+                                      },
+                                      {
+                                        "literal": "integer"
+                                      },
+                                      {
+                                        "literal": "number"
+                                      },
+                                      {
+                                        "literal": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "values": {
+                                  "optional": true,
+                                  "type": {
+                                    "array": {
+                                      "union": ["boolean", "number", "string"]
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "resultType": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "date-time"
+                              },
+                              {
+                                "literal": "number"
+                              },
+                              {
+                                "literal": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "selector": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "exact"
+                              },
+                              {
+                                "literal": "none"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "parsing-adapter"
+                          }
+                        },
+                        "maximumInputLength": {
+                          "type": "number"
+                        },
+                        "outputType": {
+                          "type": "string"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "resources": {
+              "type": {
+                "object": {
+                  "decodedBytes": {
+                    "type": "number"
+                  },
+                  "depth": {
+                    "type": "number"
+                  },
+                  "functions": {
+                    "type": "number"
+                  },
+                  "identifiers": {
+                    "type": "number"
+                  },
+                  "inputs": {
+                    "type": "number"
+                  },
+                  "irNodes": {
+                    "type": "number"
+                  },
+                  "literals": {
+                    "type": "number"
+                  },
+                  "maximumMessage": {
+                    "type": {
+                      "object": {
+                        "depth": {
+                          "type": "number"
+                        },
+                        "inputs": {
+                          "type": "number"
+                        },
+                        "irNodes": {
+                          "type": "number"
+                        },
+                        "outputParts": {
+                          "type": "number"
+                        },
+                        "selectors": {
+                          "type": "number"
+                        },
+                        "slots": {
+                          "type": "number"
+                        },
+                        "variants": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  },
+                  "messages": {
+                    "type": "number"
+                  },
+                  "outputParts": {
+                    "type": "number"
+                  },
+                  "profile": {
+                    "type": {
+                      "literal": "thoth-resource-summary/1"
+                    }
+                  },
+                  "references": {
+                    "type": "number"
+                  },
+                  "selectors": {
+                    "type": "number"
+                  },
+                  "slots": {
+                    "type": "number"
+                  },
+                  "variants": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "semanticRegistryFingerprint": {
+              "type": "string"
+            },
+            "standardsProfile": {
+              "type": {
+                "literal": "thoth-1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "thoth-compiled-catalog/1": {
+      "readers": "open",
+      "declarations": {
+        "dist/toolkit/compiled-artifacts.d.ts#ArtifactAddress": {
+          "object": {
+            "applicationContractFingerprint": {
+              "type": "string"
+            },
+            "compiledIrProfile": {
+              "type": {
+                "literal": "thoth-compiled-ir/1"
+              }
+            },
+            "contentDigest": {
+              "type": "string"
+            },
+            "generatedAbi": {
+              "type": "string"
+            },
+            "key": {
+              "type": {
+                "object": {
+                  "catalogLocale": {
+                    "type": "string"
+                  },
+                  "providerId": {
+                    "type": "string"
+                  },
+                  "scopeId": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "requiredExtensions": {
+              "type": {
+                "array": {
+                  "union": [
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "inputType": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "formatting-adapter"
+                          }
+                        },
+                        "maximumOutputLength": {
+                          "type": "number"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "result": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "parts"
+                              },
+                              {
+                                "literal": "text"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "interactive": {
+                          "type": "boolean"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "rich-slot-kind"
+                          }
+                        },
+                        "options": {
+                          "optional": true,
+                          "type": {
+                            "object": {},
+                            "index": {
+                              "array": "string"
+                            }
+                          }
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "shape": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "paired"
+                              },
+                              {
+                                "literal": "standalone"
+                              }
+                            ]
+                          }
+                        },
+                        "textProjection": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "binding-required"
+                              },
+                              {
+                                "literal": "children"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "identifier-segment"
+                          }
+                        },
+                        "maximumLength": {
+                          "type": "number"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "syntax": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "ascii-token"
+                              },
+                              {
+                                "literal": "lower-kebab"
+                              },
+                              {
+                                "literal": "unicode-token"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "message-function"
+                          }
+                        },
+                        "maximumOutputLength": {
+                          "type": "number"
+                        },
+                        "operandType": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "boolean"
+                              },
+                              {
+                                "literal": "date-time"
+                              },
+                              {
+                                "literal": "integer"
+                              },
+                              {
+                                "literal": "number"
+                              },
+                              {
+                                "literal": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "options": {
+                          "optional": true,
+                          "type": {
+                            "object": {},
+                            "index": {
+                              "object": {
+                                "required": {
+                                  "optional": true,
+                                  "type": "boolean"
+                                },
+                                "type": {
+                                  "type": {
+                                    "union": [
+                                      {
+                                        "literal": "boolean"
+                                      },
+                                      {
+                                        "literal": "date-time"
+                                      },
+                                      {
+                                        "literal": "integer"
+                                      },
+                                      {
+                                        "literal": "number"
+                                      },
+                                      {
+                                        "literal": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "values": {
+                                  "optional": true,
+                                  "type": {
+                                    "array": {
+                                      "union": ["boolean", "number", "string"]
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "resultType": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "date-time"
+                              },
+                              {
+                                "literal": "number"
+                              },
+                              {
+                                "literal": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "selector": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "exact"
+                              },
+                              {
+                                "literal": "none"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "parsing-adapter"
+                          }
+                        },
+                        "maximumInputLength": {
+                          "type": "number"
+                        },
+                        "outputType": {
+                          "type": "string"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "requiredFeatures": {
+              "type": {
+                "array": "string"
+              }
+            },
+            "schema": {
+              "type": {
+                "literal": "thoth-compiled-catalog/1"
+              }
+            },
+            "semanticRegistryFingerprint": {
+              "type": "string"
+            },
+            "standardsProfile": {
+              "type": {
+                "literal": "thoth-1"
+              }
+            }
+          }
+        },
+        "dist/runtime/types/neolorn-thoth-core.d.ts#ArtifactAddress": {
+          "object": {
+            "applicationContractFingerprint": {
+              "type": "string"
+            },
+            "compiledIrProfile": {
+              "type": {
+                "literal": "thoth-compiled-ir/1"
+              }
+            },
+            "contentDigest": {
+              "type": "string"
+            },
+            "generatedAbi": {
+              "type": {
+                "literal": "thoth-generated/1"
+              }
+            },
+            "key": {
+              "type": {
+                "object": {
+                  "catalogLocale": {
+                    "type": "string"
+                  },
+                  "providerId": {
+                    "type": "string"
+                  },
+                  "scopeId": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "requiredExtensions": {
+              "type": {
+                "array": {
+                  "union": [
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "inputType": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "formatting-adapter"
+                          }
+                        },
+                        "maximumOutputLength": {
+                          "type": "number"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "result": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "parts"
+                              },
+                              {
+                                "literal": "text"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "interactive": {
+                          "type": "boolean"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "rich-slot-kind"
+                          }
+                        },
+                        "options": {
+                          "optional": true,
+                          "type": {
+                            "object": {},
+                            "index": {
+                              "array": "string"
+                            }
+                          }
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "shape": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "paired"
+                              },
+                              {
+                                "literal": "standalone"
+                              }
+                            ]
+                          }
+                        },
+                        "textProjection": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "binding-required"
+                              },
+                              {
+                                "literal": "children"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "identifier-segment"
+                          }
+                        },
+                        "maximumLength": {
+                          "type": "number"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "syntax": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "ascii-token"
+                              },
+                              {
+                                "literal": "lower-kebab"
+                              },
+                              {
+                                "literal": "unicode-token"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "message-function"
+                          }
+                        },
+                        "maximumOutputLength": {
+                          "type": "number"
+                        },
+                        "operandType": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "boolean"
+                              },
+                              {
+                                "literal": "date-time"
+                              },
+                              {
+                                "literal": "integer"
+                              },
+                              {
+                                "literal": "number"
+                              },
+                              {
+                                "literal": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "options": {
+                          "optional": true,
+                          "type": {
+                            "object": {},
+                            "index": {
+                              "object": {
+                                "required": {
+                                  "optional": true,
+                                  "type": "boolean"
+                                },
+                                "type": {
+                                  "type": {
+                                    "union": [
+                                      {
+                                        "literal": "boolean"
+                                      },
+                                      {
+                                        "literal": "date-time"
+                                      },
+                                      {
+                                        "literal": "integer"
+                                      },
+                                      {
+                                        "literal": "number"
+                                      },
+                                      {
+                                        "literal": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "values": {
+                                  "optional": true,
+                                  "type": {
+                                    "array": {
+                                      "union": ["boolean", "number", "string"]
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "resultType": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "date-time"
+                              },
+                              {
+                                "literal": "number"
+                              },
+                              {
+                                "literal": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "selector": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "exact"
+                              },
+                              {
+                                "literal": "none"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "parsing-adapter"
+                          }
+                        },
+                        "maximumInputLength": {
+                          "type": "number"
+                        },
+                        "outputType": {
+                          "type": "string"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "requiredFeatures": {
+              "type": {
+                "array": "string"
+              }
+            },
+            "schema": {
+              "type": {
+                "literal": "thoth-compiled-catalog/1"
+              }
+            },
+            "semanticRegistryFingerprint": {
+              "type": "string"
+            },
+            "standardsProfile": {
+              "type": {
+                "literal": "thoth-1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "thoth-catalog-set/1": {
+      "readers": "open",
+      "declarations": {
+        "dist/toolkit/compiled-artifacts.d.ts#CatalogSetDescriptor": {
+          "object": {
+            "applicationContractFingerprint": {
+              "type": "string"
+            },
+            "generatedAbi": {
+              "type": "string"
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-catalog-set/1"
+              }
+            },
+            "providers": {
+              "type": {
+                "array": {
+                  "object": {
+                    "artifacts": {
+                      "type": {
+                        "array": {
+                          "object": {
+                            "address": {
+                              "type": {
+                                "object": {
+                                  "applicationContractFingerprint": {
+                                    "type": "string"
+                                  },
+                                  "compiledIrProfile": {
+                                    "type": {
+                                      "literal": "thoth-compiled-ir/1"
+                                    }
+                                  },
+                                  "contentDigest": {
+                                    "type": "string"
+                                  },
+                                  "generatedAbi": {
+                                    "type": "string"
+                                  },
+                                  "key": {
+                                    "type": {
+                                      "object": {
+                                        "catalogLocale": {
+                                          "type": "string"
+                                        },
+                                        "providerId": {
+                                          "type": "string"
+                                        },
+                                        "scopeId": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "requiredExtensions": {
+                                    "type": {
+                                      "array": {
+                                        "union": [
+                                          {
+                                            "object": {
+                                              "fingerprint": {
+                                                "type": "string"
+                                              },
+                                              "id": {
+                                                "type": "string"
+                                              },
+                                              "inputType": {
+                                                "type": "string"
+                                              },
+                                              "kind": {
+                                                "type": {
+                                                  "literal": "formatting-adapter"
+                                                }
+                                              },
+                                              "maximumOutputLength": {
+                                                "type": "number"
+                                              },
+                                              "profile": {
+                                                "type": {
+                                                  "literal": "thoth-extension-descriptor/1"
+                                                }
+                                              },
+                                              "result": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "parts"
+                                                    },
+                                                    {
+                                                      "literal": "text"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "object": {
+                                              "fingerprint": {
+                                                "type": "string"
+                                              },
+                                              "id": {
+                                                "type": "string"
+                                              },
+                                              "interactive": {
+                                                "type": "boolean"
+                                              },
+                                              "kind": {
+                                                "type": {
+                                                  "literal": "rich-slot-kind"
+                                                }
+                                              },
+                                              "options": {
+                                                "optional": true,
+                                                "type": {
+                                                  "object": {},
+                                                  "index": {
+                                                    "array": "string"
+                                                  }
+                                                }
+                                              },
+                                              "profile": {
+                                                "type": {
+                                                  "literal": "thoth-extension-descriptor/1"
+                                                }
+                                              },
+                                              "shape": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "paired"
+                                                    },
+                                                    {
+                                                      "literal": "standalone"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "textProjection": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "binding-required"
+                                                    },
+                                                    {
+                                                      "literal": "children"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "object": {
+                                              "fingerprint": {
+                                                "type": "string"
+                                              },
+                                              "id": {
+                                                "type": "string"
+                                              },
+                                              "kind": {
+                                                "type": {
+                                                  "literal": "identifier-segment"
+                                                }
+                                              },
+                                              "maximumLength": {
+                                                "type": "number"
+                                              },
+                                              "profile": {
+                                                "type": {
+                                                  "literal": "thoth-extension-descriptor/1"
+                                                }
+                                              },
+                                              "syntax": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "ascii-token"
+                                                    },
+                                                    {
+                                                      "literal": "lower-kebab"
+                                                    },
+                                                    {
+                                                      "literal": "unicode-token"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "object": {
+                                              "fingerprint": {
+                                                "type": "string"
+                                              },
+                                              "id": {
+                                                "type": "string"
+                                              },
+                                              "kind": {
+                                                "type": {
+                                                  "literal": "message-function"
+                                                }
+                                              },
+                                              "maximumOutputLength": {
+                                                "type": "number"
+                                              },
+                                              "operandType": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "boolean"
+                                                    },
+                                                    {
+                                                      "literal": "date-time"
+                                                    },
+                                                    {
+                                                      "literal": "integer"
+                                                    },
+                                                    {
+                                                      "literal": "number"
+                                                    },
+                                                    {
+                                                      "literal": "string"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "options": {
+                                                "optional": true,
+                                                "type": {
+                                                  "object": {},
+                                                  "index": {
+                                                    "object": {
+                                                      "required": {
+                                                        "optional": true,
+                                                        "type": "boolean"
+                                                      },
+                                                      "type": {
+                                                        "type": {
+                                                          "union": [
+                                                            {
+                                                              "literal": "boolean"
+                                                            },
+                                                            {
+                                                              "literal": "date-time"
+                                                            },
+                                                            {
+                                                              "literal": "integer"
+                                                            },
+                                                            {
+                                                              "literal": "number"
+                                                            },
+                                                            {
+                                                              "literal": "string"
+                                                            }
+                                                          ]
+                                                        }
+                                                      },
+                                                      "values": {
+                                                        "optional": true,
+                                                        "type": {
+                                                          "array": {
+                                                            "union": [
+                                                              "boolean",
+                                                              "number",
+                                                              "string"
+                                                            ]
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              "profile": {
+                                                "type": {
+                                                  "literal": "thoth-extension-descriptor/1"
+                                                }
+                                              },
+                                              "resultType": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "date-time"
+                                                    },
+                                                    {
+                                                      "literal": "number"
+                                                    },
+                                                    {
+                                                      "literal": "string"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "selector": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "exact"
+                                                    },
+                                                    {
+                                                      "literal": "none"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "object": {
+                                              "fingerprint": {
+                                                "type": "string"
+                                              },
+                                              "id": {
+                                                "type": "string"
+                                              },
+                                              "kind": {
+                                                "type": {
+                                                  "literal": "parsing-adapter"
+                                                }
+                                              },
+                                              "maximumInputLength": {
+                                                "type": "number"
+                                              },
+                                              "outputType": {
+                                                "type": "string"
+                                              },
+                                              "profile": {
+                                                "type": {
+                                                  "literal": "thoth-extension-descriptor/1"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "requiredFeatures": {
+                                    "type": {
+                                      "array": "string"
+                                    }
+                                  },
+                                  "schema": {
+                                    "type": {
+                                      "literal": "thoth-compiled-catalog/1"
+                                    }
+                                  },
+                                  "semanticRegistryFingerprint": {
+                                    "type": "string"
+                                  },
+                                  "standardsProfile": {
+                                    "type": {
+                                      "literal": "thoth-1"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "modulePath": {
+                              "type": "string"
+                            },
+                            "resources": {
+                              "type": {
+                                "object": {
+                                  "decodedBytes": {
+                                    "type": "number"
+                                  },
+                                  "depth": {
+                                    "type": "number"
+                                  },
+                                  "functions": {
+                                    "type": "number"
+                                  },
+                                  "identifiers": {
+                                    "type": "number"
+                                  },
+                                  "inputs": {
+                                    "type": "number"
+                                  },
+                                  "irNodes": {
+                                    "type": "number"
+                                  },
+                                  "literals": {
+                                    "type": "number"
+                                  },
+                                  "maximumMessage": {
+                                    "type": {
+                                      "object": {
+                                        "depth": {
+                                          "type": "number"
+                                        },
+                                        "inputs": {
+                                          "type": "number"
+                                        },
+                                        "irNodes": {
+                                          "type": "number"
+                                        },
+                                        "outputParts": {
+                                          "type": "number"
+                                        },
+                                        "selectors": {
+                                          "type": "number"
+                                        },
+                                        "slots": {
+                                          "type": "number"
+                                        },
+                                        "variants": {
+                                          "type": "number"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "messages": {
+                                    "type": "number"
+                                  },
+                                  "outputParts": {
+                                    "type": "number"
+                                  },
+                                  "profile": {
+                                    "type": {
+                                      "literal": "thoth-resource-summary/1"
+                                    }
+                                  },
+                                  "references": {
+                                    "type": "number"
+                                  },
+                                  "selectors": {
+                                    "type": "number"
+                                  },
+                                  "slots": {
+                                    "type": "number"
+                                  },
+                                  "variants": {
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "catalogSetId": {
+                      "type": "string"
+                    },
+                    "providerId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "semanticRegistryFingerprint": {
+              "type": "string"
+            }
+          }
+        },
+        "dist/runtime/types/neolorn-thoth-core.d.ts#CatalogSetDescriptor": {
+          "object": {
+            "applicationContractFingerprint": {
+              "type": "string"
+            },
+            "generatedAbi": {
+              "type": {
+                "literal": "thoth-generated/1"
+              }
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-catalog-set/1"
+              }
+            },
+            "providers": {
+              "type": {
+                "array": {
+                  "object": {
+                    "artifacts": {
+                      "type": {
+                        "array": {
+                          "object": {
+                            "address": {
+                              "type": {
+                                "object": {
+                                  "applicationContractFingerprint": {
+                                    "type": "string"
+                                  },
+                                  "compiledIrProfile": {
+                                    "type": {
+                                      "literal": "thoth-compiled-ir/1"
+                                    }
+                                  },
+                                  "contentDigest": {
+                                    "type": "string"
+                                  },
+                                  "generatedAbi": {
+                                    "type": {
+                                      "literal": "thoth-generated/1"
+                                    }
+                                  },
+                                  "key": {
+                                    "type": {
+                                      "object": {
+                                        "catalogLocale": {
+                                          "type": "string"
+                                        },
+                                        "providerId": {
+                                          "type": "string"
+                                        },
+                                        "scopeId": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "requiredExtensions": {
+                                    "type": {
+                                      "array": {
+                                        "union": [
+                                          {
+                                            "object": {
+                                              "fingerprint": {
+                                                "type": "string"
+                                              },
+                                              "id": {
+                                                "type": "string"
+                                              },
+                                              "inputType": {
+                                                "type": "string"
+                                              },
+                                              "kind": {
+                                                "type": {
+                                                  "literal": "formatting-adapter"
+                                                }
+                                              },
+                                              "maximumOutputLength": {
+                                                "type": "number"
+                                              },
+                                              "profile": {
+                                                "type": {
+                                                  "literal": "thoth-extension-descriptor/1"
+                                                }
+                                              },
+                                              "result": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "parts"
+                                                    },
+                                                    {
+                                                      "literal": "text"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "object": {
+                                              "fingerprint": {
+                                                "type": "string"
+                                              },
+                                              "id": {
+                                                "type": "string"
+                                              },
+                                              "interactive": {
+                                                "type": "boolean"
+                                              },
+                                              "kind": {
+                                                "type": {
+                                                  "literal": "rich-slot-kind"
+                                                }
+                                              },
+                                              "options": {
+                                                "optional": true,
+                                                "type": {
+                                                  "object": {},
+                                                  "index": {
+                                                    "array": "string"
+                                                  }
+                                                }
+                                              },
+                                              "profile": {
+                                                "type": {
+                                                  "literal": "thoth-extension-descriptor/1"
+                                                }
+                                              },
+                                              "shape": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "paired"
+                                                    },
+                                                    {
+                                                      "literal": "standalone"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "textProjection": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "binding-required"
+                                                    },
+                                                    {
+                                                      "literal": "children"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "object": {
+                                              "fingerprint": {
+                                                "type": "string"
+                                              },
+                                              "id": {
+                                                "type": "string"
+                                              },
+                                              "kind": {
+                                                "type": {
+                                                  "literal": "identifier-segment"
+                                                }
+                                              },
+                                              "maximumLength": {
+                                                "type": "number"
+                                              },
+                                              "profile": {
+                                                "type": {
+                                                  "literal": "thoth-extension-descriptor/1"
+                                                }
+                                              },
+                                              "syntax": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "ascii-token"
+                                                    },
+                                                    {
+                                                      "literal": "lower-kebab"
+                                                    },
+                                                    {
+                                                      "literal": "unicode-token"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "object": {
+                                              "fingerprint": {
+                                                "type": "string"
+                                              },
+                                              "id": {
+                                                "type": "string"
+                                              },
+                                              "kind": {
+                                                "type": {
+                                                  "literal": "message-function"
+                                                }
+                                              },
+                                              "maximumOutputLength": {
+                                                "type": "number"
+                                              },
+                                              "operandType": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "boolean"
+                                                    },
+                                                    {
+                                                      "literal": "date-time"
+                                                    },
+                                                    {
+                                                      "literal": "integer"
+                                                    },
+                                                    {
+                                                      "literal": "number"
+                                                    },
+                                                    {
+                                                      "literal": "string"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "options": {
+                                                "optional": true,
+                                                "type": {
+                                                  "object": {},
+                                                  "index": {
+                                                    "object": {
+                                                      "required": {
+                                                        "optional": true,
+                                                        "type": "boolean"
+                                                      },
+                                                      "type": {
+                                                        "type": {
+                                                          "union": [
+                                                            {
+                                                              "literal": "boolean"
+                                                            },
+                                                            {
+                                                              "literal": "date-time"
+                                                            },
+                                                            {
+                                                              "literal": "integer"
+                                                            },
+                                                            {
+                                                              "literal": "number"
+                                                            },
+                                                            {
+                                                              "literal": "string"
+                                                            }
+                                                          ]
+                                                        }
+                                                      },
+                                                      "values": {
+                                                        "optional": true,
+                                                        "type": {
+                                                          "array": {
+                                                            "union": [
+                                                              "boolean",
+                                                              "number",
+                                                              "string"
+                                                            ]
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              "profile": {
+                                                "type": {
+                                                  "literal": "thoth-extension-descriptor/1"
+                                                }
+                                              },
+                                              "resultType": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "date-time"
+                                                    },
+                                                    {
+                                                      "literal": "number"
+                                                    },
+                                                    {
+                                                      "literal": "string"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "selector": {
+                                                "type": {
+                                                  "union": [
+                                                    {
+                                                      "literal": "exact"
+                                                    },
+                                                    {
+                                                      "literal": "none"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "object": {
+                                              "fingerprint": {
+                                                "type": "string"
+                                              },
+                                              "id": {
+                                                "type": "string"
+                                              },
+                                              "kind": {
+                                                "type": {
+                                                  "literal": "parsing-adapter"
+                                                }
+                                              },
+                                              "maximumInputLength": {
+                                                "type": "number"
+                                              },
+                                              "outputType": {
+                                                "type": "string"
+                                              },
+                                              "profile": {
+                                                "type": {
+                                                  "literal": "thoth-extension-descriptor/1"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "requiredFeatures": {
+                                    "type": {
+                                      "array": "string"
+                                    }
+                                  },
+                                  "schema": {
+                                    "type": {
+                                      "literal": "thoth-compiled-catalog/1"
+                                    }
+                                  },
+                                  "semanticRegistryFingerprint": {
+                                    "type": "string"
+                                  },
+                                  "standardsProfile": {
+                                    "type": {
+                                      "literal": "thoth-1"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "modulePath": {
+                              "type": "string"
+                            },
+                            "resources": {
+                              "type": {
+                                "object": {
+                                  "decodedBytes": {
+                                    "type": "number"
+                                  },
+                                  "depth": {
+                                    "type": "number"
+                                  },
+                                  "functions": {
+                                    "type": "number"
+                                  },
+                                  "identifiers": {
+                                    "type": "number"
+                                  },
+                                  "inputs": {
+                                    "type": "number"
+                                  },
+                                  "irNodes": {
+                                    "type": "number"
+                                  },
+                                  "literals": {
+                                    "type": "number"
+                                  },
+                                  "maximumMessage": {
+                                    "type": {
+                                      "object": {
+                                        "depth": {
+                                          "type": "number"
+                                        },
+                                        "inputs": {
+                                          "type": "number"
+                                        },
+                                        "irNodes": {
+                                          "type": "number"
+                                        },
+                                        "outputParts": {
+                                          "type": "number"
+                                        },
+                                        "selectors": {
+                                          "type": "number"
+                                        },
+                                        "slots": {
+                                          "type": "number"
+                                        },
+                                        "variants": {
+                                          "type": "number"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "messages": {
+                                    "type": "number"
+                                  },
+                                  "outputParts": {
+                                    "type": "number"
+                                  },
+                                  "profile": {
+                                    "type": {
+                                      "literal": "thoth-resource-summary/1"
+                                    }
+                                  },
+                                  "references": {
+                                    "type": "number"
+                                  },
+                                  "selectors": {
+                                    "type": "number"
+                                  },
+                                  "slots": {
+                                    "type": "number"
+                                  },
+                                  "variants": {
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "catalogSetId": {
+                      "type": "string"
+                    },
+                    "providerId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "semanticRegistryFingerprint": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "thoth-resource-summary/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/compiled-artifacts.d.ts#CatalogResourceSummary": {
+          "object": {
+            "decodedBytes": {
+              "type": "number"
+            },
+            "depth": {
+              "type": "number"
+            },
+            "functions": {
+              "type": "number"
+            },
+            "identifiers": {
+              "type": "number"
+            },
+            "inputs": {
+              "type": "number"
+            },
+            "irNodes": {
+              "type": "number"
+            },
+            "literals": {
+              "type": "number"
+            },
+            "maximumMessage": {
+              "type": {
+                "object": {
+                  "depth": {
+                    "type": "number"
+                  },
+                  "inputs": {
+                    "type": "number"
+                  },
+                  "irNodes": {
+                    "type": "number"
+                  },
+                  "outputParts": {
+                    "type": "number"
+                  },
+                  "selectors": {
+                    "type": "number"
+                  },
+                  "slots": {
+                    "type": "number"
+                  },
+                  "variants": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "messages": {
+              "type": "number"
+            },
+            "outputParts": {
+              "type": "number"
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-resource-summary/1"
+              }
+            },
+            "references": {
+              "type": "number"
+            },
+            "selectors": {
+              "type": "number"
+            },
+            "slots": {
+              "type": "number"
+            },
+            "variants": {
+              "type": "number"
+            }
+          }
+        },
+        "dist/runtime/types/neolorn-thoth-core.d.ts#CatalogResourceSummary": {
+          "object": {
+            "decodedBytes": {
+              "type": "number"
+            },
+            "depth": {
+              "type": "number"
+            },
+            "functions": {
+              "type": "number"
+            },
+            "identifiers": {
+              "type": "number"
+            },
+            "inputs": {
+              "type": "number"
+            },
+            "irNodes": {
+              "type": "number"
+            },
+            "literals": {
+              "type": "number"
+            },
+            "maximumMessage": {
+              "type": {
+                "object": {
+                  "depth": {
+                    "type": "number"
+                  },
+                  "inputs": {
+                    "type": "number"
+                  },
+                  "irNodes": {
+                    "type": "number"
+                  },
+                  "outputParts": {
+                    "type": "number"
+                  },
+                  "selectors": {
+                    "type": "number"
+                  },
+                  "slots": {
+                    "type": "number"
+                  },
+                  "variants": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "messages": {
+              "type": "number"
+            },
+            "outputParts": {
+              "type": "number"
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-resource-summary/1"
+              }
+            },
+            "references": {
+              "type": "number"
+            },
+            "selectors": {
+              "type": "number"
+            },
+            "slots": {
+              "type": "number"
+            },
+            "variants": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "thoth-generated/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/runtime/types/neolorn-thoth-core.d.ts#GeneratedConfiguration": {
+          "object": {
+            "aliases": {
+              "type": {
+                "object": {},
+                "index": "string"
+              }
+            },
+            "applicationContractFingerprint": {
+              "type": "string"
+            },
+            "defaultLocale": {
+              "type": "string"
+            },
+            "extensionDescriptors": {
+              "optional": true,
+              "type": {
+                "array": {
+                  "union": [
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "inputType": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "formatting-adapter"
+                          }
+                        },
+                        "maximumOutputLength": {
+                          "type": "number"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "result": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "parts"
+                              },
+                              {
+                                "literal": "text"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "interactive": {
+                          "type": "boolean"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "rich-slot-kind"
+                          }
+                        },
+                        "options": {
+                          "optional": true,
+                          "type": {
+                            "object": {},
+                            "index": {
+                              "array": "string"
+                            }
+                          }
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "shape": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "paired"
+                              },
+                              {
+                                "literal": "standalone"
+                              }
+                            ]
+                          }
+                        },
+                        "textProjection": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "binding-required"
+                              },
+                              {
+                                "literal": "children"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "identifier-segment"
+                          }
+                        },
+                        "maximumLength": {
+                          "type": "number"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "syntax": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "ascii-token"
+                              },
+                              {
+                                "literal": "lower-kebab"
+                              },
+                              {
+                                "literal": "unicode-token"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "message-function"
+                          }
+                        },
+                        "maximumOutputLength": {
+                          "type": "number"
+                        },
+                        "operandType": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "boolean"
+                              },
+                              {
+                                "literal": "date-time"
+                              },
+                              {
+                                "literal": "integer"
+                              },
+                              {
+                                "literal": "number"
+                              },
+                              {
+                                "literal": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "options": {
+                          "optional": true,
+                          "type": {
+                            "object": {},
+                            "index": {
+                              "object": {
+                                "required": {
+                                  "optional": true,
+                                  "type": "boolean"
+                                },
+                                "type": {
+                                  "type": {
+                                    "union": [
+                                      {
+                                        "literal": "boolean"
+                                      },
+                                      {
+                                        "literal": "date-time"
+                                      },
+                                      {
+                                        "literal": "integer"
+                                      },
+                                      {
+                                        "literal": "number"
+                                      },
+                                      {
+                                        "literal": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "values": {
+                                  "optional": true,
+                                  "type": {
+                                    "array": {
+                                      "union": ["boolean", "number", "string"]
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        },
+                        "resultType": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "date-time"
+                              },
+                              {
+                                "literal": "number"
+                              },
+                              {
+                                "literal": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "selector": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "exact"
+                              },
+                              {
+                                "literal": "none"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": {
+                            "literal": "parsing-adapter"
+                          }
+                        },
+                        "maximumInputLength": {
+                          "type": "number"
+                        },
+                        "outputType": {
+                          "type": "string"
+                        },
+                        "profile": {
+                          "type": {
+                            "literal": "thoth-extension-descriptor/1"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "formatting": {
+              "optional": true,
+              "type": {
+                "object": {},
+                "index": {
+                  "object": {
+                    "calendar": {
+                      "optional": true,
+                      "type": "string"
+                    },
+                    "hourCycle": {
+                      "optional": true,
+                      "type": {
+                        "union": [
+                          {
+                            "literal": "h11"
+                          },
+                          {
+                            "literal": "h12"
+                          },
+                          {
+                            "literal": "h23"
+                          },
+                          {
+                            "literal": "h24"
+                          }
+                        ]
+                      }
+                    },
+                    "numberingSystem": {
+                      "optional": true,
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "generatedAbi": {
+              "type": {
+                "literal": "thoth-generated/1"
+              }
+            },
+            "localeFallbacks": {
+              "optional": true,
+              "type": {
+                "object": {},
+                "index": {
+                  "array": "string"
+                }
+              }
+            },
+            "localeNames": {
+              "optional": true,
+              "type": {
+                "object": {},
+                "index": "string"
+              }
+            },
+            "locales": {
+              "type": {
+                "array": "string"
+              }
+            },
+            "pseudoLocales": {
+              "optional": true,
+              "type": {
+                "array": "string"
+              }
+            },
+            "scopes": {
+              "type": {
+                "array": {
+                  "object": {
+                    "applicationContractFingerprint": {
+                      "type": "string"
+                    },
+                    "providerId": {
+                      "type": "string"
+                    },
+                    "requiredExtensions": {
+                      "type": {
+                        "array": {
+                          "union": [
+                            {
+                              "object": {
+                                "fingerprint": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "inputType": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": {
+                                    "literal": "formatting-adapter"
+                                  }
+                                },
+                                "maximumOutputLength": {
+                                  "type": "number"
+                                },
+                                "profile": {
+                                  "type": {
+                                    "literal": "thoth-extension-descriptor/1"
+                                  }
+                                },
+                                "result": {
+                                  "type": {
+                                    "union": [
+                                      {
+                                        "literal": "parts"
+                                      },
+                                      {
+                                        "literal": "text"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "object": {
+                                "fingerprint": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "interactive": {
+                                  "type": "boolean"
+                                },
+                                "kind": {
+                                  "type": {
+                                    "literal": "rich-slot-kind"
+                                  }
+                                },
+                                "options": {
+                                  "optional": true,
+                                  "type": {
+                                    "object": {},
+                                    "index": {
+                                      "array": "string"
+                                    }
+                                  }
+                                },
+                                "profile": {
+                                  "type": {
+                                    "literal": "thoth-extension-descriptor/1"
+                                  }
+                                },
+                                "shape": {
+                                  "type": {
+                                    "union": [
+                                      {
+                                        "literal": "paired"
+                                      },
+                                      {
+                                        "literal": "standalone"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "textProjection": {
+                                  "type": {
+                                    "union": [
+                                      {
+                                        "literal": "binding-required"
+                                      },
+                                      {
+                                        "literal": "children"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "object": {
+                                "fingerprint": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": {
+                                    "literal": "identifier-segment"
+                                  }
+                                },
+                                "maximumLength": {
+                                  "type": "number"
+                                },
+                                "profile": {
+                                  "type": {
+                                    "literal": "thoth-extension-descriptor/1"
+                                  }
+                                },
+                                "syntax": {
+                                  "type": {
+                                    "union": [
+                                      {
+                                        "literal": "ascii-token"
+                                      },
+                                      {
+                                        "literal": "lower-kebab"
+                                      },
+                                      {
+                                        "literal": "unicode-token"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "object": {
+                                "fingerprint": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": {
+                                    "literal": "message-function"
+                                  }
+                                },
+                                "maximumOutputLength": {
+                                  "type": "number"
+                                },
+                                "operandType": {
+                                  "type": {
+                                    "union": [
+                                      {
+                                        "literal": "boolean"
+                                      },
+                                      {
+                                        "literal": "date-time"
+                                      },
+                                      {
+                                        "literal": "integer"
+                                      },
+                                      {
+                                        "literal": "number"
+                                      },
+                                      {
+                                        "literal": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "options": {
+                                  "optional": true,
+                                  "type": {
+                                    "object": {},
+                                    "index": {
+                                      "object": {
+                                        "required": {
+                                          "optional": true,
+                                          "type": "boolean"
+                                        },
+                                        "type": {
+                                          "type": {
+                                            "union": [
+                                              {
+                                                "literal": "boolean"
+                                              },
+                                              {
+                                                "literal": "date-time"
+                                              },
+                                              {
+                                                "literal": "integer"
+                                              },
+                                              {
+                                                "literal": "number"
+                                              },
+                                              {
+                                                "literal": "string"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "values": {
+                                          "optional": true,
+                                          "type": {
+                                            "array": {
+                                              "union": [
+                                                "boolean",
+                                                "number",
+                                                "string"
+                                              ]
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "profile": {
+                                  "type": {
+                                    "literal": "thoth-extension-descriptor/1"
+                                  }
+                                },
+                                "resultType": {
+                                  "type": {
+                                    "union": [
+                                      {
+                                        "literal": "date-time"
+                                      },
+                                      {
+                                        "literal": "number"
+                                      },
+                                      {
+                                        "literal": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "selector": {
+                                  "type": {
+                                    "union": [
+                                      {
+                                        "literal": "exact"
+                                      },
+                                      {
+                                        "literal": "none"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "object": {
+                                "fingerprint": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": {
+                                    "literal": "parsing-adapter"
+                                  }
+                                },
+                                "maximumInputLength": {
+                                  "type": "number"
+                                },
+                                "outputType": {
+                                  "type": "string"
+                                },
+                                "profile": {
+                                  "type": {
+                                    "literal": "thoth-extension-descriptor/1"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "scopeId": {
+                      "type": "string"
+                    },
+                    "semanticRegistryFingerprint": {
+                      "type": "string"
+                    },
+                    "startup": {
+                      "optional": true,
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            },
+            "semanticRegistryFingerprint": {
+              "type": "string"
+            },
+            "sourceLocale": {
+              "type": "string"
+            }
+          }
+        },
+        "dist/runtime/types/neolorn-thoth-core.d.ts#MessageHandle": {
+          "object": {
+            "__contract": {
+              "optional": true,
+              "type": {
+                "object": {
+                  "inputs": {
+                    "type": "unknown"
+                  },
+                  "resultKind": {
+                    "type": {
+                      "union": [
+                        {
+                          "literal": "plain"
+                        },
+                        {
+                          "literal": "structured"
+                        }
+                      ]
+                    }
+                  },
+                  "slots": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "generatedAbi": {
+              "type": {
+                "literal": "thoth-generated/1"
+              }
+            },
+            "identity": {
+              "type": "string"
+            },
+            "inputNames": {
+              "type": {
+                "array": "string"
+              }
+            },
+            "messageId": {
+              "type": "string"
+            },
+            "providerId": {
+              "type": "string"
+            },
+            "resultKind": {
+              "type": {
+                "union": [
+                  {
+                    "literal": "plain"
+                  },
+                  {
+                    "literal": "structured"
+                  }
+                ]
+              }
+            },
+            "scopeId": {
+              "type": "string"
+            },
+            "slotNames": {
+              "type": {
+                "array": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "thoth-route-projection/1": {
+      "readers": "open",
+      "declarations": {
+        "dist/runtime/types/neolorn-thoth-core.d.ts#GeneratedRouteProjection": {
+          "object": {
+            "identity": {
+              "type": "string"
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-route-projection/1"
+              }
+            },
+            "routes": {
+              "type": {
+                "array": {
+                  "object": {
+                    "caching": {
+                      "optional": true,
+                      "type": {
+                        "union": [
+                          {
+                            "literal": "not-stored"
+                          },
+                          {
+                            "literal": "per-visitor"
+                          }
+                        ]
+                      }
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "indexing": {
+                      "optional": true,
+                      "type": {
+                        "union": [
+                          {
+                            "literal": "indexable"
+                          },
+                          {
+                            "literal": "non-indexable"
+                          },
+                          {
+                            "literal": "private"
+                          }
+                        ]
+                      }
+                    },
+                    "parameterNames": {
+                      "type": {
+                        "array": "string"
+                      }
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "scopes": {
+                      "optional": true,
+                      "type": {
+                        "array": {
+                          "object": {
+                            "providerId": {
+                              "type": "string"
+                            },
+                            "scopeId": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "sitemap": {
+                      "optional": true,
+                      "type": {
+                        "object": {
+                          "changefreq": {
+                            "optional": true,
+                            "type": {
+                              "union": [
+                                {
+                                  "literal": "always"
+                                },
+                                {
+                                  "literal": "daily"
+                                },
+                                {
+                                  "literal": "hourly"
+                                },
+                                {
+                                  "literal": "monthly"
+                                },
+                                {
+                                  "literal": "never"
+                                },
+                                {
+                                  "literal": "weekly"
+                                },
+                                {
+                                  "literal": "yearly"
+                                }
+                              ]
+                            }
+                          },
+                          "lastmod": {
+                            "optional": true,
+                            "type": "string"
+                          },
+                          "priority": {
+                            "optional": true,
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "sourcePath": {
+                      "optional": true,
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "thoth-extension-descriptor/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/extensions.d.ts#ExtensionDescriptor": {
+          "union": [
+            {
+              "object": {
+                "fingerprint": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "inputType": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": {
+                    "literal": "formatting-adapter"
+                  }
+                },
+                "maximumOutputLength": {
+                  "type": "number"
+                },
+                "profile": {
+                  "type": {
+                    "literal": "thoth-extension-descriptor/1"
+                  }
+                },
+                "result": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "parts"
+                      },
+                      {
+                        "literal": "text"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "object": {
+                "fingerprint": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "interactive": {
+                  "type": "boolean"
+                },
+                "kind": {
+                  "type": {
+                    "literal": "rich-slot-kind"
+                  }
+                },
+                "options": {
+                  "optional": true,
+                  "type": {
+                    "object": {},
+                    "index": {
+                      "array": "string"
+                    }
+                  }
+                },
+                "profile": {
+                  "type": {
+                    "literal": "thoth-extension-descriptor/1"
+                  }
+                },
+                "shape": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "paired"
+                      },
+                      {
+                        "literal": "standalone"
+                      }
+                    ]
+                  }
+                },
+                "textProjection": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "binding-required"
+                      },
+                      {
+                        "literal": "children"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "object": {
+                "fingerprint": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": {
+                    "literal": "identifier-segment"
+                  }
+                },
+                "maximumLength": {
+                  "type": "number"
+                },
+                "profile": {
+                  "type": {
+                    "literal": "thoth-extension-descriptor/1"
+                  }
+                },
+                "syntax": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "ascii-token"
+                      },
+                      {
+                        "literal": "lower-kebab"
+                      },
+                      {
+                        "literal": "unicode-token"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "object": {
+                "fingerprint": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": {
+                    "literal": "message-function"
+                  }
+                },
+                "maximumOutputLength": {
+                  "type": "number"
+                },
+                "operandType": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "boolean"
+                      },
+                      {
+                        "literal": "date-time"
+                      },
+                      {
+                        "literal": "integer"
+                      },
+                      {
+                        "literal": "number"
+                      },
+                      {
+                        "literal": "string"
+                      }
+                    ]
+                  }
+                },
+                "options": {
+                  "optional": true,
+                  "type": {
+                    "object": {},
+                    "index": {
+                      "object": {
+                        "required": {
+                          "optional": true,
+                          "type": "boolean"
+                        },
+                        "type": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "boolean"
+                              },
+                              {
+                                "literal": "date-time"
+                              },
+                              {
+                                "literal": "integer"
+                              },
+                              {
+                                "literal": "number"
+                              },
+                              {
+                                "literal": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "values": {
+                          "optional": true,
+                          "type": {
+                            "array": {
+                              "union": ["boolean", "number", "string"]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "profile": {
+                  "type": {
+                    "literal": "thoth-extension-descriptor/1"
+                  }
+                },
+                "resultType": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "date-time"
+                      },
+                      {
+                        "literal": "number"
+                      },
+                      {
+                        "literal": "string"
+                      }
+                    ]
+                  }
+                },
+                "selector": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "exact"
+                      },
+                      {
+                        "literal": "none"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "object": {
+                "fingerprint": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": {
+                    "literal": "parsing-adapter"
+                  }
+                },
+                "maximumInputLength": {
+                  "type": "number"
+                },
+                "outputType": {
+                  "type": "string"
+                },
+                "profile": {
+                  "type": {
+                    "literal": "thoth-extension-descriptor/1"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "dist/runtime/types/neolorn-thoth-core.d.ts#RuntimeExtensionDescriptor": {
+          "union": [
+            {
+              "object": {
+                "fingerprint": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "inputType": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": {
+                    "literal": "formatting-adapter"
+                  }
+                },
+                "maximumOutputLength": {
+                  "type": "number"
+                },
+                "profile": {
+                  "type": {
+                    "literal": "thoth-extension-descriptor/1"
+                  }
+                },
+                "result": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "parts"
+                      },
+                      {
+                        "literal": "text"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "object": {
+                "fingerprint": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "interactive": {
+                  "type": "boolean"
+                },
+                "kind": {
+                  "type": {
+                    "literal": "rich-slot-kind"
+                  }
+                },
+                "options": {
+                  "optional": true,
+                  "type": {
+                    "object": {},
+                    "index": {
+                      "array": "string"
+                    }
+                  }
+                },
+                "profile": {
+                  "type": {
+                    "literal": "thoth-extension-descriptor/1"
+                  }
+                },
+                "shape": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "paired"
+                      },
+                      {
+                        "literal": "standalone"
+                      }
+                    ]
+                  }
+                },
+                "textProjection": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "binding-required"
+                      },
+                      {
+                        "literal": "children"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "object": {
+                "fingerprint": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": {
+                    "literal": "identifier-segment"
+                  }
+                },
+                "maximumLength": {
+                  "type": "number"
+                },
+                "profile": {
+                  "type": {
+                    "literal": "thoth-extension-descriptor/1"
+                  }
+                },
+                "syntax": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "ascii-token"
+                      },
+                      {
+                        "literal": "lower-kebab"
+                      },
+                      {
+                        "literal": "unicode-token"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "object": {
+                "fingerprint": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": {
+                    "literal": "message-function"
+                  }
+                },
+                "maximumOutputLength": {
+                  "type": "number"
+                },
+                "operandType": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "boolean"
+                      },
+                      {
+                        "literal": "date-time"
+                      },
+                      {
+                        "literal": "integer"
+                      },
+                      {
+                        "literal": "number"
+                      },
+                      {
+                        "literal": "string"
+                      }
+                    ]
+                  }
+                },
+                "options": {
+                  "optional": true,
+                  "type": {
+                    "object": {},
+                    "index": {
+                      "object": {
+                        "required": {
+                          "optional": true,
+                          "type": "boolean"
+                        },
+                        "type": {
+                          "type": {
+                            "union": [
+                              {
+                                "literal": "boolean"
+                              },
+                              {
+                                "literal": "date-time"
+                              },
+                              {
+                                "literal": "integer"
+                              },
+                              {
+                                "literal": "number"
+                              },
+                              {
+                                "literal": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "values": {
+                          "optional": true,
+                          "type": {
+                            "array": {
+                              "union": ["boolean", "number", "string"]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "profile": {
+                  "type": {
+                    "literal": "thoth-extension-descriptor/1"
+                  }
+                },
+                "resultType": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "date-time"
+                      },
+                      {
+                        "literal": "number"
+                      },
+                      {
+                        "literal": "string"
+                      }
+                    ]
+                  }
+                },
+                "selector": {
+                  "type": {
+                    "union": [
+                      {
+                        "literal": "exact"
+                      },
+                      {
+                        "literal": "none"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "object": {
+                "fingerprint": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": {
+                    "literal": "parsing-adapter"
+                  }
+                },
+                "maximumInputLength": {
+                  "type": "number"
+                },
+                "outputType": {
+                  "type": "string"
+                },
+                "profile": {
+                  "type": {
+                    "literal": "thoth-extension-descriptor/1"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "thoth-extension-registry/1": {
+      "readers": "closed",
+      "schemas": {
+        "dist/toolkit/schemas/extension-registry.v1.schema.json": "sha256-9SWghuorzePespZf9vLb2NsYG2KzTVNDY7ftCKfSF7s"
+      }
+    },
+    "thoth-runtime-observability-event/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/runtime/types/neolorn-thoth.d.ts#LocalizationObservabilityEvent": {
+          "object": {
+            "code": {
+              "type": {
+                "open": [
+                  "TH-E2001",
+                  "TH-E2002",
+                  "TH-E2003",
+                  "TH-E2004",
+                  "TH-E2005",
+                  "TH-E2006",
+                  "TH-E2007",
+                  "TH-E2008"
+                ]
+              }
+            },
+            "correlationId": {
+              "optional": true,
+              "type": "string"
+            },
+            "count": {
+              "optional": true,
+              "type": "number"
+            },
+            "durationMilliseconds": {
+              "optional": true,
+              "type": "number"
+            },
+            "participantId": {
+              "optional": true,
+              "type": "string"
+            },
+            "phase": {
+              "type": {
+                "union": [
+                  {
+                    "literal": "cache"
+                  },
+                  {
+                    "literal": "catalog"
+                  },
+                  {
+                    "literal": "formatting"
+                  },
+                  {
+                    "literal": "initialization"
+                  },
+                  {
+                    "literal": "integration"
+                  },
+                  {
+                    "literal": "persistence"
+                  },
+                  {
+                    "literal": "ssr-hydration"
+                  },
+                  {
+                    "literal": "transition"
+                  }
+                ]
+              }
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-runtime-observability-event/1"
+              }
+            },
+            "providerId": {
+              "optional": true,
+              "type": "string"
+            },
+            "reason": {
+              "optional": true,
+              "type": {
+                "union": [
+                  {
+                    "literal": "cancelled"
+                  },
+                  {
+                    "literal": "catalog-admission-failed"
+                  },
+                  {
+                    "literal": "catalog-load-failed"
+                  },
+                  {
+                    "literal": "disposed"
+                  },
+                  {
+                    "literal": "effect-failed"
+                  },
+                  {
+                    "literal": "internal-invariant"
+                  },
+                  {
+                    "literal": "invalid-configuration"
+                  },
+                  {
+                    "literal": "invalid-localized-input"
+                  },
+                  {
+                    "literal": "invalid-message-input"
+                  },
+                  {
+                    "literal": "invalid-rich-message"
+                  },
+                  {
+                    "literal": "message-unavailable"
+                  },
+                  {
+                    "literal": "participant-contract-rejected"
+                  },
+                  {
+                    "literal": "participant-failed"
+                  },
+                  {
+                    "literal": "participant-timeout"
+                  },
+                  {
+                    "literal": "participant-unavailable"
+                  },
+                  {
+                    "literal": "route-unavailable"
+                  },
+                  {
+                    "literal": "scope-unavailable"
+                  },
+                  {
+                    "literal": "superseded"
+                  },
+                  {
+                    "literal": "unknown-presentation-code"
+                  },
+                  {
+                    "literal": "unsafe-route"
+                  },
+                  {
+                    "literal": "unsupported-formatting-capability"
+                  },
+                  {
+                    "literal": "unsupported-input-capability"
+                  },
+                  {
+                    "literal": "unsupported-locale"
+                  }
+                ]
+              }
+            },
+            "scopeId": {
+              "optional": true,
+              "type": "string"
+            },
+            "snapshotId": {
+              "optional": true,
+              "type": "number"
+            },
+            "status": {
+              "type": {
+                "union": [
+                  {
+                    "literal": "cancelled"
+                  },
+                  {
+                    "literal": "failed"
+                  },
+                  {
+                    "literal": "recovered"
+                  },
+                  {
+                    "literal": "redirected"
+                  },
+                  {
+                    "literal": "started"
+                  },
+                  {
+                    "literal": "succeeded"
+                  },
+                  {
+                    "literal": "superseded"
+                  },
+                  {
+                    "literal": "unavailable"
+                  }
+                ]
+              }
+            },
+            "supplyingLocale": {
+              "optional": true,
+              "type": "string"
+            },
+            "targetLocale": {
+              "optional": true,
+              "type": "string"
+            },
+            "transitionId": {
+              "optional": true,
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "thoth-toolkit-observability-event/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/observability.d.ts#ToolkitObservabilityEvent": {
+          "object": {
+            "code": {
+              "type": {
+                "open": ["TH-E1001", "TH-E1002", "TH-E1003"]
+              }
+            },
+            "count": {
+              "optional": true,
+              "type": "number"
+            },
+            "diagnosticCode": {
+              "optional": true,
+              "type": {
+                "open": [
+                  "TH1001",
+                  "TH1002",
+                  "TH1003",
+                  "TH1004",
+                  "TH1005",
+                  "TH1006",
+                  "TH1007",
+                  "TH1008",
+                  "TH1009",
+                  "TH1101",
+                  "TH1102",
+                  "TH1103",
+                  "TH1104",
+                  "TH1105",
+                  "TH1201",
+                  "TH1202",
+                  "TH1203",
+                  "TH1204",
+                  "TH1205",
+                  "TH1206",
+                  "TH1301",
+                  "TH1302",
+                  "TH1303",
+                  "TH1304",
+                  "TH1305",
+                  "TH1306",
+                  "TH1307",
+                  "TH1308",
+                  "TH1309",
+                  "TH1310",
+                  "TH1311",
+                  "TH1401",
+                  "TH1402",
+                  "TH1403",
+                  "TH1404",
+                  "TH1405",
+                  "TH1406",
+                  "TH1407",
+                  "TH1408",
+                  "TH1409",
+                  "TH1410",
+                  "TH1411",
+                  "TH1412",
+                  "TH1413",
+                  "TH1414",
+                  "TH1415",
+                  "TH1416",
+                  "TH1417",
+                  "TH1501",
+                  "TH1502",
+                  "TH1503",
+                  "TH1601",
+                  "TH1602",
+                  "TH1603",
+                  "TH1701",
+                  "TH1702",
+                  "TH1703",
+                  "TH1704",
+                  "TH1705",
+                  "TH1706",
+                  "TH1801",
+                  "TH1802",
+                  "TH1803",
+                  "TH1804",
+                  "TH1805",
+                  "TH1806",
+                  "TH1807"
+                ]
+              }
+            },
+            "durationMilliseconds": {
+              "optional": true,
+              "type": "number"
+            },
+            "locale": {
+              "optional": true,
+              "type": "string"
+            },
+            "operationId": {
+              "optional": true,
+              "type": "string"
+            },
+            "phase": {
+              "type": {
+                "union": [
+                  {
+                    "literal": "analysis"
+                  },
+                  {
+                    "literal": "catalog"
+                  },
+                  {
+                    "literal": "compilation"
+                  },
+                  {
+                    "literal": "configuration"
+                  },
+                  {
+                    "literal": "generation"
+                  },
+                  {
+                    "literal": "integration"
+                  },
+                  {
+                    "literal": "interchange"
+                  },
+                  {
+                    "literal": "migration"
+                  }
+                ]
+              }
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-toolkit-observability-event/1"
+              }
+            },
+            "providerId": {
+              "optional": true,
+              "type": "string"
+            },
+            "scopeId": {
+              "optional": true,
+              "type": "string"
+            },
+            "status": {
+              "type": {
+                "union": [
+                  {
+                    "literal": "failed"
+                  },
+                  {
+                    "literal": "started"
+                  },
+                  {
+                    "literal": "succeeded"
+                  },
+                  {
+                    "literal": "unchanged"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "thoth-compiler-state/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/compiler.d.ts#CompilerState": {
+          "object": {
+            "inputFingerprint": {
+              "type": "string"
+            },
+            "inputs": {
+              "type": {
+                "array": {
+                  "object": {
+                    "digest": {
+                      "type": "string"
+                    },
+                    "identity": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "outputPlanDigest": {
+              "type": "string"
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-compiler-state/1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "thoth-compiler-cache/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/project-host.d.ts#CompilerCacheEnvelope": {
+          "object": {
+            "ownerId": {
+              "type": "string"
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-compiler-cache/1"
+              }
+            },
+            "state": {
+              "type": {
+                "object": {
+                  "inputFingerprint": {
+                    "type": "string"
+                  },
+                  "inputs": {
+                    "type": {
+                      "array": {
+                        "object": {
+                          "digest": {
+                            "type": "string"
+                          },
+                          "identity": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "outputPlanDigest": {
+                    "type": "string"
+                  },
+                  "profile": {
+                    "type": {
+                      "literal": "thoth-compiler-state/1"
+                    }
+                  }
+                }
+              }
+            },
+            "stateDigest": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "thoth-output-transaction/1": {
+      "readers": "open",
+      "declarations": {
+        "dist/toolkit/output-host.d.ts#TransactionJournal": {
+          "object": {
+            "operations": {
+              "type": {
+                "array": {
+                  "object": {
+                    "backup": {
+                      "type": "string"
+                    },
+                    "hadOriginal": {
+                      "type": "boolean"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "temporary": {
+                      "optional": true,
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "ownerId": {
+              "type": "string"
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-output-transaction/1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "thoth-work-owner/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/output-host.d.ts#WorkOwnerMarker": {
+          "object": {
+            "ownerId": {
+              "type": "string"
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-work-owner/1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "thoth-completion-manifest/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/output-plan.d.ts#CompletionManifest": {
+          "object": {
+            "files": {
+              "type": {
+                "array": {
+                  "object": {
+                    "bytes": {
+                      "type": "number"
+                    },
+                    "digest": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "ownerId": {
+              "type": "string"
+            },
+            "planDigest": {
+              "type": "string"
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-completion-manifest/1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "thoth-authored-change-plan/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/authoring-transaction.d.ts#AuthoredChangePlan": {
+          "object": {
+            "changes": {
+              "type": {
+                "array": {
+                  "object": {
+                    "after": {
+                      "optional": true,
+                      "type": "string"
+                    },
+                    "afterDigest": {
+                      "optional": true,
+                      "type": "string"
+                    },
+                    "before": {
+                      "optional": true,
+                      "type": "string"
+                    },
+                    "beforeDigest": {
+                      "optional": true,
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "digest": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": {
+                "union": [
+                  {
+                    "literal": "migration"
+                  },
+                  {
+                    "literal": "refactor"
+                  }
+                ]
+              }
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-authored-change-plan/1"
+              }
+            },
+            "regenerate": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "thoth-semantic-catalog-diff/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/catalog-diff.d.ts#CatalogDiff": {
+          "object": {
+            "digest": {
+              "type": "string"
+            },
+            "entries": {
+              "type": {
+                "array": {
+                  "object": {
+                    "afterFingerprint": {
+                      "optional": true,
+                      "type": "string"
+                    },
+                    "beforeFingerprint": {
+                      "optional": true,
+                      "type": "string"
+                    },
+                    "identity": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": {
+                        "union": [
+                          {
+                            "literal": "added"
+                          },
+                          {
+                            "literal": "fallback-impact"
+                          },
+                          {
+                            "literal": "identity-contract-changed"
+                          },
+                          {
+                            "literal": "removed"
+                          },
+                          {
+                            "literal": "source-changed"
+                          },
+                          {
+                            "literal": "stale-source"
+                          },
+                          {
+                            "literal": "translation-changed"
+                          }
+                        ]
+                      }
+                    },
+                    "locale": {
+                      "optional": true,
+                      "type": "string"
+                    },
+                    "previousIdentity": {
+                      "optional": true,
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-semantic-catalog-diff/1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "thoth-translation-state/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/translation-state.d.ts#TranslationState": {
+          "object": {
+            "entries": {
+              "type": {
+                "object": {},
+                "index": {
+                  "object": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-translation-state/1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "thoth-xliff-2.2/1": {
+      "readers": "closed",
+      "declarations": {
+        "dist/toolkit/xliff.d.ts#XliffUnitContract": {
+          "object": {
+            "identity": {
+              "type": "string"
+            },
+            "messageId": {
+              "type": "string"
+            },
+            "profile": {
+              "type": {
+                "literal": "thoth-xliff-2.2/1"
+              }
+            },
+            "representation": {
+              "type": {
+                "union": [
+                  {
+                    "literal": "flat"
+                  },
+                  {
+                    "literal": "inline"
+                  }
+                ]
+              }
+            },
+            "sourceFingerprint": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "thoth-cli-result/1": {
+      "readers": "closed",
+      "schemas": {
+        "dist/toolkit/schemas/cli-result.v1.schema.json": "sha256-pStsZIf0_DCzxqVTO2LFrxWfqxNQaxBOp8s9T9EO_44"
+      }
+    },
+    "thoth-cli-watch-event/1": {
+      "readers": "closed",
+      "schemas": {
+        "dist/toolkit/schemas/cli-watch-event.v1.schema.json": "sha256-3kJPNf2iSyI_419xbTBAa49RgYd_OKoMKjpcdNQhuZI"
+      }
+    },
+    "configuration schemaVersion 1": {
+      "readers": "closed",
+      "schemas": {
+        "dist/toolkit/schemas/configuration.v1.schema.json": "sha256-2WPru1LalP3lSegbA_jPnlbdty-_JiNAMNu982H_zZ0"
+      }
+    }
+  }
+}

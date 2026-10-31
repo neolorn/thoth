@@ -1,0 +1,186 @@
+/**
+ * The options of the Angular builders Thoth's builders wrap, written from the schemas Angular ships.
+ *
+ * `ng build`, `ng serve` and `ng test` read their options from the schema of the builder the target
+ * names, and refuse any option it lacks. Thoth's builders name Angular's, so their schemas have to
+ * hold every option Angular's hold, or a command that works without Thoth is refused with it. A
+ * copy kept by hand goes stale on the next option Angular adds; this reads them from the
+ * `@angular/build` release of every Angular row and writes the union, and `--check` fails in the
+ * gate when the file and the releases have drifted apart.
+ *
+ * Each option is written without a default anywhere in it and none is required, so an option the
+ * command line does not give reaches Angular as absent and Angular applies its own default, and
+ * nothing Thoth's schema holds can stand in for what `angular.json` sets on the Angular target.
+ * Where the rows define an option alike apart from prose, the newest row's text is written; where
+ * they differ in shape, the option admits each row's shape, so no row's value is refused.
+ *
+ * The releases are read from the npm cache `stage:npm-cache` fills, offline, and each tarball is
+ * checked against the digest its lockfile pins, so the schemas are the ones the rows install.
+ */
+
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { angularBuildRows, WRAPPED } from './angular-build-rows.ts';
+import { isSchema, unitedMap, type Schema } from './option-schema-union.ts';
+
+const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const cache =
+  process.env['THOTH_NPM_CACHE'] ??
+  resolve(workspaceRoot, '.runtimes/npm-cache');
+const scratch = resolve(workspaceRoot, 'tmp/builder-options');
+const outputPath = resolve(
+  workspaceRoot,
+  'packages/toolkit/src/angular-builder-options.generated.ts',
+);
+
+function run(command: string, args: readonly string[], cwd: string): string {
+  const windows = process.platform === 'win32';
+  const result = spawnSync(
+    windows ? (process.env['ComSpec'] ?? 'cmd.exe') : command,
+    windows ? ['/d', '/s', '/c', command, ...args] : args,
+    { cwd, encoding: 'utf8', maxBuffer: 1 << 26 },
+  );
+  assert.equal(
+    result.status,
+    0,
+    `${command} ${args.join(' ')} failed:\n${result.stdout}${result.stderr}`,
+  );
+  return result.stdout;
+}
+
+const rows = angularBuildRows();
+const schemas = new Map<string, Schema[]>(
+  Object.values(WRAPPED).map((builder) => [builder, []]),
+);
+await rm(scratch, { recursive: true, force: true });
+for (const row of rows) {
+  const directory = resolve(scratch, row.version);
+  await mkdir(directory, { recursive: true });
+  const packed = JSON.parse(
+    run(
+      'npm',
+      [
+        'pack',
+        `@angular/build@${row.version}`,
+        '--offline',
+        `--cache=${cache}`,
+        '--json',
+      ],
+      directory,
+    ),
+  ) as readonly { readonly filename: string; readonly integrity: string }[];
+  const [tarball] = packed;
+  assert.ok(
+    tarball !== undefined,
+    `npm pack @angular/build@${row.version} produced no tarball; run pnpm run stage:npm-cache.`,
+  );
+  assert.equal(
+    tarball.integrity,
+    row.integrity,
+    `The cached @angular/build@${row.version} is not the tarball ${row.lockfiles.join(', ')} pins.`,
+  );
+  const members = Object.values(WRAPPED).map(
+    (builder) => `package/src/builders/${builder}/schema.json`,
+  );
+  // Extracted by a relative path from inside its directory: a Windows path opens with a drive
+  // letter and a colon, which tar reads as a remote host.
+  run('tar', ['-xzf', tarball.filename, ...members], directory);
+  for (const builder of Object.values(WRAPPED)) {
+    const schema = JSON.parse(
+      await readFile(
+        resolve(directory, `package/src/builders/${builder}/schema.json`),
+        'utf8',
+      ),
+    ) as unknown;
+    assert.ok(
+      isSchema(schema) && isSchema(schema['properties']),
+      `@angular/build@${row.version}'s ${builder} schema has no properties, so it is not an option schema.`,
+    );
+    schemas.get(builder)?.push(schema);
+  }
+}
+await rm(scratch, { recursive: true, force: true });
+
+const releases = rows.map(({ version }) => version);
+const table = Object.fromEntries(
+  Object.entries(WRAPPED).map(([command, builder]) => {
+    const all = schemas.get(builder) ?? [];
+    const definitions = unitedMap(all, 'definitions');
+    return [
+      command,
+      {
+        builder: `@angular/build:${builder}`,
+        properties: unitedMap(all, 'properties'),
+        ...(Object.keys(definitions).length > 0 ? { definitions } : {}),
+      },
+    ];
+  }),
+);
+
+const output = `${[
+  `// Generated by tools/generate-builder-options.ts from @angular/build ${releases.join(', ')}. Do not edit.`,
+  '//',
+  '// The options of the Angular builder each Thoth builder runs, so the Angular CLI accepts every option',
+  '// on the command line that it accepts without Thoth. pnpm run verify:builder-options fails when',
+  '// this file and the releases the rows pin have drifted apart.',
+  '',
+  '/** The options of one Angular builder, with no default and nothing required. */',
+  'export interface WrappedAngularBuilder {',
+  '  /** The builder, as a workspace file names it. */',
+  '  readonly builder: string;',
+  '  /** Each option, as a JSON Schema the Angular CLI reads. */',
+  '  readonly properties: Readonly<Record<string, unknown>>;',
+  '  /** The schemas the options refer to by `#/definitions/`. */',
+  '  readonly definitions?: Readonly<Record<string, unknown>>;',
+  '}',
+  '',
+  '/** The Angular releases the options are the union of, one for each Angular row. */',
+  '// prettier-ignore',
+  `export const WRAPPED_BUILDER_RELEASES: readonly string[] = Object.freeze(${JSON.stringify(releases)});`,
+  '',
+  '/** The Angular builder each Thoth builder runs, and its options. */',
+  '// prettier-ignore',
+  `export const WRAPPED_BUILDER_OPTIONS: Readonly<Record<'build' | 'serve' | 'test', WrappedAngularBuilder>> = Object.freeze(${JSON.stringify(table, null, 2)});`,
+  '',
+].join('\n')}`;
+
+if (process.argv.includes('--check')) {
+  let current;
+  try {
+    current = await readFile(outputPath, 'utf8');
+  } catch (error) {
+    throw new Error(
+      `${outputPath} is missing; run pnpm run generate:builder-options. (${(error as Error | undefined)?.message ?? error})`,
+    );
+  }
+  assert.equal(
+    current,
+    output,
+    'The checked-in builder options are stale; run pnpm run generate:builder-options.',
+  );
+  console.log(
+    `Verified the options of ${Object.values(WRAPPED)
+      .map((builder) => `@angular/build:${builder}`)
+      .join(
+        ', ',
+      )} against @angular/build ${releases.join(', ')}: ${Object.entries(table)
+      .map(
+        ([command, { properties }]) =>
+          `${command} ${Object.keys(properties).length}`,
+      )
+      .join(', ')} options.`,
+  );
+} else {
+  let current;
+  try {
+    current = await readFile(outputPath, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException | undefined)?.code !== 'ENOENT')
+      throw error;
+  }
+  if (current !== output) await writeFile(outputPath, output, 'utf8');
+}

@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "target": "ES2022",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "isolatedModules": true,
+    "paths": {
+      "@neolorn/thoth": ["./packages/runtime/src/public-api.ts"],
+      "@neolorn/thoth-toolkit": ["./packages/toolkit/src/index.ts"],
+      "@neolorn/thoth/core": ["./packages/runtime/core/src/public-api.ts"],
+      "@neolorn/thoth/forms": ["./packages/runtime/forms/src/public-api.ts"],
+      "@neolorn/thoth/http": ["./packages/runtime/http/src/public-api.ts"],
+      "@neolorn/thoth/router": ["./packages/runtime/router/src/public-api.ts"],
+      "@neolorn/thoth/ssr": ["./packages/runtime/ssr/src/public-api.ts"],
+      "@neolorn/thoth/testing": ["./packages/runtime/testing/src/public-api.ts"]
+    }
+  },
+  "include": ["packages/**/src/**/*.ts", "packages/**/test/**/*.ts"],
+  "exclude": ["**/node_modules/**", "**/dist/**"]
+}

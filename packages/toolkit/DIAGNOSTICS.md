@@ -1,0 +1,301 @@
+# Thoth diagnostics
+
+Every code `@neolorn/thoth-toolkit` can report, and what it means. A diagnostic carries its own
+summary saying what happened at the place it happened; this says what the code is about.
+
+**Generated.** The list comes from the `ToolkitDiagnosticCode` union and the sentences from the
+table beside it, and the gate re-renders this file and fails when it differs. Do not edit it here:
+edit `packages/toolkit/src/diagnostic-reference.ts`, which the compiler checks against the union in
+both directions.
+
+**Severity is not listed, on purpose.** Several codes carry the severity a run decides: the
+completeness family and `TH1704` are advisory or blocking depending on the command's switches and
+the project's own declarations, so a severity written here would be wrong for exactly the codes
+most worth looking up. What a run does with a finding is decided on severity, and the finding says
+which one it carries.
+
+## The project configuration
+
+### TH1001
+
+`thoth.config.json` is not one readable JSON value: a syntax error, a repeated key, more than one value, text that is not UTF-8, or the configuration byte ceiling.
+
+### TH1002
+
+`thoth.config.json` is readable JSON, and one of its values is not what the configuration schema allows.
+
+### TH1003
+
+A locale identifier is malformed. Every place a locale is written is canonicalized first (`locales`, `personNameLocales`, a pseudo-locale tag, a `formatting` or `inProgress` key, an alias target, a catalog's own locale) and a tag the platform would accept can still be refused, including one carrying extensions or private-use subtags.
+
+### TH1004
+
+A locale identifier is well formed and declared where it cannot be used: it duplicates another after canonicalization, or it names a locale this project does not serve.
+
+### TH1005
+
+A locale alias is malformed. An alias is a lowercase ASCII identifier of letters, digits and hyphens: a name for a URL rather than a locale tag.
+
+### TH1006
+
+A locale alias points somewhere it must not: it shadows a supported locale, or it targets a locale the project does not serve.
+
+### TH1007
+
+A declared parent locale cannot be inherited from: it is the locale itself, or the chain it starts comes back to a locale already in that chain.
+
+### TH1008
+
+A pseudo-locale tag is well formed and cannot identify a pseudo-locale: it names no script, its language is not the source locale's, or its region claims what the locale is not. XA is English lengthened left to right, as `PSEUDO_LOCALE_ACCENTED` is, XB is English right to left, as `PSEUDO_LOCALE_BIDI` is, and any other pseudo-locale takes one of XC to XJ or XL to XZ, which UTS #35 leaves free.
+
+### TH1009
+
+The URL policy in the configuration does not fit the locales: a prefix, alias or origin names a locale the project does not serve, a locale-host policy leaves a locale without an origin, an origin is not normalized, two prefixes, aliases or locale-neutral roots spell one segment, or the x-default is not a path, or under locale-host an origin.
+
+## The catalog file
+
+### TH1101
+
+A catalog file is not the YAML Thoth accepts: invalid, oversized, or more than one document; anchors, aliases, merge keys, directives, non-string keys or non-Core scalars; a root that is not a mapping; malformed Unicode or unauthorized invisible and bidi controls; or the node, depth and message ceilings.
+
+### TH1102
+
+A catalog is well-formed YAML, and one of its entries is not what the catalog schema allows.
+
+### TH1103
+
+A catalog repeats a key, or its text, or a translation an XLIFF import would write into it, carries a bidi construction Thoth refuses.
+
+### TH1104
+
+A provider, scope or message identity written in a catalog is malformed, or the provider identity of the owner a compilation was handed is.
+
+### TH1105
+
+A target catalog declares `inputs` or `slots`. Those belong to the source catalog, and a target inherits them.
+
+## The message
+
+### TH1201
+
+A message is not valid MessageFormat 2 syntax, or exceeds the message byte ceiling.
+
+### TH1202
+
+A message parses and its data model is invalid: a duplicate declaration, variant or option name, a variant key mismatch, a missing fallback variant, or a selector that reaches no annotation. Which of the two stages found it does not decide the code: the specification's division does.
+
+### TH1203
+
+A message calls a function outside the Thoth 1 profile, which is the UTS #35 default registry.
+
+### TH1204
+
+A message writes a function option outside the profile, or gives an option a value the profile does not allow.
+
+### TH1205
+
+A message gives a function an operand it cannot take. Its own code rather than `TH1204`'s, because a wrong option and a wrong operand have different fixes.
+
+### TH1206
+
+A `.match` selects on a function that formats but does not select.
+
+## The catalog set
+
+### TH1301
+
+The catalogs of one scope do not form a set: a locale the project does not declare, a duplicate catalog, no source catalog, an empty scope, or a catalog whose role does not match its locale.
+
+### TH1302
+
+A message's inputs are not usable: an unknown or unrefinable portable type, incompatible operand uses, an enum value the type cannot hold, a refinement matching no inferred input, an explicitly empty message declaring inputs, or the per-message input ceiling.
+
+### TH1303
+
+A message's rich slots do not form a valid structure: unclosed or mismatched, nested where nesting is refused, used both paired and standalone, of an unregistered or undeterminable kind, refined past what the source supports, or the per-message slot ceiling.
+
+### TH1304
+
+A translation does not honour the source message's contract: it invents a message, changes or invents an input, or omits a required rich slot.
+
+### TH1305
+
+Generated names collide, or an open family is not well formed: two identities projecting to one generated path, a repeated placeholder, a template with no fixed part, members whose contracts differ, or a message two families both match.
+
+### TH1306
+
+A scope has no catalog at all for a locale the project serves; the source locale is used in its place. One of the four completeness findings: advisory unless the run requires complete targets and the project has not declared that locale still in progress.
+
+### TH1307
+
+A target catalog omits a message the source has; the source locale is used in its place. Escalates with the rest of the completeness family.
+
+### TH1308
+
+A translation omits a plural or ordinal category its locale's grammar has, so those counts fall through to the catch-all. Escalates with the rest of the completeness family.
+
+### TH1309
+
+A translation was written against an older source message and may no longer match it. Raised against the translation record rather than the catalogs, and escalates with the rest of the completeness family.
+
+### TH1310
+
+This owner composes the Thoth application runtime and its configuration names no recovery message in recoveryMessage, so a failed start has nothing to say.
+
+### TH1311
+
+A scope defines source messages that nothing in the application reaches.
+
+## The application
+
+### TH1401
+
+TypeScript refused the application or its configuration while Thoth was analyzing it.
+
+### TH1402
+
+An Angular component template could not be read or was refused: a symbolic link, a path resolving outside the selected owner, or a template Angular's own parser rejected.
+
+### TH1403
+
+The analysis exceeded its source-file or byte ceiling, or was asked to resolve something outside the generated `#i18n` namespace.
+
+### TH1404
+
+A route's identity cannot be used: declared in a form the localization runtime refuses, declared in a way the build cannot read, not derivable from what the route declares, colliding with another route's, or the owner declaring two route-indexing fields.
+
+### TH1405
+
+A route renders nothing: it carries none of `component`, `loadComponent`, `redirectTo`, `children` or `loadChildren`, or it has an empty path and a wildcard written before it takes its address.
+
+### TH1406
+
+A route hides addresses from the projection: its address comes from a computed `path`, a `matcher`, or a spread or computed key that may set either, or its children load from a file it only references, or a route table takes routes from a binding, a spread or an expression Thoth does not follow. Those addresses stay outside the localized route table and are served at their canonical form in every locale. Also raised for a route that renders in a named outlet, or names its outlet in a way the build cannot read, which is never a page and is left out of the projection.
+
+### TH1407
+
+A route loads a file through a lazy boundary that something in the initial bundle also imports statically, so the split does not happen.
+
+### TH1408
+
+The configuration and the locale URL policy disagree: a configured locale with no address, an address with no catalogs, two different default locales, more than one policy for Thoth to read, or a policy built in code that differs from the one the configuration declares in its kind, its default-locale prefix or the segments it claims. The policy is read from the options written as literals in the call that builds it. The locale table is compared only when every entry in it is written out, so a table taken from a constant or a function, or one with an entry that is spread in or has a computed key, is not compared, and neither is a default locale that is not a literal. An option with a spread written after it in that call is not read, because the spread can replace it. The running application then drops a policy locale that has no catalogs and refuses a policy whose default locale the configuration lacks; a configured locale with no address and a different default locale go unreported. TH1417 names the options that were not read.
+
+### TH1409
+
+A route's leading segment is one this owner has already claimed for a locale, so the route and the locale compete for the same address. The claimed segments are those of the policy the configuration declares, or the prefixes, aliases and locale-neutral roots written as literals in the call that builds the policy in code; one taken from a constant, a spread or a function is not read, no prefix is read from a locale table that is not written out whole, and nothing is read from an option with a spread written after it in that call. The running application refuses such an address when it builds one that carries no locale prefix. TH1417 names the options that were not read.
+
+### TH1410
+
+A component template spells out something about a locale that Thoth already knows and can hand it: the language subtag, the direction, or the locale's name in its own language.
+
+### TH1411
+
+A component template writes a `routerLink` whose leading segment is one this owner claims for a locale.
+
+### TH1412
+
+A sitemap declaration cannot be used as written: a changefreq outside the seven the protocol lists, a priority that is not a number literal between 0 and 1, a lastmod that is not a W3C date, a field, table or route value the build cannot read, or the owner declaring two route sitemap fields.
+
+### TH1413
+
+A caching declaration cannot be used as written: a value that names neither `per-visitor` nor `not-stored`, a table or a route value the build cannot read as a string literal or a `const` bound to one, or the owner declaring two route caching fields. A route whose value cannot be used is answered as not stored until it is corrected. Also raised where a `matcher`, a `canMatch` guard or a value the build cannot read decides which route renders an address, which is then answered as not stored.
+
+### TH1414
+
+An indexing declaration cannot be used as written: a route value the build cannot read, because it is computed, a parameter, supplied by a resolver or behind a binding it cannot follow, or a field or table it cannot read. A route whose value cannot be read is answered as private until it is corrected. Also raised where a `matcher`, a `canMatch` guard or a value the build cannot read decides which route renders an address, which is then answered as private.
+
+### TH1415
+
+A route names its addresses in a way Angular refuses: neither a `path` nor a `matcher`, or a `matcher` beside a non-empty `path`.
+
+### TH1416
+
+The router's inheritance strategy cannot be read: a `paramsInheritanceStrategy` the build cannot read as a string literal or a `const` bound to one, or more than one router configuration where one sets it. Every child route is read as inheriting its parent's data, which is Angular's default.
+
+### TH1417
+
+The locale URL policy is not written out whole, so TH1408 and TH1409 were not checked for part of it. The advisory names each option of the call that builds the policy that the build did not read: the locale table, `defaultLocale`, `aliases` or `localeNeutralRoots`, where it or an entry in it comes from a constant, a function, a spread or a key that is not a literal, or has a spread written after it. It does not block a build. Write the named options as literals in the call to have them compared.
+
+## The compiled artifacts
+
+### TH1501
+
+A compiled artifact cannot be produced from the accepted graph: a recovery message that does not resolve to one existing plain message without inputs or slots, or a catalog absent from the graph.
+
+### TH1502
+
+A compiled catalog exceeds the IR node or depth ceiling.
+
+### TH1503
+
+The output plan or the completion manifest is invalid: a malformed or colliding output path, an attempt to replace the reserved completion marker, or a manifest whose header, entries or plan digest do not hold.
+
+## The generated output
+
+### TH1601
+
+The generated root is not Thoth's to write: no completion and ownership manifest, an unowned file inside it, an owner identity that is not this one, or a root inside a dependency directory or the build output.
+
+### TH1602
+
+An output or authoring transaction did not complete. The message says whether the prior state was restored, because a failure that rolled back and one that could not are different situations.
+
+### TH1603
+
+Generated output does not match its completion manifest: a file missing, a file changed, or the manifest itself moving while the output was being inspected.
+
+## The command
+
+### TH1701
+
+The command cannot act on how it was invoked: an unknown or malformed argument, or a noninteractive `thoth init` with a required option missing.
+
+### TH1702
+
+The project could not be selected or read: no Thoth configuration inside the package boundary, a selection that is a symbolic link or not a directory, an owner `package.json` that is missing, unreadable or not an object, an owner `angular.json` that is unreadable, a TypeScript source behind a link, or a translation-state record that is present and cannot be read.
+
+### TH1703
+
+An environment operation failed, or a disposable one was skipped: a corrupt, incompatible, oversized or linked incremental cache, a cache that could not be persisted, a formatting or an exchange import refused because semantic equality was not proven, or a watcher that could not start or reconcile.
+
+### TH1704
+
+Generated output is stale against the compilation that would produce it. Advisory unless the run requires fresh output.
+
+### TH1705
+
+`package.json` does not carry what Thoth needs, or carries something that conflicts with it: the `#i18n` import mappings, the scripts `thoth init` writes, or init arguments that contradict the existing `thoth.config.json`.
+
+### TH1706
+
+`thoth init` finished, and is naming the two things that are now the owner's to write: the first catalog, and a recovery message.
+
+## Interchange, authoring, and the host
+
+### TH1801
+
+An XLIFF document is not readable XML, or exceeds the Thoth byte ceiling.
+
+### TH1802
+
+An XLIFF export or import, or one document or file of `thoth exchange`, cannot be performed at all: catalogs that are not the source and target of one scope, a file or unit id that is not an `xs:NMTOKEN`, a document that is not the Thoth 2.2 profile, a document `thoth exchange import` expected and did not find, a file that belongs to no scope of the project, or a source message whose markup has no XLIFF inline representation.
+
+### TH1803
+
+An XLIFF unit cannot be imported as a translation: placeholders the source does not have or that the translation never renders, a segment state Thoth does not accept, notes it does not store, a unit outside the authoritative source catalog or stale against it, or an attempt to change what the authoring catalog owns.
+
+### TH1804
+
+A pseudo-localization request is invalid: a length factor outside its range, a message that does not parse, or a catalog that is not a source catalog.
+
+### TH1805
+
+An authored change plan, an application-local extension registry, or a semantic refactor was refused: invalid or oversized input, an invalid or duplicate operation, an undeclared or nonportable option, or a refactor whose source is unavailable and whose destination already exists.
+
+### TH1806
+
+The host is outside Thoth's supported range: Node.js, TypeScript, or the Angular compiler.
+
+### TH1807
+
+`thoth exchange export` would replace a document holding translations the catalogs do not: a unit whose target differs from the translation its target catalog holds, a missing translation included, or a document it cannot read. Nothing is written.
