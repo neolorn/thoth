@@ -10,6 +10,7 @@
   },
   "scripts": {
     "clean": "node ./tools/clean.ts",
+    "cap": "node ./tools/cap.ts",
     "build": "pnpm run clean dist && pnpm run build:runtime && pnpm run build:toolkit",
     "build:runtime": "pnpm --filter @neolorn/thoth build",
     "build:toolkit": "pnpm --filter @neolorn/thoth-toolkit build",
@@ -40,6 +41,8 @@
     "verify:spec-links": "node ./tools/verify-spec-links.ts",
     "verify:doc-links": "node ./tools/verify-doc-links.ts",
     "verify:gate-limits:self-test": "node ./tools/verify-gate-limits-self-test.ts",
+    "verify:cap:self-test": "node ./tools/verify-cap-self-test.ts",
+    "verify:clean:self-test": "node ./tools/verify-clean-self-test.ts",
     "verify:browser-script-gate:self-test": "node ./tools/verify-browser-script-gate-self-test.ts",
     "verify:browser-teardown:self-test": "node ./tools/verify-browser-teardown-self-test.ts",
     "verify:normative-map:self-test": "node ./tools/verify-normative-map-self-test.ts",

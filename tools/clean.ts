@@ -1,8 +1,8 @@
-import { readdir, rm } from 'node:fs/promises';
+import { rm } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { attemptLedgerPath, workingRoot } from './working-state.ts';
+import { emptyWorkingRoot } from './working-state.ts';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -10,31 +10,12 @@ const remove = (path: string): Promise<void> =>
   rm(path, { force: true, recursive: true });
 
 /**
- * The gate's working directory, emptied of everything a run can produce again.
- *
- * The directory itself stays, and so does the attempt ledger, for the reason `working-state.ts`
- * gives. An absent directory is nothing to clean rather than an error, because a clean is how a
- * tree with no run behind it is asked for.
- */
-async function emptyWorkingRoot(): Promise<void> {
-  let entries: string[];
-  try {
-    entries = await readdir(workingRoot);
-  } catch {
-    return;
-  }
-  for (const entry of entries) {
-    const path = resolve(workingRoot, entry);
-    if (path === attemptLedgerPath) continue;
-    await remove(path);
-  }
-}
-
-/**
  * What a clean may remove, and why `build` asks for one of them by name.
  *
  * `dist` is the build's own output, removed first so a package cannot be assembled from a file an
- * earlier state of the tree produced.
+ * earlier state of the tree produced. `tmp` is the gate's working directory, emptied of everything
+ * a run can produce again and nothing else (`emptyWorkingRoot` in `working-state.ts` says what
+ * stays).
  *
  * `build` names `dist` alone because one gate stage builds after a consumer has been materialized
  * under `tmp`, rebuilding the packages once per injection and handing each build to that consumer.
@@ -42,7 +23,7 @@ async function emptyWorkingRoot(): Promise<void> {
  */
 const REMOVABLE = {
   dist: () => remove(resolve(workspaceRoot, 'dist')),
-  tmp: emptyWorkingRoot,
+  tmp: () => emptyWorkingRoot(),
 };
 
 const names = Object.keys(REMOVABLE);
