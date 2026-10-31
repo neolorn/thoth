@@ -42,7 +42,7 @@ Everything each build emits, including Angular and the application itself.
 
 | Application      | Part    | Files |     Bytes |    gzip |  Brotli |
 | ---------------- | ------- | ----: | --------: | ------: | ------: |
-| Minimal consumer | initial |     1 |   342,315 | 104,141 |  89,109 |
+| Minimal consumer | initial |     1 |   342,315 | 104,141 |  89,207 |
 | Minimal consumer | lazy    |     4 |     8,718 |   4,294 |   3,506 |
 | Minimal consumer | server  |     0 |         0 |       0 |       0 |
 | Full consumer    | initial |     1 |   739,107 | 214,484 | 179,426 |
@@ -100,5 +100,5 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Package                  | Files |     Bytes |
 | ------------------------ | ----: | --------: |
-| `@neolorn/thoth`         |    38 | 3,213,176 |
-| `@neolorn/thoth-toolkit` |   288 | 4,678,704 |
+| `@neolorn/thoth`         |    38 | 3,210,335 |
+| `@neolorn/thoth-toolkit` |   288 | 4,681,911 |
