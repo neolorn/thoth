@@ -262,7 +262,7 @@ describe('ng add', () => {
     expect(snapshot(tree)).toEqual(before);
   });
 
-  it('runs build, serve and test through the builders, each naming the Angular target it was, with every configuration carried', async () => {
+  it('runs build, serve and test through the builders, each naming the Angular target it was, with every configuration carried and the pseudo-locales asked for only where a development run reads them', async () => {
     const run = runner();
     const tree = await application(run);
     const before = targets(tree) as Record<string, Record<string, unknown>>;
@@ -273,7 +273,10 @@ describe('ng add', () => {
       options: { buildTarget: 'my-app:angular-build' },
       configurations: {
         production: { buildTarget: 'my-app:angular-build:production' },
-        development: { buildTarget: 'my-app:angular-build:development' },
+        development: {
+          buildTarget: 'my-app:angular-build:development',
+          pseudoLocales: true,
+        },
       },
       defaultConfiguration: 'production',
     });
@@ -282,13 +285,16 @@ describe('ng add', () => {
       options: { serveTarget: 'my-app:angular-serve' },
       configurations: {
         production: { serveTarget: 'my-app:angular-serve:production' },
-        development: { serveTarget: 'my-app:angular-serve:development' },
+        development: {
+          serveTarget: 'my-app:angular-serve:development',
+          pseudoLocales: true,
+        },
       },
       defaultConfiguration: 'development',
     });
     expect(after['test']).toEqual({
       builder: '@neolorn/thoth-toolkit:test',
-      options: { testTarget: 'my-app:angular-test' },
+      options: { testTarget: 'my-app:angular-test', pseudoLocales: true },
     });
     // The Angular targets keep their builders and options, and read the Angular build target
     // wherever they read the build target before, including through the defaults they were given.

@@ -20,12 +20,14 @@ const TARGET_PATTERN = '^[^:\\s]*:[^:\\s]*(:[^\\s]+)?$';
 export type AngularCommand = 'build' | 'serve' | 'test';
 
 /**
- * What every Thoth builder is given: the Angular target to run, for two of them `watch`, and the
- * options of the Angular builder it was given, which it passes on.
+ * What every Thoth builder is given: the Angular target to run, for two of them `watch`, whether to
+ * generate the pseudo-locales, and the options of the Angular builder it was given, which it passes
+ * on.
  */
 export interface AngularBuilderOptions {
   readonly target: string;
   readonly watch?: boolean;
+  readonly pseudoLocales?: boolean;
   /** Every option of the Angular builder the builder was given, `watch` included. */
   readonly angular: Readonly<Record<string, unknown>>;
 }
@@ -84,6 +86,13 @@ function ownOptions(command: AngularCommand): Record<string, unknown> {
       description: TARGET_DESCRIPTION[command],
       pattern: TARGET_PATTERN,
     },
+    // Thoth's own, and on every command, because a development run of each wants the pseudo-locales
+    // and a production build must not have them. `ng add` sets it where a development run reads it.
+    pseudoLocales: {
+      type: 'boolean',
+      description:
+        'Also generate the pseudo-locales thoth.config.json declares. For development runs only: a production build must not set it.',
+    },
   };
   if (command !== 'serve') {
     own['watch'] = {
@@ -130,6 +139,7 @@ export function angularBuilderOptions(
 ): AngularBuilderOptions {
   const target = options[ANGULAR_TARGET_OPTION[command]];
   const watch = options['watch'];
+  const pseudoLocales = options['pseudoLocales'];
   const angular: Record<string, unknown> = {};
   for (const name of angularOptionNames(command)) {
     if (options[name] !== undefined) angular[name] = options[name];
@@ -137,6 +147,7 @@ export function angularBuilderOptions(
   return Object.freeze({
     target: typeof target === 'string' ? target : '',
     ...(typeof watch === 'boolean' ? { watch } : {}),
+    ...(pseudoLocales === true ? { pseudoLocales } : {}),
     angular: Object.freeze(angular),
   });
 }

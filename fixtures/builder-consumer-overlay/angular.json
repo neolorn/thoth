@@ -21,7 +21,8 @@
               "buildTarget": "minimal:angular-build:production"
             },
             "development": {
-              "buildTarget": "minimal:angular-build:development"
+              "buildTarget": "minimal:angular-build:development",
+              "pseudoLocales": true
             }
           },
           "defaultConfiguration": "production"
@@ -29,13 +30,15 @@
         "serve": {
           "builder": "@neolorn/thoth-toolkit:serve",
           "options": {
-            "serveTarget": "minimal:angular-serve"
+            "serveTarget": "minimal:angular-serve",
+            "pseudoLocales": true
           }
         },
         "test": {
           "builder": "@neolorn/thoth-toolkit:test",
           "options": {
-            "testTarget": "minimal:angular-test"
+            "testTarget": "minimal:angular-test",
+            "pseudoLocales": true
           }
         },
         "angular-build": {

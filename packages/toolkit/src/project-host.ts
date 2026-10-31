@@ -3937,9 +3937,12 @@ export async function watchProject(
     }
     running = true;
     try {
+      // The pseudo-locale request reaches the load as well as the generation, because the load is
+      // where the derived catalogs and their locale table enter.
       const selection = {
         cwd: location.value.ownerRoot,
         project: location.value.ownerRoot,
+        ...(options.pseudoLocales === true ? { pseudoLocales: true } : {}),
       };
       const loaded = await loadProject(selection, {
         requirePackageSetup: true,

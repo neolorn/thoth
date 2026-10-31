@@ -350,6 +350,11 @@ the server routes `ng new` writes with `provideLocalizedServerRendering`. A rele
 - ask, on a terminal, only for the source locale, the default locale, the supported locales, and
   the URL policy, and accept each as an option;
 - write no catalog and no message text, because those are the application's;
+- set the builders' `pseudoLocales` option of section 14 wherever a development run reads it, the
+  `development` configuration of each target that has one and the options of `serve` and `test`
+  where they have none, so `ng serve`, `ng test` and `ng build --configuration development`
+  generate the pseudo-locales a project declares, and never where a production build reads it, the
+  options of `build` and every other configuration;
 - check the whole setup before writing any of it, and refuse with a message, writing nothing, a
   workspace with no application, or with several when `--project` names none of them, a conflict
   with an existing configuration or package entry, a target already under a name it would give, an
@@ -517,6 +522,9 @@ Angular target is `@angular/build:application` for `ng build`, `@angular/build:d
   words;
 - refuse an option of the Angular builder that `angular.json` sets on the Thoth target, with a
   failed result that names the option and the Angular target it belongs on, before generating;
+- take `pseudoLocales`, an option of their own that is not passed on, and generate the
+  pseudo-locales of section 16 in every generation of the command when it is true and in none when
+  it is not;
 - generate the project whose configuration is at the Angular project's root, so each application
   of a workspace builds from its own.
 
@@ -620,7 +628,9 @@ the right direction: it is refused by the toolkit alone, and only where a catalo
 Declaring a pseudo-locale does not generate it. A release MUST take the request on the build
 command rather than from the environment, so one configuration serves the development build that
 wants pseudo-locales and the production build that must not contain them, and an environment
-variable set once on a build runner cannot reach the production build.
+variable set once on a build runner cannot reach the production build. The builders of section 14
+take it as their `pseudoLocales` option, which `ng add` sets for development runs, and
+`thoth generate` and `thoth check` take it as `--pseudo`.
 
 The transform runs at build time and produces an ordinary compiled catalog. A release MUST NOT run
 it in the runtime and MUST NOT ship it from a runtime entry point, so excluding a pseudo-locale from

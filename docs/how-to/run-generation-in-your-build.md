@@ -21,17 +21,28 @@ Each of the three builders generates, then runs an Angular target you name. Rena
   "options": { "buildTarget": "my-app:angular-build" },
   "configurations": {
     "production": { "buildTarget": "my-app:angular-build:production" },
-    "development": { "buildTarget": "my-app:angular-build:development" }
+    "development": {
+      "buildTarget": "my-app:angular-build:development",
+      "pseudoLocales": true
+    }
   },
   "defaultConfiguration": "production"
 },
 "serve": {
   "builder": "@neolorn/thoth-toolkit:serve",
-  "options": { "serveTarget": "my-app:angular-serve" }
+  "options": { "serveTarget": "my-app:angular-serve" },
+  "configurations": {
+    "production": { "serveTarget": "my-app:angular-serve:production" },
+    "development": {
+      "serveTarget": "my-app:angular-serve:development",
+      "pseudoLocales": true
+    }
+  },
+  "defaultConfiguration": "development"
 },
 "test": {
   "builder": "@neolorn/thoth-toolkit:test",
-  "options": { "testTarget": "my-app:angular-test" }
+  "options": { "testTarget": "my-app:angular-test", "pseudoLocales": true }
 },
 "angular-build": {
   "builder": "@angular/build:application",
@@ -41,7 +52,12 @@ Each of the three builders generates, then runs an Angular target you name. Rena
 },
 "angular-serve": {
   "builder": "@angular/build:dev-server",
-  "options": { "buildTarget": "my-app:angular-build:development" }
+  "options": { "buildTarget": "my-app:angular-build:development" },
+  "configurations": {
+    "production": { "buildTarget": "my-app:angular-build:production" },
+    "development": { "buildTarget": "my-app:angular-build:development" }
+  },
+  "defaultConfiguration": "development"
 },
 "angular-test": {
   "builder": "@angular/build:unit-test",
@@ -57,6 +73,10 @@ target.
 `-c production` selects a configuration of the Thoth target, and that configuration names the
 Angular configuration it runs. Add a configuration to the Thoth target when you add one to the
 Angular target.
+
+`pseudoLocales` asks for the pseudo-locales your `thoth.config.json` declares, and is set only where
+a development run reads it, which
+[Check your screens with pseudo-locales](#check-your-screens-with-pseudo-locales) describes.
 
 A schematic that edits the `build` target expects Angular's builder there, so run one, such as
 `ng add @angular/ssr`, before `ng add @neolorn/thoth-toolkit`.
@@ -91,6 +111,23 @@ without Thoth. An Angular option set on the Thoth target ends the command with a
 the target it belongs on.
 
 `ng run my-app:angular-build` runs Angular alone and does not generate.
+
+## Check your screens with pseudo-locales
+
+Declare a pseudo-locale in `thoth.config.json`:
+
+```text
+"pseudoLocales": { "en-Latn-XA": { "lengthFactor": 0.3 } }
+```
+
+`ng serve` then serves it beside your locales, and `ng test` and
+`ng build --configuration development` generate it too, with nothing run beside them: the targets
+`ng add` writes set `pseudoLocales` on the serve target's `development` configuration, on the test
+target, and on the build target's `development` configuration. A production build holds none of it:
+no catalog, no entry in the locale table, and no transform. Keep `pseudoLocales` off the build
+target's `options` and its `production` configuration, which every production build reads.
+
+`thoth generate --pseudo` generates them for a step the builders do not run.
 
 ## Generate for other steps
 

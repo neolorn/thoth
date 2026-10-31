@@ -44,6 +44,9 @@ type Command = (typeof COMMANDS)[number];
 const THOTH_BUILDER = (command: Command) => `@neolorn/thoth-toolkit:${command}`;
 const ANGULAR_TARGET = (command: Command) => `angular-${command}`;
 
+/** The configuration `ng new` gives every development run, which `ng serve` defaults to. */
+const DEVELOPMENT_CONFIGURATION = 'development';
+
 /** Angular's builders that read an application target's options through `buildTarget`. */
 const BUILD_TARGET_READERS = new Set([
   '@angular/build:dev-server',
@@ -780,15 +783,29 @@ function rewriteTargets(
     for (const [command, angular] of renamed) {
       const option = ANGULAR_TARGET_OPTION[command];
       const reference = `${name}:${ANGULAR_TARGET(command)}`;
+      // The pseudo-locales are asked for wherever a development run reads its options, and nowhere
+      // a production build does: the `development` configuration where a target has
+      // configurations, and the options of a serve or test target that has none. A build target's
+      // options are read by every build, so they never ask.
+      const names = Object.keys(angular.configurations ?? {});
       const configurations = Object.fromEntries(
-        Object.keys(angular.configurations ?? {}).map((configuration) => [
+        names.map((configuration) => [
           configuration,
-          { [option]: `${reference}:${configuration}` },
+          {
+            [option]: `${reference}:${configuration}`,
+            ...(configuration === DEVELOPMENT_CONFIGURATION
+              ? { pseudoLocales: true }
+              : {}),
+          },
         ]),
       );
+      const pseudoInOptions = command !== 'build' && names.length === 0;
       project.targets.set(command, {
         builder: THOTH_BUILDER(command),
-        options: { [option]: reference },
+        options: {
+          [option]: reference,
+          ...(pseudoInOptions ? { pseudoLocales: true } : {}),
+        },
         ...(Object.keys(configurations).length === 0 ? {} : { configurations }),
         ...(angular.defaultConfiguration === undefined
           ? {}

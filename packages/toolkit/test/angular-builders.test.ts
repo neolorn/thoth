@@ -72,8 +72,14 @@ async function directory(): Promise<string> {
   return root;
 }
 
-/** A Thoth project with one catalog, at `root` or in a directory of its own. */
-async function project(root?: string): Promise<string> {
+/** The pseudo-locale a project declares when it is asked to, and how it is told apart in output. */
+const PSEUDO_LOCALE = 'en-Latn-XA';
+
+/**
+ * A Thoth project with one catalog, at `root` or in a directory of its own, declaring a pseudo-locale
+ * when `pseudo` says so.
+ */
+async function project(root?: string, pseudo = false): Promise<string> {
   root ??= await directory();
   await write(
     root,
@@ -86,9 +92,12 @@ async function project(root?: string): Promise<string> {
       sourceLocale: 'en-US',
       defaultLocale: 'en-US',
       locales: ['en-US'],
+      ...(pseudo
+        ? { pseudoLocales: { [PSEUDO_LOCALE]: { lengthFactor: 0.3 } } }
+        : {}),
     },
   });
-  expect(initialized.ok).toBe(true);
+  expect(initialized.ok, JSON.stringify(initialized.diagnostics)).toBe(true);
   await write(
     root,
     'tsconfig.app.json',
@@ -164,10 +173,15 @@ interface Workspace {
   readonly open: () => number;
 }
 
-/** What `angular.json` sets on the Thoth build target and on the Angular build target it runs. */
+/**
+ * What `angular.json` sets on the Thoth build target and on the Angular build target it runs, and
+ * on the Thoth serve and test targets.
+ */
 interface BuildOptions {
   readonly thoth?: Readonly<Record<string, boolean | number | string>>;
   readonly angular?: Readonly<Record<string, boolean | number | string>>;
+  readonly serve?: Readonly<Record<string, boolean | number | string>>;
+  readonly test?: Readonly<Record<string, boolean | number | string>>;
 }
 
 /** The workspace at `workspaceRoot`, whose one project `app` has its root at `projectRoot` within it. */
@@ -234,7 +248,7 @@ function workspace(
   host.addTarget(
     { project: 'app', target: 'serve' },
     '@neolorn/thoth-toolkit:serve',
-    { serveTarget: ':angular-serve' },
+    { serveTarget: ':angular-serve', ...options.serve },
   );
   host.addTarget(
     { project: 'app', target: 'angular-serve' },
@@ -243,7 +257,7 @@ function workspace(
   host.addTarget(
     { project: 'app', target: 'test' },
     '@neolorn/thoth-toolkit:test',
-    { testTarget: 'app:angular-test' },
+    { testTarget: 'app:angular-test', ...options.test },
   );
   host.addTarget(
     { project: 'app', target: 'angular-test' },
@@ -382,6 +396,80 @@ describe('the Angular builders', () => {
 
     await run.stop();
     expect(host.open()).toBe(0);
+  });
+});
+
+describe('the Angular builders generate the pseudo-locales a project declares only when asked', () => {
+  it.each(['build', 'serve', 'test'] as const)(
+    '%s takes pseudoLocales, an option of its own',
+    (command) => {
+      const properties = angularBuilderSchema(command)[
+        'properties'
+      ] as Readonly<Record<string, unknown>>;
+      expect(properties['pseudoLocales']).toEqual({
+        type: 'boolean',
+        description: expect.stringContaining('pseudo-locales') as string,
+      });
+    },
+  );
+
+  it('generate them under ng serve when the serve target asks, in every generation of the session', async () => {
+    const root = await project(undefined, true);
+    const host = workspace(root, '', { serve: { pseudoLocales: true } });
+
+    const { run } = await schedule(host, { project: 'app', target: 'serve' });
+    expect(await until(() => host.starts.length === 1)).toBe(true);
+    expect(host.starts[0]?.generated ?? '').toContain(PSEUDO_LOCALE);
+    expect(host.starts[0]?.options['pseudoLocales']).toBeUndefined();
+
+    // The second generation is the watch's own, which is reported once it is written.
+    await write(root, CATALOG, catalog('Edited'));
+    expect(
+      await until(
+        () =>
+          host.logs.filter((line) => line.includes('Thoth generated')).length >=
+          2,
+      ),
+    ).toBe(true);
+    const regenerated = await generatedText(root);
+    expect(regenerated).toContain('Edited');
+    expect(regenerated).toContain(PSEUDO_LOCALE);
+    await run.stop();
+  });
+
+  it('generate them under ng test when the test target asks', async () => {
+    const root = await project(undefined, true);
+    const host = workspace(root, '', { test: { pseudoLocales: true } });
+
+    const { run } = await schedule(
+      host,
+      { project: 'app', target: 'test' },
+      { watch: false },
+    );
+    expect((await run.result).success).toBe(true);
+    expect(host.starts[0]?.generated ?? '').toContain(PSEUDO_LOCALE);
+  });
+
+  it('leave them out of a build that does not ask, after one that did', async () => {
+    const root = await project(undefined, true);
+    const host = workspace(root);
+
+    const asked = await schedule(
+      host,
+      { project: 'app', target: 'build' },
+      { pseudoLocales: true },
+    );
+    expect((await asked.run.result).success).toBe(true);
+    expect(host.starts[0]?.generated ?? '').toContain(PSEUDO_LOCALE);
+
+    const production = await schedule(host, {
+      project: 'app',
+      target: 'build',
+    });
+    expect((await production.run.result).success).toBe(true);
+    expect(host.starts[1]?.generated ?? '').toContain('Started');
+    expect(host.starts[1]?.generated ?? '').not.toContain(PSEUDO_LOCALE);
+    expect(await generatedText(root)).not.toContain(PSEUDO_LOCALE);
   });
 });
 

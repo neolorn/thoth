@@ -212,12 +212,14 @@ export async function* runAngularCommand(
     Parameters<BuilderContext['scheduleTarget']>[1]
   >;
   const { generateProject, watchProject } = await import('./project-host.js');
+  const pseudo = options.pseudoLocales === true ? { pseudoLocales: true } : {};
 
   const controller = new AbortController();
   let watch: Promise<ToolkitResult<unknown>> | undefined;
   if (watching) {
     watch = watchProject({
       cwd,
+      ...pseudo,
       signal: controller.signal,
       onCycle: (cycle) => events.push({ kind: 'cycle', cycle }),
     });
@@ -227,7 +229,7 @@ export async function* runAngularCommand(
   try {
     let first: ToolkitResult<GenerateProjectResult> | undefined;
     if (watch === undefined) {
-      first = await generateProject({ cwd });
+      first = await generateProject({ cwd, ...pseudo });
     } else {
       while (first === undefined) {
         const event = await events.next();

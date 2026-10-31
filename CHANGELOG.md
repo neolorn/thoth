@@ -266,8 +266,10 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   `--project` names the one it sets up, at that application's root.
 - `thoth init` and `ng add` add the generated root and `.thoth/` to an existing `.gitignore`, and
   `thoth uninstall` removes those lines.
-- `pseudoLocales` in `thoth.config.json`, generated only by `--pseudo`, with length change and
-  boundary markers set independently. `PSEUDO_LOCALE_ACCENTED` and `PSEUDO_LOCALE_BIDI`
+- `pseudoLocales` in `thoth.config.json`, generated only when asked, by the builders'
+  `pseudoLocales` option or by `--pseudo`, with length change and boundary markers set
+  independently. `ng add` asks for them in `ng serve`, `ng test` and
+  `ng build --configuration development`, and never in a production build. `PSEUDO_LOCALE_ACCENTED` and `PSEUDO_LOCALE_BIDI`
   name the two tags UTS #35 defines.
 - `diffCatalogSets` classifies what changed between two catalog sets, and `planMessageRefactor`
   plans a rename or a move of a message across its catalogs and usages.

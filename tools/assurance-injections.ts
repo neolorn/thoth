@@ -4603,8 +4603,9 @@ export const injections = Object.freeze([
     invariant:
       'An Angular builder generates before the Angular target starts, so the target reads the modules its catalogs produce.',
     source: 'packages/toolkit/src/angular-builders.ts',
-    find: '      first = await generateProject({ cwd });',
-    replace: '      first = await generateProject({ cwd, dryRun: true });',
+    find: '      first = await generateProject({ cwd, ...pseudo });',
+    replace:
+      '      first = await generateProject({ cwd, ...pseudo, dryRun: true });',
     caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
   },
   {
@@ -4681,6 +4682,52 @@ export const injections = Object.freeze([
     find: '  if (misplaced !== undefined) {',
     replace: '  if (misplaced !== undefined && false) {',
     caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'builder-generates-once-without-the-pseudo-request',
+    invariant:
+      'An Angular builder whose pseudoLocales option is set generates the pseudo-locales in a command that does not watch.',
+    source: 'packages/toolkit/src/angular-builders.ts',
+    find: '      first = await generateProject({ cwd, ...pseudo });',
+    replace: '      first = await generateProject({ cwd });',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'builder-watches-without-the-pseudo-request',
+    invariant:
+      'An Angular builder whose pseudoLocales option is set generates the pseudo-locales in a session that watches.',
+    source: 'packages/toolkit/src/angular-builders.ts',
+    find: '      cwd,\n      ...pseudo,\n      signal',
+    replace: '      cwd,\n      signal',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'watch-cycle-drops-the-pseudo-request',
+    invariant:
+      'A watch asked for the pseudo-locales generates them in every cycle, not only the first.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '        project: location.value.ownerRoot,\n        ...(options.pseudoLocales === true ? { pseudoLocales: true } : {}),\n      };',
+    replace: '        project: location.value.ownerRoot,\n      };',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'ng-add-asks-for-pseudo-locales-in-the-build-options',
+    invariant:
+      'ng add never sets pseudoLocales where a production build reads it: the options of build.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: "      const pseudoInOptions = command !== 'build' && names.length === 0;",
+    replace: '      const pseudoInOptions = names.length >= 0;',
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-asks-for-pseudo-locales-in-no-development-configuration',
+    invariant:
+      'ng add sets pseudoLocales on the development configuration of each target that has one.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: '            ...(configuration === DEVELOPMENT_CONFIGURATION',
+    replace:
+      '            ...(configuration === `${DEVELOPMENT_CONFIGURATION}-`',
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
   },
   {
     id: 'init-asks-a-fifth-question',

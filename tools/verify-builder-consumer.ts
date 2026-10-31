@@ -9,6 +9,10 @@
  *
  * Every command is started with the installed Angular CLI's own entry file and a bound of its own,
  * and the serve session is ended by this process once it has shown what it is run for.
+ *
+ * Last, the consumer declares a pseudo-locale, as section 16 of the same specification lets a project
+ * do: `ng serve`, whose target asks for the pseudo-locales as `ng add` sets it, serves it with
+ * nothing run beside it, and a production `ng build` of the same project holds none of it.
  */
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
@@ -42,6 +46,8 @@ const templateRoot = resolve(
 const overlayRoot = resolve(workspaceRoot, 'fixtures/builder-consumer-overlay');
 const generatedRoot = resolve(consumerRoot, 'src/generated/i18n');
 const catalogPath = resolve(consumerRoot, 'i18n/shell/en-US.yaml');
+const configurationPath = resolve(consumerRoot, 'thoth.config.json');
+const PSEUDO_LOCALE = 'en-Latn-XA';
 const COMMAND_BOUND_MILLISECONDS = 600_000;
 
 assert.ok(
@@ -292,6 +298,166 @@ await new Promise<void>((resolvePromise, rejectPromise) => {
 });
 await writeFile(catalogPath, originalCatalog, 'utf8');
 
+/** Every file under a directory, as text, keyed by its path from that directory. */
+const textsUnder = async (
+  root: string,
+): Promise<ReadonlyMap<string, string>> => {
+  const texts = new Map<string, string>();
+  for (const entry of await readdir(root, {
+    recursive: true,
+    withFileTypes: true,
+  })) {
+    if (!entry.isFile()) continue;
+    const path = resolve(entry.parentPath, entry.name);
+    texts.set(path.slice(root.length + 1), await readFile(path, 'utf8'));
+  }
+  return texts;
+};
+const holding = (
+  texts: ReadonlyMap<string, string>,
+  text: string,
+): readonly string[] =>
+  [...texts]
+    .filter(([, contents]) => contents.includes(text))
+    .map(([path]) => path);
+
+/**
+ * The scripts a served page loads, and every module they import by a path on the same server,
+ * relative or from its root, each fetched from the dev server as a browser would fetch it.
+ */
+const servedScripts = async (
+  origin: string,
+): Promise<ReadonlyMap<string, string>> => {
+  const page = await (await fetch(origin)).text();
+  const pending = [...page.matchAll(/<script[^>]*\ssrc="([^"]+)"/gu)].map(
+    (match) => new URL(match[1] as string, origin).href,
+  );
+  const scripts = new Map<string, string>();
+  while (pending.length > 0 && scripts.size < 200) {
+    const url = pending.shift() as string;
+    if (scripts.has(url)) continue;
+    const response = await fetch(url);
+    assert.equal(response.ok, true, `${url} answered ${response.status}.`);
+    const text = await response.text();
+    scripts.set(url, text);
+    for (const match of text.matchAll(
+      /(?:from|import)\s*\(?\s*["']((?:\.{1,2})?\/[^"']+)["']/gu,
+    )) {
+      const imported = new URL(match[1] as string, url);
+      if (imported.origin === new URL(origin).origin) {
+        pending.push(imported.href);
+      }
+    }
+  }
+  return scripts;
+};
+
+// The project declares a pseudo-locale. ng serve, from nothing generated, serves it.
+const originalConfiguration = await readFile(configurationPath, 'utf8');
+const pseudoConfiguration = JSON.parse(originalConfiguration);
+pseudoConfiguration.pseudoLocales = { [PSEUDO_LOCALE]: { lengthFactor: 0.3 } };
+await writeFile(
+  configurationPath,
+  `${JSON.stringify(pseudoConfiguration, null, 2)}\n`,
+  'utf8',
+);
+await ungenerated();
+await new Promise<void>((resolvePromise, rejectPromise) => {
+  process.stdout.write('$ ng serve (with a pseudo-locale declared)\n');
+  const child = spawn(process.execPath, [ngEntry, 'serve'], {
+    cwd: consumerRoot,
+    env: { ...process.env, CI: 'true', NG_CLI_ANALYTICS: 'false' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let output = '';
+  let checking = false;
+  const finish = (error?: unknown) => {
+    clearTimeout(bound);
+    end(child.pid);
+    if (error === undefined) resolvePromise();
+    else rejectPromise(new Error(`${String(error)}\n${output}`));
+  };
+  const bound = setTimeout(
+    () =>
+      finish(
+        `ng serve ran past its ${COMMAND_BOUND_MILLISECONDS / 1000}s bound.`,
+      ),
+    COMMAND_BOUND_MILLISECONDS,
+  );
+  const record = (chunk: Buffer) => {
+    // Without the dev server's colour codes, as the session above reads it.
+    output += chunk.toString().replace(/\u001b\[[0-9;]*m/gu, '');
+    process.stdout.write(chunk);
+    const origin = /Local:\s+(http:\/\/localhost:\d+\/)/u.exec(output)?.[1];
+    if (origin === undefined || checking) return;
+    checking = true;
+    void (async () => {
+      assert.notDeepEqual(
+        holding(await textsUnder(generatedRoot), PSEUDO_LOCALE),
+        [],
+        `ng serve generated nothing for ${PSEUDO_LOCALE}.`,
+      );
+      const served = await servedScripts(origin);
+      assert.notDeepEqual(
+        holding(served, PSEUDO_LOCALE),
+        [],
+        `None of the ${served.size} scripts ng serve serves holds ${PSEUDO_LOCALE}: ${[...served.keys()].join(', ')}`,
+      );
+    })().then(() => finish(), finish);
+  };
+  child.stdout.on('data', record);
+  child.stderr.on('data', record);
+  child.once('error', finish);
+  child.once('close', (status) => {
+    if (!checking) {
+      finish(`ng serve ended with status ${status} before it served.`);
+    }
+  });
+});
+
+/**
+ * What a build emitted that the project's generated modules could reach: every file but the source
+ * maps, and of each source map the sources under `src/generated/`. The rest of a source map is the
+ * packages' own sources, which name the pseudo-locales whether the project generated one or not.
+ */
+const emittedTexts = async (
+  root: string,
+): Promise<ReadonlyMap<string, string>> => {
+  const texts = new Map<string, string>();
+  for (const [path, text] of await textsUnder(root)) {
+    if (!path.endsWith('.map')) {
+      texts.set(path, text);
+      continue;
+    }
+    const map = JSON.parse(text) as {
+      readonly sources?: readonly string[];
+      readonly sourcesContent?: readonly (string | null)[];
+    };
+    (map.sources ?? []).forEach((source, index) => {
+      if (/(?:^|[\\/])src[\\/]generated[\\/]/u.test(source)) {
+        texts.set(`${path} ${source}`, map.sourcesContent?.[index] ?? '');
+      }
+    });
+  }
+  return texts;
+};
+
+// A production ng build of the same project holds none of it, after a serve that generated it.
+await rm(resolve(consumerRoot, 'dist'), { recursive: true, force: true });
+const production = await ng(['build']);
+assert.equal(production.status, 0, production.output);
+assert.deepEqual(
+  holding(await emittedTexts(resolve(consumerRoot, 'dist')), PSEUDO_LOCALE),
+  [],
+  `The production build holds ${PSEUDO_LOCALE}.`,
+);
+assert.deepEqual(
+  holding(await textsUnder(generatedRoot), PSEUDO_LOCALE),
+  [],
+  `The production build left ${PSEUDO_LOCALE} in the generated modules.`,
+);
+await writeFile(configurationPath, originalConfiguration, 'utf8');
+
 process.stdout.write(
-  'Thoth builder consumer verified: ng build, ng test and ng serve generate before Angular runs, a broken catalog ends ng build with its diagnostic, and ng serve regenerates on catalog edits and reports a broken catalog without ending.\n',
+  `Thoth builder consumer verified: ng build, ng test and ng serve generate before Angular runs, a broken catalog ends ng build with its diagnostic, ng serve regenerates on catalog edits and reports a broken catalog without ending, ng serve serves the declared pseudo-locale ${PSEUDO_LOCALE}, and a production ng build holds none of it.\n`,
 );
