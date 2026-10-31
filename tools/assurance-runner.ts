@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 
 export interface Verdict {
   readonly verdict: 'caught' | 'passed' | 'unmeasured';
@@ -156,10 +156,15 @@ function runTests(workspaceRoot: string, testFile: string): Verdict {
     'node_modules/.vite/assurance-report.json',
   );
   rmSync(reportPath, { force: true });
+  // A file named to Vitest is a filter, matched against the end of every test file's path, so a
+  // work tree checked out inside this one would have its copy of the file run beside it and its
+  // failures counted. The directory keeps the scan to the one file.
   const args = [
     'vitest',
     'run',
     testFile,
+    '--dir',
+    dirname(testFile),
     '--reporter=json',
     `--outputFile=${reportPath}`,
   ];
@@ -182,6 +187,37 @@ function runTests(workspaceRoot: string, testFile: string): Verdict {
     testFile: resolve(workspaceRoot, testFile),
     label: testFile,
   });
+}
+
+/**
+ * The injections a run measures: every declared one, or with `--only <id>[,<id>...]` the named
+ * ones, in the order they are declared.
+ *
+ * A run of named injections is how a change's new injections are shown caught before the whole
+ * gate runs. It is not the gate's verdict, so `named` is true and the caller says how many it
+ * measured. A name that is not declared is refused, so a misspelt id is not a run that measured
+ * nothing and passed.
+ */
+export function selectInjections<T extends { readonly id: string }>(
+  declared: readonly T[],
+  argv: readonly string[] = process.argv,
+): { readonly measured: readonly T[]; readonly named: boolean } {
+  const at = argv.indexOf('--only');
+  if (at === -1) return { measured: declared, named: false };
+  const ids = (argv[at + 1] ?? '').split(',').filter((id) => id !== '');
+  assert.ok(ids.length > 0, '--only names no injection.');
+  const unknown = ids.filter(
+    (id) => !declared.some((entry) => entry.id === id),
+  );
+  assert.deepEqual(
+    unknown,
+    [],
+    `--only names injections nobody declared: ${unknown.join(', ')}.`,
+  );
+  return {
+    measured: declared.filter(({ id }) => ids.includes(id)),
+    named: true,
+  };
 }
 
 /**

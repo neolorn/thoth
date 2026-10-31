@@ -799,7 +799,19 @@ function scanText(
   }
 }
 
-const files = trackedFiles();
+/**
+ * `--message <file>...` holds drafts to the rules every commit message is held to, before the
+ * commit, the pull request's title and body or the release text they are written for exists
+ * anywhere. Only the drafts are scanned, every rule and the listed words included, so the verdict
+ * is theirs alone and says nothing of the tree.
+ */
+const messageAt = process.argv.indexOf('--message');
+const drafts = messageAt === -1 ? undefined : process.argv.slice(messageAt + 1);
+if (drafts?.length === 0) {
+  throw new Error('--message names no file. Name the draft messages to hold.');
+}
+
+const files = drafts === undefined ? trackedFiles() : [];
 
 /**
  * Every tracked path, and every directory one lies in.
@@ -842,18 +854,30 @@ for (const path of files) {
   }
 }
 
-const messages = commitMessages();
+const messages = drafts === undefined ? commitMessages() : [];
 for (const { hash, body, criteria, listed } of messages) {
   scanText(body, `commit ${hash}`, { criteria, listed, message: true });
 }
+for (const draft of drafts ?? []) {
+  scanText(readFileSync(resolve(draft), 'utf8'), draft, { message: true });
+}
 
-const unusedExemptions = EXEMPTIONS.filter(
-  (exemption) =>
-    !files.includes(exemption.where) ||
-    !readFileSync(resolve(workspaceRoot, exemption.where), 'utf8').includes(
-      exemption.within ?? exemption.match,
-    ),
-);
+// The exemptions are sites in files, which a run over drafts does not read.
+const unusedExemptions =
+  drafts === undefined
+    ? EXEMPTIONS.filter(
+        (exemption) =>
+          !files.includes(exemption.where) ||
+          !readFileSync(
+            resolve(workspaceRoot, exemption.where),
+            'utf8',
+          ).includes(exemption.within ?? exemption.match),
+      )
+    : [];
+const scanned =
+  drafts === undefined
+    ? `${files.length} files and ${messages.length} commit messages`
+    : `${drafts.length} draft message(s)`;
 
 const listNote =
   LISTED_WORDS === undefined
@@ -869,7 +893,7 @@ const counts = Object.fromEntries(
 
 if (findings.length > 0 || unusedExemptions.length > 0) {
   const lines = [
-    `Thoth sterilization: ${findings.length} hit(s) across ${files.length} files and ${messages.length} commit messages. ${listNote}`,
+    `Thoth sterilization: ${findings.length} hit(s) across ${scanned}. ${listNote}`,
     '',
     ...CATEGORIES.map(
       (category) => `  ${category.padEnd(10)} ${counts[category]}`,
@@ -894,6 +918,6 @@ if (findings.length > 0 || unusedExemptions.length > 0) {
   process.exitCode = 1;
 } else {
   process.stdout.write(
-    `Thoth sterilization verified: ${files.length} files and ${messages.length} commit messages carry no dash used as punctuation, no authoring tool name or co-author trailer, no reference to an internal document, no listed word, and no path into this repository that does not resolve. ${EXEMPTIONS.length} exemption(s), all still matching. ${listNote}\n`,
+    `Thoth sterilization verified: ${scanned} carry no dash used as punctuation, no authoring tool name or co-author trailer, no reference to an internal document, no listed word, and no path into this repository that does not resolve.${drafts === undefined ? ` ${EXEMPTIONS.length} exemption(s), all still matching.` : ''} ${listNote}\n`,
   );
 }

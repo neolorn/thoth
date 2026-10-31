@@ -22,23 +22,69 @@
  * `specs/12-verification.spec.md` section 9 states the rule this gate is: withdraw the behavior
  * a check guards and require the check to notice, because a check nobody has seen fail is
  * indistinguishable from one that cannot.
+ *
+ * `--only <id>[,<id>...]` measures the named injections alone, and `--plants <file>` measures the
+ * injections a JSON file lists instead of the declared ones, each `{ id, source, find, replace,
+ * caughtBy }`: a defect written down to see whether a test notices it, before it is decided whether
+ * it becomes a declared injection. Either is a run of its own and not the gate's verdict, and its
+ * last line says how many it measured. The source is restored after each, and a source that is not
+ * restored byte for byte fails the run.
  */
 
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { injections } from './assurance-injections.ts';
-import { measureInjection } from './assurance-runner.ts';
+import {
+  type FastInjection,
+  measureInjection,
+  selectInjections,
+} from './assurance-runner.ts';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+function readPlants(path: string): FastInjection[] {
+  const listed = JSON.parse(readFileSync(resolve(path), 'utf8')) as unknown;
+  assert.ok(Array.isArray(listed), `${path} holds no list of injections.`);
+  return listed.map((entry: unknown, index) => {
+    const fields = entry as Partial<Record<keyof FastInjection, unknown>>;
+    for (const field of [
+      'id',
+      'source',
+      'find',
+      'replace',
+      'caughtBy',
+    ] as const) {
+      assert.equal(
+        typeof fields[field],
+        'string',
+        `Entry ${index} of ${path} has no ${field}.`,
+      );
+    }
+    return entry as FastInjection;
+  });
+}
+
+const plantsAt = process.argv.indexOf('--plants');
+const { measured, named } =
+  plantsAt === -1
+    ? selectInjections(injections)
+    : {
+        measured: readPlants(process.argv[plantsAt + 1] ?? ''),
+        named: true,
+      };
+const invariantOf = (injection: FastInjection): string =>
+  'invariant' in injection ? String(injection.invariant) : 'a planted defect';
+
 const LABEL = { caught: 'caught ', passed: 'MISSED ', unmeasured: 'NOT RUN' };
-const missed = [];
-const unmeasured = [];
-for (const injection of injections) {
+const missed: FastInjection[] = [];
+const unmeasured: (FastInjection & { readonly why: string | undefined })[] = [];
+for (const injection of measured) {
   const outcome = await measureInjection(workspaceRoot, injection);
   process.stdout.write(
-    `${LABEL[outcome.verdict]} ${injection.id}\n          ${injection.invariant}\n` +
+    `${LABEL[outcome.verdict]} ${injection.id}\n          ${invariantOf(injection)}\n` +
       (outcome.why === undefined ? '' : `          ${outcome.why}\n`),
   );
   if (outcome.verdict === 'passed') missed.push(injection);
@@ -60,8 +106,8 @@ if (missed.length > 0) {
   process.stderr.write(
     `\n${missed.length} invariant(s) are not guarded by the test named for them:\n${missed
       .map(
-        ({ id, invariant, caughtBy }) =>
-          `  ${id}\n    ${invariant}\n    ${caughtBy} passed with the behaviour removed.\n`,
+        (injection) =>
+          `  ${injection.id}\n    ${invariantOf(injection)}\n    ${injection.caughtBy} passed with the behaviour removed.\n`,
       )
       .join('')}`,
   );
@@ -70,6 +116,8 @@ if (missed.length > 0) {
 
 if (missed.length === 0 && unmeasured.length === 0) {
   process.stdout.write(
-    `\nAssurance verified: ${injections.length} removed behaviours were each caught by the test named for them.\n`,
+    named
+      ? `\n${measured.length} named injection(s) were each caught by the test named for them. This is not the gate's verdict, which measures all ${injections.length}.\n`
+      : `\nAssurance verified: ${injections.length} removed behaviours were each caught by the test named for them.\n`,
   );
 }

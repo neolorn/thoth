@@ -242,6 +242,10 @@ const declared: readonly StageDeclaration[] = Object.freeze([
   // Drives the exports-map reader every entry-point list is taken from with manifests of its own,
   // because the built packages close no subpath and the stages that read them never meet one.
   { id: 'verify:exports-map:self-test', reads: ['source:tools'] },
+  // Runs the tool that puts a release's archives and their sums in one folder, copied into planted
+  // checkouts, on planted folders: a release added beside an earlier one keeps every line of its
+  // SHA256SUMS, and each refusal writes nothing, so a release folder is never left half written.
+  { id: 'verify:release-collect:self-test', reads: ['source:tools'] },
   // Plants a document and a map beside it and requires the reader to find each planted statement
   // and the map to refuse each planted defect, so the stage below cannot pass by reading nothing.
   { id: 'verify:normative-map:self-test', reads: ['source:tools'] },

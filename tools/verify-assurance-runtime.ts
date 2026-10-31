@@ -15,6 +15,10 @@
  * list disables scope loading on activation outright, and nothing a workspace test can reach moves:
  * the defect shows only in a consumer that renders. A guard nobody has watched fail is a claim
  * about the guard.
+ *
+ * `--only <id>[,<id>...]` measures the named injections alone, after the same build and with the same
+ * consumer, so a change's new injections are shown caught before the whole stage runs. That is not
+ * the stage's verdict, and its last line says how many it measured.
  */
 
 import assert from 'node:assert/strict';
@@ -35,7 +39,12 @@ import {
   refreshConsumerPackages,
 } from './refresh-consumer-packages.ts';
 
-import { gateVerdict, verdictOf, type Verdict } from './assurance-runner.ts';
+import {
+  gateVerdict,
+  selectInjections,
+  verdictOf,
+  type Verdict,
+} from './assurance-runner.ts';
 import { consumerSpecsEnvironment } from './consumer-specs-environment.ts';
 import {
   injections,
@@ -367,7 +376,8 @@ const ordered = [
   ),
   ...injections.filter(({ suite }) => suite === 'browser'),
 ];
-for (const injection of ordered) {
+const { measured, named } = selectInjections(ordered);
+for (const injection of measured) {
   const path = resolve(workspaceRoot, injection.source);
   const original = await readFile(path, 'utf8');
   const occurrences = original.split(injection.find).length - 1;
@@ -469,6 +479,8 @@ if (missed.length > 0) {
   process.exitCode = 1;
 } else if (closed.length === 0 && unmeasured.length === 0) {
   process.stdout.write(
-    `\n${injections.length - known.length} of ${injections.length} runtime invariants are guarded by a suite that notices when they stop holding.\n`,
+    named
+      ? `\n${measured.length - known.length} of ${measured.length} named runtime invariants are guarded by a suite that notices when they stop holding. This is not the stage's verdict, which measures all ${injections.length}.\n`
+      : `\n${injections.length - known.length} of ${injections.length} runtime invariants are guarded by a suite that notices when they stop holding.\n`,
   );
 }
