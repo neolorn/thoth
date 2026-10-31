@@ -288,6 +288,12 @@ describe('a keyword of the context tag the host drops', () => {
         formatPlainDate(plainDate(2024, 3, 14), c, DATE),
       'en-u-ca-zzzzzz',
     ],
+    // One keyword kept beside the one dropped: the locale is refused for either.
+    [
+      'formatInstant',
+      (c: FormattingContext) => formatInstant(NOON, c, DATE),
+      'en-u-ca-gregory-nu-zzzz',
+    ],
     [
       'formatRelativeTime',
       (c: FormattingContext) => formatRelativeTime(decimal('-2'), 'day', c),
