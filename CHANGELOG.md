@@ -14,6 +14,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The 0.x line is the alpha stage,
 then the betas, then the release candidates and the milestones that followed them.
 
+## [1.0.0-rc.2]
+
+The second release candidate of Thoth. It replaces `1.0.0-rc.1`, which was not published, and
+differs from it in the two entries below. Its host ranges, dependencies and standards profile are
+those of `1.0.0-rc.1`.
+
+### Fixed
+
+- `exchangeProject` checks its options before it reads them, as the other project functions do. An
+  option of the wrong kind rejects with a `TypeError` that names the function and the option, and a
+  `direction` other than `export` or `import` is refused rather than run as an import.
+
+### Removed
+
+- `LocaleUrlResolutionSetup`. Nothing took it once `withRouting()` stopped requiring a policy and
+  a projection, and its description still said that it did.
+
 ## [1.0.0-rc.1]
 
 The first release candidate of Thoth, a localization framework for Angular applications.
@@ -1010,4 +1027,5 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 - Catalogs compile to artifacts that are identical for identical input.
 - The `thoth` command line drives a project.
 
+[1.0.0-rc.2]: https://github.com/neolorn/thoth/releases/tag/v1.0.0-rc.2
 [1.0.0-rc.1]: https://github.com/neolorn/thoth/releases/tag/v1.0.0-rc.1
