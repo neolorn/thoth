@@ -61,6 +61,7 @@ import {
 import type { PriorityLevel } from './process-tree.ts';
 import { takeHeavyJobLock } from './heavy-job-lock.ts';
 import { followLevel, mutationLevel } from './run-mutation.ts';
+import { wslGateProcessors } from './verify-in-wsl.ts';
 import { startCaptured } from './stage-output.ts';
 import { steps as declaredSteps } from './verify-stages.ts';
 import { workingRoot } from './working-state.ts';
@@ -527,6 +528,24 @@ assert.deepEqual(
   ],
   'A mutation run did not follow a switch of the cap level over its own processes.',
 );
+// The suite in WSL takes the budget the cap names here, and every processor of the Linux machine
+// when none is named; a budget that is not a whole number above zero is refused, not passed on.
+assert.deepEqual(
+  [
+    wslGateProcessors({ THOTH_VERIFY_PROCESSORS: '16' }),
+    wslGateProcessors({}),
+    wslGateProcessors({ THOTH_VERIFY_PROCESSORS: '' }),
+  ],
+  ['16', '"$(nproc)"', '"$(nproc)"'],
+  'The suite in WSL does not take the budget THOTH_VERIFY_PROCESSORS names, or takes one where none is named.',
+);
+for (const refused of ['0', 'all', '1.5', '-2']) {
+  assert.throws(
+    () => wslGateProcessors({ THOTH_VERIFY_PROCESSORS: refused }),
+    /whole number of processors above zero/u,
+    `The WSL gate passed on a budget of ${refused}.`,
+  );
+}
 // How a stage is started at its level, with the platform and the priority call planted. On Windows
 // the gate is below normal and a child takes its parent's class, so the gate stands at normal for
 // the length of the start and no longer. Elsewhere a process cannot take back a priority it gave
