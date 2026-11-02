@@ -7631,6 +7631,14 @@
       "reason": "scope.messages is already in message-id order: analyzeCatalogSet sorts each scope's messages by messageId with compareCodeUnit (semantic-model.ts line 2154), and filter and map keep that order, so the sort finds the list sorted and the mutant lists the same unreached ids in the same order."
     },
     {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "scopeId === undefined",
+      "replacement": "false",
+      "category": "unreachable",
+      "reason": "deferredScopeIds is called with graph.value and the one analysis compileProject keeps (line 797), which analyzeApplication built with knownMessageIdentities set to every identity of that graph (line 791). A given list, empty included, makes addUsage refuse any identity outside it with TH1403 (static-analysis.ts line 3417) before the only push into messageUsages (line 3427), and scopeOf holds every identity of the graph (line 232), so scopeOf.get never answers undefined here."
+    },
+    {
       "file": "packages/toolkit/src/message-format.ts",
       "mutator": "StringLiteral",
       "original": "`MessageFormat source exceeds the ${RESOURCE_LIMITS.messageBytes}-byte implementation ceiling.`",

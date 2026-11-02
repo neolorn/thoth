@@ -3381,6 +3381,9 @@ export function analyzeApplication(
 
   const checker = program.getTypeChecker();
   const knownIdentities = new Set(request.knownMessageIdentities ?? []);
+  // A list that is given is the graph's whole set of identities, and an empty one is the graph
+  // right after setup, with no message yet. Only an absent list leaves identities unchecked.
+  const checksIdentities = request.knownMessageIdentities !== undefined;
   const usages: MessageUsage[] = [];
   let selectsApplicationRuntime = false;
   let declaredRouteIndexing: RouteIndexingPolicy | undefined;
@@ -3411,7 +3414,7 @@ export function analyzeApplication(
     const key = `${surface}\u0000${sourcePath}\u0000${start}\u0000${identity}`;
     if (seenUsage.has(key)) return;
     seenUsage.add(key);
-    if (knownIdentities.size > 0 && !knownIdentities.has(identity)) {
+    if (checksIdentities && !knownIdentities.has(identity)) {
       diagnostics.push(
         toolkitDiagnostic(
           'TH1403',

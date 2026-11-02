@@ -252,10 +252,11 @@ describe('the route table a generation writes', () => {
     expect(scopesOf('route:reports')).toEqual(['reports', 'shell']);
   });
 
-  it('gives a lazily loaded route no scope for a handle whose message no catalog defines', async () => {
-    // An owner with no catalogs knows no message identities, so a handle written by hand is taken
-    // as a use like any other. No scope holds its message, and the route that defers the file is
-    // written without one.
+  it('refuses a handle no catalog defines in a lazily loaded file, with no catalogs at all', async () => {
+    // A handle written by hand names a message no catalog defines, which is a stale or bogus
+    // reference however many catalogs the owner has. An owner with none refuses it as one with
+    // catalogs does, so the generation stops before any route table is written, rather than
+    // taking it as a use whose scope nothing holds.
     const root = await project([], {
       'page.ts': [
         'const handle = {',
@@ -292,17 +293,21 @@ describe('the route table a generation writes', () => {
       },
     });
 
-    if (!compiled.ok) throw new Error(JSON.stringify(compiled.diagnostics));
+    expect(compiled.ok).toBe(false);
+    expect(compiled.diagnostics).not.toEqual([]);
     expect(
-      compiled.value.analysis?.messageUsages.map(({ identity }) => identity),
-    ).toContain('elsewhere:scope:message');
-    expect(compiled.value.analysis?.routes[0]?.deferredSourcePaths).toEqual([
-      'src/page.ts',
-    ]);
-    const table = compiled.value.artifacts.outputPlan.files.find(({ path }) =>
-      path.endsWith('routes.ts'),
+      new Set(
+        compiled.diagnostics.map(({ code, path }) =>
+          JSON.stringify({ code, path }),
+        ),
+      ),
+    ).toEqual(
+      new Set([
+        JSON.stringify({
+          code: 'TH1403',
+          path: ['message', 'elsewhere:scope:message'],
+        }),
+      ]),
     );
-    expect(table?.contents).toContain('id: "route:page"');
-    expect(table?.contents).not.toContain('scopes:');
   });
 });

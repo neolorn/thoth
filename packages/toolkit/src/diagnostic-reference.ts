@@ -106,7 +106,7 @@ const REFERENCE = {
   TH1402:
     "An Angular component template could not be read or was refused: a symbolic link, a path resolving outside the selected owner, or a template Angular's own parser rejected.",
   TH1403:
-    'The analysis exceeded its source-file or byte ceiling, or was asked to resolve something outside the generated `#i18n` namespace.',
+    'The analysis exceeded its source-file or byte ceiling, was asked to resolve something outside the generated `#i18n` namespace, or found a message handle whose identity no catalog defines, such as a handle type kept from an earlier build or written by hand.',
   TH1404:
     "A route's identity cannot be used: declared in a form the localization runtime refuses, declared in a way the build cannot read, not derivable from what the route declares, colliding with another route's, or the owner declaring two route-indexing fields.",
   TH1405:

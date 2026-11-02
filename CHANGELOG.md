@@ -14,6 +14,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The 0.x line is the alpha stage,
 then the betas, then the release candidates and the milestones that followed them.
 
+## [1.0.0-rc.3]
+
+### Changed
+
+- A project with no catalogs now refuses a message handle that no catalog defines, with `TH1403`, as
+  a project with catalogs already did.
+
 ## [1.0.0-rc.2]
 
 The second release candidate of Thoth. It replaces `1.0.0-rc.1`, which was not published, and
@@ -1027,5 +1034,6 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 - Catalogs compile to artifacts that are identical for identical input.
 - The `thoth` command line drives a project.
 
+[1.0.0-rc.3]: https://github.com/neolorn/thoth/releases/tag/v1.0.0-rc.3
 [1.0.0-rc.2]: https://github.com/neolorn/thoth/releases/tag/v1.0.0-rc.2
 [1.0.0-rc.1]: https://github.com/neolorn/thoth/releases/tag/v1.0.0-rc.1
