@@ -5902,7 +5902,7 @@
       "original": "error.type !== 'missing-syntax'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "Without the early return an error of another type is matched against /^Missing (.+) at \\d+$/. messageformat 4.0.0 writes \"Missing\" into a message only when its MissingSyntax helper passes the expected token (lib/errors.js, lib/data-model/parse.js line 11), and that helper always sets the type missing-syntax; every other error carries its type name as its message, the pattern does not match, and the general sentence is returned as before."
+      "reason": "Without the early return an error of another type is matched against /^Missing (.+) at \\d+$/. messageformat 4.1.0 writes \"Missing\" into a message only when its MissingSyntax helper passes the expected token (lib/errors.js, lib/data-model/parse.js line 11), and that helper always sets the type missing-syntax; every other error carries its type name as its message, the pattern does not match, and the general sentence is returned as before."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -5919,7 +5919,7 @@
       "original": "error instanceof MessageSyntaxError",
       "replacement": "true",
       "category": "unreachable",
-      "reason": "The rethrow on line 764 is the branch this test guards. parseMessage is handed a string (line 742) and raises only through the SyntaxError and MissingSyntax helpers of messageformat 4.0.0 lib/data-model/parse.js lines 11 and 12, both of which construct MessageSyntaxError, so the catch on line 758 never holds anything else."
+      "reason": "The rethrow on line 764 is the branch this test guards. parseMessage is handed a string (line 742) and raises only through the SyntaxError and MissingSyntax helpers of messageformat 4.1.0 lib/data-model/parse.js lines 11 and 12, both of which construct MessageSyntaxError, so the catch on line 758 never holds anything else."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -6009,7 +6009,7 @@
       "original": "declaration === undefined",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "A name with no declaration is reached only from a selector that no annotated declaration leads to. validate refuses such a selector as missing-selector-annotation (messageformat 4.0.0 lib/data-model/validate.js, the annotated set) and lines 776 to 778 return that failure before line 1151 asks, so every name the loop on lines 1137 to 1144 looks up is declared."
+      "reason": "A name with no declaration is reached only from a selector that no annotated declaration leads to. validate refuses such a selector as missing-selector-annotation (messageformat 4.1.0 lib/data-model/validate.js, the annotated set) and lines 776 to 778 return that failure before line 1151 asks, so every name the loop on lines 1137 to 1144 looks up is declared."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -7652,7 +7652,7 @@
       "original": "name === undefined",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "annotatingFunction answers undefined only for a selector no function annotates, directly or through re-bindings, and validate reports that as missing-selector-annotation, which returns at line 776 before this loop runs (line 768). Checked against messageformat 4.0.0: `.match $a`, `.local $b = {$a} .match $b` and a selector bound to a literal are refused, and `.input {$a :number} .local $b = {$a} .match $b` is valid."
+      "reason": "annotatingFunction answers undefined only for a selector no function annotates, directly or through re-bindings, and validate reports that as missing-selector-annotation, which returns at line 776 before this loop runs (line 768). Checked against messageformat 4.1.0: `.match $a`, `.local $b = {$a} .match $b` and a selector bound to a literal are refused, and `.input {$a :number} .local $b = {$a} .match $b` is valid."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",

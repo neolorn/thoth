@@ -635,7 +635,7 @@ assert.deepEqual(toolkitPackage.dependencies, {
   '@schematics/angular': '22.2.5',
   ajv: '8.20.0',
   'jsonc-parser': '3.3.1',
-  messageformat: '4.0.0',
+  messageformat: '4.1.0',
   tslib: '^2.8.1',
   yaml: '2.9.1',
 });

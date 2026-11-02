@@ -400,7 +400,7 @@ The toolkit package depends on `tslib` and eight packages, each bounded to one r
 - `jsonc-parser` 3.3.1 supplies the syntax tree and source locations that admit
   `thoth.config.json` strictly, detect duplicate keys before construction, and place diagnostics.
   Comment syntax is disabled and the toolkit constructs its own prototype-safe configuration value.
-- `messageformat` 4.0.0 supplies the LDML 48 MessageFormat 2 parser, its data model, its validation
+- `messageformat` 4.1.0 supplies the LDML 48.2 MessageFormat 2 parser, its data model, its validation
   and traversal, and its reference function surface. A release owns the normalized semantic model,
   the compiled representation, compatibility identity, diagnostics, and the browser evaluator; the
   dependency enters neither a generated catalog nor a runtime bundle.
