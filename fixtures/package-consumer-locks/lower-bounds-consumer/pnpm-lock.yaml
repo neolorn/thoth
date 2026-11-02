@@ -2592,8 +2592,8 @@ packages:
     resolution: {integrity: sha512-Snk314V5ayFLhp3fkUREub6WtjBfPdCPY1Ln8/8munuLuiYhsABgBVWsozAG+MWMbVEvcdcpbi9R7ww22l9Q3g==}
     engines: {node: '>=18'}
 
-  messageformat@4.0.0:
-    resolution: {integrity: sha512-XKmJ/ffTWToWOlHJzt85ZChQgVGC0LHzNWuNK8zuYpNySsB0nIEmytOdSAOW9ETKtkajAUJf520m5gFHHnrTYg==}
+  messageformat@4.1.0:
+    resolution: {integrity: sha512-ZLId0BYfsNhC6/MRwVFw1yTLgG9cbJwfTsjYSS2C59PdfJWVRsX7hthADvsXefBtTg2FKso0VAJmMJJOtnJ75w==}
     engines: {node: ^20.19 || ^22.12 || >=24}
 
   mime-db@1.54.0:
@@ -4341,7 +4341,7 @@ snapshots:
       '@schematics/angular': 22.2.5(chokidar@5.0.0)
       ajv: 8.20.0
       jsonc-parser: 3.3.1
-      messageformat: 4.0.0
+      messageformat: 4.1.0
       tslib: 2.9.1
       typescript: 6.0.2
       yaml: 2.9.1
@@ -5552,7 +5552,7 @@ snapshots:
 
   merge-descriptors@2.0.0: {}
 
-  messageformat@4.0.0: {}
+  messageformat@4.1.0: {}
 
   mime-db@1.54.0: {}
 

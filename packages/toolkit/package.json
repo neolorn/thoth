@@ -1,6 +1,6 @@
 {
   "name": "@neolorn/thoth-toolkit",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "Compiler and developer tooling for Thoth localization projects.",
   "homepage": "https://github.com/neolorn/thoth/tree/main/packages/toolkit#readme",
   "keywords": [

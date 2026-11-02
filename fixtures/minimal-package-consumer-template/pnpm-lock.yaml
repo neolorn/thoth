@@ -2015,8 +2015,8 @@ packages:
   mdn-data@2.27.1:
     resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
 
-  messageformat@4.0.0:
-    resolution: {integrity: sha512-XKmJ/ffTWToWOlHJzt85ZChQgVGC0LHzNWuNK8zuYpNySsB0nIEmytOdSAOW9ETKtkajAUJf520m5gFHHnrTYg==}
+  messageformat@4.1.0:
+    resolution: {integrity: sha512-ZLId0BYfsNhC6/MRwVFw1yTLgG9cbJwfTsjYSS2C59PdfJWVRsX7hthADvsXefBtTg2FKso0VAJmMJJOtnJ75w==}
     engines: {node: ^20.19 || ^22.12 || >=24}
 
   mimic-function@5.0.1:
@@ -3210,7 +3210,7 @@ snapshots:
       '@schematics/angular': 22.2.5(chokidar@5.0.0)
       ajv: 8.20.0
       jsonc-parser: 3.3.1
-      messageformat: 4.0.0
+      messageformat: 4.1.0
       tslib: 2.9.1
       typescript: 6.0.3
       yaml: 2.9.1
@@ -3984,7 +3984,7 @@ snapshots:
 
   mdn-data@2.27.1: {}
 
-  messageformat@4.0.0: {}
+  messageformat@4.1.0: {}
 
   mimic-function@5.0.1: {}
 

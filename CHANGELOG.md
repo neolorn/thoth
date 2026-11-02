@@ -16,6 +16,14 @@ then the betas, then the release candidates and the milestones that followed the
 
 ## [1.0.0-rc.3]
 
+The third release candidate of Thoth. It replaces `1.0.0-rc.2`, which was not published, and
+differs from it in the entries below. Its host ranges are those of `1.0.0-rc.1`, and its standards
+profile is still `thoth-1`, now with the IANA Time Zone Database 2026f. The toolkit depends on
+`@angular-devkit/architect` 0.2202.5, `@angular-devkit/core` 22.2.5,
+`@angular-devkit/schematics` 22.2.5, `@schematics/angular` 22.2.5 and `messageformat` 4.1.0; its
+other dependencies are unchanged. [Compatibility](docs/reference/compatibility.md) lists the
+combinations it is built and run on.
+
 ### Changed
 
 - A project with no catalogs now refuses a message handle that no catalog defines, with `TH1403`, as
