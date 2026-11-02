@@ -197,7 +197,7 @@ describe('provideLocalizedRouter diagnostics', () => {
    *
    * **Version-specific, and it says so rather than being skipped quietly.** The collision is a
    * fact about a particular Angular build, not about Thoth: `ɵwithRouterResources` does not exist
-   * on 22.0.4, so on that row there is no pair to collide and nothing for this case to assert.
+   * on 22.0.8, so on that row there is no pair to collide and nothing for this case to assert.
    * Skipping alone would be the shape this whole file argues against, a check that stopped
    * running and still reported green, so the companion case below asserts the absence with a
    * control, and the two are mutually exclusive by construction.

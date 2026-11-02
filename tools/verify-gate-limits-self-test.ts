@@ -311,7 +311,7 @@ assert.match(
     [
       {
         event: 'start',
-        id: 'verify:angular-22.0.4',
+        id: 'verify:angular-22.0.8',
         processors: 2,
         settings: { ...runnerEnvironment(2), NG_BUILD_MAX_WORKERS: '3' },
       },
@@ -330,12 +330,12 @@ const hosted = createScheduler({
   steps: [
     { id: 'format:check', processors: undefined },
     { id: 'lint:self-test', processors: undefined },
-    { id: 'verify:angular-22.0.4', processors: 4 },
+    { id: 'verify:angular-22.0.8', processors: 4 },
   ],
   dependencies: new Map([
     ['format:check', []],
     ['lint:self-test', []],
-    ['verify:angular-22.0.4', ['format:check', 'lint:self-test']],
+    ['verify:angular-22.0.8', ['format:check', 'lint:self-test']],
   ]),
   results: hostedResults,
   budget: 2,
@@ -349,7 +349,7 @@ for (const id of ['format:check', 'lint:self-test']) {
 }
 assert.deepEqual(
   [...hosted.running],
-  [['verify:angular-22.0.4', 2]],
+  [['verify:angular-22.0.8', 2]],
   'The planted hosted run did not go on to the Angular stage on its share.',
 );
 const hostedWindow = processorsBetween(

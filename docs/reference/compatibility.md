@@ -12,7 +12,7 @@ This page is generated from the packages and is not edited by hand.
 The suites run at the lowest version of every line the range admits, and on the version this
 repository develops on:
 
-`22.22.3`, `24.15.0`, `26.0.0`, `26.10.0`.
+`22.22.3`, `24.15.0`, `26.0.0`, `26.13.0`.
 
 The development row below is also installed, tested, built and served on `22.22.3` and `24.15.0`,
 the lowest version of each line other than the one this repository develops on.
@@ -43,12 +43,12 @@ browser-only application installs none of the three.
 
 ## The combinations that are built and tested
 
-| Row                             | Angular  | TypeScript | RxJS    |
-| ------------------------------- | -------- | ---------- | ------- |
-| Thoth development row           | `22.2.1` | `6.0.3`    | `7.8.2` |
-| Angular patch compatibility row | `22.0.4` | `6.0.3`    | `7.8.2` |
-| Demanding compiler options      | `22.2.1` | `6.0.3`    | `7.8.2` |
-| Lowest supported versions       | `22.0.0` | `6.0.2`    | `7.4.0` |
+| Row                             | Angular                     | TypeScript | RxJS    |
+| ------------------------------- | --------------------------- | ---------- | ------- |
+| Thoth development row           | `22.2.4` (tooling `22.2.5`) | `6.0.3`    | `7.8.2` |
+| Angular patch compatibility row | `22.0.8` (tooling `22.0.9`) | `6.0.3`    | `7.8.2` |
+| Demanding compiler options      | `22.2.4` (tooling `22.2.5`) | `6.0.3`    | `7.8.2` |
+| Lowest supported versions       | `22.0.0`                    | `6.0.2`    | `7.4.0` |
 
 Each row builds a real application against the packages and runs it. The lower bound row's
 versions are the floors of the ranges above, read from the same manifests, so the row moves when a

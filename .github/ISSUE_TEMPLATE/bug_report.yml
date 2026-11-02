@@ -49,7 +49,7 @@ body:
     id: angular-version
     attributes:
       label: Angular version
-      placeholder: 22.2.1
+      placeholder: 22.2.4
     validations:
       required: true
 
@@ -58,7 +58,7 @@ body:
     attributes:
       label: Node version
       description: The output of `node --version`.
-      placeholder: v26.10.0
+      placeholder: v26.13.0
     validations:
       required: true
 

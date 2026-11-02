@@ -1,8 +1,15 @@
 autoInstallPeers: false
 strictPeerDependencies: true
 savePrefix: ''
-nodeVersion: 26.10.0
+nodeVersion: 26.13.0
 engineStrict: true
+
+# `@angular/build` lists this binding as optional, and the binding pins `@emnapi/core` and
+# `@emnapi/runtime` to a prerelease its own `@napi-rs/wasm-runtime` does not accept as a peer, so a
+# strict install refuses it. It is the parser for WebAssembly hosts, and no host this repository
+# builds or tests on is one, so it is left out rather than strict peer checking loosened.
+ignoredOptionalDependencies:
+  - '@oxc-parser/binding-wasm32-wasi'
 
 # The length pnpm gives a folder under node_modules/.pnpm, which is 120 by default and 60 on
 # Windows. The folder of a package installed from a path is named in the source maps a

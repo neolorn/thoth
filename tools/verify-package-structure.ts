@@ -156,17 +156,17 @@ const assertManifestTargets = async (
 };
 
 const workspacePackage = await readJson(resolve(workspaceRoot, 'package.json'));
-assert.equal(workspacePackage.packageManager, 'pnpm@12.9.1');
+assert.equal(workspacePackage.packageManager, 'pnpm@12.16.1');
 // Literals, deliberately: this is a tripwire against an accidental `pnpm update` moving the
 // development row, so reading the versions back out of the manifest would assert nothing. Angular's
 // framework and tooling ship on separate patch trains, so both halves are pinned: pinning only
 // `@angular/core` would let `@angular/build`, `@angular/cli` and `@angular/ssr` drift unwatched.
-assert.equal(workspacePackage.devDependencies['@angular/core'], '22.2.1');
-assert.equal(workspacePackage.devDependencies['@angular/ssr'], '22.2.1');
+assert.equal(workspacePackage.devDependencies['@angular/core'], '22.2.4');
+assert.equal(workspacePackage.devDependencies['@angular/ssr'], '22.2.5');
 assert.equal(workspacePackage.devDependencies.typescript, '6.0.3');
 assert.equal(
   (await readFile(resolve(workspaceRoot, '.node-version'), 'utf8')).trim(),
-  '26.10.0',
+  '26.13.0',
 );
 
 const workspaceConfiguration = await readFile(
@@ -177,7 +177,7 @@ for (const setting of [
   'autoInstallPeers: false',
   'strictPeerDependencies: true',
   "savePrefix: ''",
-  'nodeVersion: 26.10.0',
+  'nodeVersion: 26.13.0',
   'engineStrict: true',
 ]) {
   assert.match(workspaceConfiguration, new RegExp(`^${setting}$`, 'mu'));
@@ -629,10 +629,10 @@ assert.equal(toolkitPackage.sideEffects, false);
 assert.deepEqual(toolkitPackage.engines, { node: nodeRange });
 assert.deepEqual(toolkitPackage.bin, { thoth: './cli.js' });
 assert.deepEqual(toolkitPackage.dependencies, {
-  '@angular-devkit/architect': '0.2202.1',
-  '@angular-devkit/core': '22.2.1',
-  '@angular-devkit/schematics': '22.2.1',
-  '@schematics/angular': '22.2.1',
+  '@angular-devkit/architect': '0.2202.5',
+  '@angular-devkit/core': '22.2.5',
+  '@angular-devkit/schematics': '22.2.5',
+  '@schematics/angular': '22.2.5',
   ajv: '8.20.0',
   'jsonc-parser': '3.3.1',
   messageformat: '4.0.0',
