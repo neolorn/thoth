@@ -20,6 +20,8 @@ then the betas, then the release candidates and the milestones that followed the
 
 - A project with no catalogs now refuses a message handle that no catalog defines, with `TH1403`, as
   a project with catalogs already did.
+- The time zone identities come from the IANA Time Zone Database 2026f. Every name resolves to the
+  same zone as it did under 2026e.
 
 ## [1.0.0-rc.2]
 

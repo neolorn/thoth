@@ -313,9 +313,9 @@ assert.match(
 );
 
 const timeZoneDatabase = standardsLock.dataSources.ianaTimeZoneDatabase;
-assert.equal(timeZoneDatabase.version, '2026e');
-assert.equal(timeZoneDatabase.projectSnapshot, 'data/tzdata-2026e');
-assert.equal(timeZoneDatabase.crossCheck.artifactBytes, 481989);
+assert.equal(timeZoneDatabase.version, '2026f');
+assert.equal(timeZoneDatabase.projectSnapshot, 'data/tzdata-2026f');
+assert.equal(timeZoneDatabase.crossCheck.artifactBytes, 483310);
 assert.equal(timeZoneDatabase.crossCheck.artifactDigest.algorithm, 'SHA-512');
 assert.match(
   timeZoneDatabase.crossCheck.artifactDigest.value,

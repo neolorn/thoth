@@ -799,7 +799,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
         'packages/toolkit/src/rtl-scripts.generated.ts',
         'packages/runtime/core/src/locale-aliases.generated.ts',
         'packages/toolkit/src/locale-aliases.generated.ts',
-        'standards/data/tzdata-2026e',
+        'standards/data/tzdata-2026f',
         'packages/runtime/src/time-zone-identities.generated.ts',
         'packages/toolkit/src/time-zone-identities.generated.ts',
         'standards/data/ecma-402-13.0-measurement-unit-identifiers.html',
@@ -893,7 +893,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
         {
           id: 'zone-a-country-calls-its-own-read-as-a-link',
           plant: plantText(
-            'standards/data/tzdata-2026e/zone.tab',
+            'standards/data/tzdata-2026f/zone.tab',
             'Europe/Oslo',
             'Europe/Oslo_',
           ),
@@ -902,7 +902,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
         {
           id: 'former-name-resolved-outside-its-country',
           plant: plantText(
-            'standards/data/tzdata-2026e/backzone',
+            'standards/data/tzdata-2026f/backzone',
             '#PACKRATLIST zone.tab Link Africa/Bamako Africa/Timbuktu',
             '#PACKRATLIST zone.tab Link Africa/Abidjan Africa/Timbuktu',
           ),
@@ -911,7 +911,7 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
         {
           id: 'fixed-offset-zone-not-the-pinned-one',
           plant: plantText(
-            'standards/data/tzdata-2026e/etcetera',
+            'standards/data/tzdata-2026f/etcetera',
             'Etc/GMT+5',
             'Etc/GMT+15',
           ),
@@ -947,8 +947,8 @@ export const stageSelfTests: Readonly<Record<string, StageSelfTest>> =
                   'Europe/Kiev Europe/Kirov ',
                 )(
                   replaceOnce(
+                    "'tzdata-2026f/thoth-time-zone-1'",
                     "'tzdata-2026e/thoth-time-zone-1'",
-                    "'tzdata-2026d/thoth-time-zone-1'",
                   )(text),
                 ),
             );

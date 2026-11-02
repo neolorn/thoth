@@ -195,10 +195,10 @@
       }
     },
     "ianaTimeZoneDatabase": {
-      "version": "2026e",
-      "released": "2026-09-29",
-      "url": "https://data.iana.org/time-zones/releases/tzdata2026e.tar.gz",
-      "projectSnapshot": "data/tzdata-2026e",
+      "version": "2026f",
+      "released": "2026-10-27",
+      "url": "https://data.iana.org/time-zones/releases/tzdata2026f.tar.gz",
+      "projectSnapshot": "data/tzdata-2026f",
       "role": "The time zone database release the profile is pinned to. Development-only derivation input: tools/generate-locale-profile.ts derives packages/runtime/src/time-zone-identities.generated.ts, the primary identifier of every name the release's zone.tab, backward and etcetera files carry, resolved inside a name's own country with the release's backzone file, and only that table reaches a published package.",
       "snapshotLayout": "Four files of the release, byte for byte: `backward`, which holds the links from former and merged names; `zone.tab`, whose country and TZ columns say which names a country still calls its own; `backzone`, whose link lines say which of a country's names a former name stood for; and `etcetera`, which holds the zones that belong to no country, UTC, GMT and the fixed offsets from them. Nothing else in the release is read, and of `backzone` only those link lines. The release's `factory` file is left out on purpose: its one zone stands for a clock nobody has set and names no time zone.",
       "renames": [
@@ -212,25 +212,43 @@
       "renamesRole": "Each time the database added a Zone to replace an existing one and kept the former name as a Link, with the release that did it. ECMA-402 section 6.5 recommends that the new name resolve to the former one for two years, and no file of a release dates its Links, so the dates are written here: `released` is the day in the `Release` heading of the release's own NEWS file, read from the verified archive, for the pinned release above and for each renaming release. tools/generate-locale-profile.ts holds every entry against the pinned `backward` and `zone.tab`, and stops at a rename a newer pin brings that has no entry. An entry is never removed; the latest one stays so that the rule always has a rename to be held against.",
       "crossCheck": {
         "method": "The release archive was verified against its detached OpenPGP signature before extraction, and the vendored files were taken from that verified archive and from nothing else. The signature is the tz coordinator's, the key the release announcements are signed with.",
-        "artifact": "tzdata2026e.tar.gz",
-        "artifactBytes": 481989,
+        "artifact": "tzdata2026f.tar.gz",
+        "artifactBytes": 483310,
         "artifactDigest": {
           "algorithm": "SHA-512",
           "encoding": "hex",
-          "value": "5be2f875f73b75e5783c474bf7a6c768e433cc90283f8fc6a75e3d05bd92aec97936e8a55ccca5e880b5dacc18ba65932bab0e783e1ed5d2af4a3a4df95512be"
+          "value": "26189803c8b3e903dcc467404e2feefb7d190cb1870249a23577ce31e9dcbf187e4704e0b45c8d1366d1c501bb5b53a2e80f8e2828b2163be15e532f6acab52d"
         },
         "signature": {
-          "url": "https://data.iana.org/time-zones/releases/tzdata2026e.tar.gz.asc",
+          "url": "https://data.iana.org/time-zones/releases/tzdata2026f.tar.gz.asc",
           "keyFingerprint": "7E3792A9D8ACF7D633BC1588ED97E90E62AA7E34",
           "signer": "Paul Eggert <eggert@cs.ucla.edu>",
-          "result": "good signature"
+          "signed": "2026-10-28",
+          "result": "good signature",
+          "resultDetail": "GnuPG 2.4.9 reported GOODSIG and VALIDSIG for the fingerprint above, with no expiry warning, in a fresh keyring holding that one key.",
+          "keyProvenance": {
+            "method": "The fingerprint is taken from two channels independent of the release and of each other, and not from the archive or its signature. IANA's time zone page names no signing key; it names the coordinator's repository account, `git clone https://github.com/eggert/tz`, and the first channel is that account's published key. The second is a keyserver that publishes a user ID only after verifying its email address. Both gave the fingerprint above and the signer above. The keyserver's copy carries the key's extension to 2031-07-24, where the account's copy shows it expired on 2026-09-01, so the keyserver's copy is the one the signature was verified with.",
+            "fetched": "2026-11-02",
+            "channels": [
+              {
+                "url": "https://github.com/eggert.gpg",
+                "keyFingerprint": "7E3792A9D8ACF7D633BC1588ED97E90E62AA7E34",
+                "expires": "2026-09-01"
+              },
+              {
+                "url": "https://keys.openpgp.org/vks/v1/by-fingerprint/7E3792A9D8ACF7D633BC1588ED97E90E62AA7E34",
+                "keyFingerprint": "7E3792A9D8ACF7D633BC1588ED97E90E62AA7E34",
+                "expires": "2031-07-24"
+              }
+            ]
+          }
         }
       },
       "license": {
         "name": "Public domain",
-        "url": "https://data.iana.org/time-zones/tzdb-2026e/LICENSE",
+        "url": "https://data.iana.org/time-zones/tzdb-2026f/LICENSE",
         "noticeFile": {
-          "path": "data/tzdata-2026e.LICENSE.txt",
+          "path": "data/tzdata-2026f.LICENSE.txt",
           "bytes": 252,
           "digest": {
             "algorithm": "SHA-256",
@@ -249,11 +267,11 @@
           }
         },
         "backzone": {
-          "bytes": 71208,
+          "bytes": 69744,
           "digest": {
             "algorithm": "SHA-256",
             "encoding": "hex",
-            "value": "9c965661692c07d241c758c41c6f1e9c082d0f77a193d9240228b995e2f1666f"
+            "value": "8cce95d550862a443806fcf7ec1baf799d69a21a74af714291cba7ee4b7d2346"
           }
         },
         "etcetera": {
