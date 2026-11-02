@@ -28,7 +28,8 @@
  * of `tools/mutation-reasons.json` with the category and the reason left to write.
  *
  * `changed` takes every line of package source added or changed between two commits and says what
- * shows that it runs: nothing to show (a blank line, a comment, an import, a type), a removed line
+ * shows that it runs: nothing to show (a blank line, a comment, an import, a type, a specifier
+ * that exports only a type), a removed line
  * it only respells (`--rename <old>=<new>`, as often as needed, for a change that renamed
  * something), a mutant on it that a reading killed, or an assurance injection whose text covers
  * it. The rest are open, listed for reading by hand with `--list <file>`, and `--ranges <file>`
@@ -565,10 +566,15 @@ function skeletons(args: readonly string[]): void {
 }
 
 /** The lines of a source that carry a token outside a type, an import or a comment. */
-function behaviorLines(text: string, path: string): Set<number> {
+export function behaviorLines(text: string, path: string): Set<number> {
   const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
   const lines = new Set<number>();
-  const visit = (node: ts.Node): void => {
+  // A specifier that names only a type is erased with it, in an export as in an import.
+  const typeOnlySpecifier = (node: ts.Node | undefined): boolean =>
+    node !== undefined &&
+    (ts.isExportSpecifier(node) || ts.isImportSpecifier(node)) &&
+    node.isTypeOnly;
+  const visit = (node: ts.Node, previous?: ts.Node): void => {
     if (
       (node.kind >= ts.SyntaxKind.FirstJSDocNode &&
         node.kind <= ts.SyntaxKind.LastJSDocNode) ||
@@ -576,7 +582,10 @@ function behaviorLines(text: string, path: string): Set<number> {
       ts.isInterfaceDeclaration(node) ||
       ts.isTypeAliasDeclaration(node) ||
       ts.isImportDeclaration(node) ||
-      (ts.isExportDeclaration(node) && node.isTypeOnly)
+      (ts.isExportDeclaration(node) && node.isTypeOnly) ||
+      typeOnlySpecifier(node) ||
+      // The comma after such a specifier goes with it.
+      (node.kind === ts.SyntaxKind.CommaToken && typeOnlySpecifier(previous))
     ) {
       return;
     }
@@ -591,7 +600,7 @@ function behaviorLines(text: string, path: string): Set<number> {
       for (let line = first; line <= last; line += 1) lines.add(line);
       return;
     }
-    for (const child of children) visit(child);
+    children.forEach((child, index) => visit(child, children[index - 1]));
   };
   visit(source);
   return lines;
@@ -1027,13 +1036,19 @@ const ACTIONS: Record<
   skeletons,
   changed,
 };
-const [action, ...rest] = process.argv.slice(2);
-const run = action === undefined ? undefined : ACTIONS[action];
-if (run === undefined) {
-  process.stderr.write(
-    `Usage: node tools/mutation-reading.ts ${Object.keys(ACTIONS).join('|')} ...\n`,
-  );
-  process.exitCode = 2;
-} else {
-  await run(rest);
+// Run as a command only; the self-test imports `behaviorLines` from here.
+if (
+  process.argv[1] !== undefined &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  const [action, ...rest] = process.argv.slice(2);
+  const run = action === undefined ? undefined : ACTIONS[action];
+  if (run === undefined) {
+    process.stderr.write(
+      `Usage: node tools/mutation-reading.ts ${Object.keys(ACTIONS).join('|')} ...\n`,
+    );
+    process.exitCode = 2;
+  } else {
+    await run(rest);
+  }
 }

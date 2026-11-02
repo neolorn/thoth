@@ -15,6 +15,9 @@
  * also read nor differing; a listed mutant absent from it, or `Ignored` in it, fails the merge before
  * any file is written.
  *
+ * `behaviorLines`, which `changed` reads lines through, is checked on its own: a specifier that
+ * names only a type, with its comma, is not a line with behaviour, in an export as in an import.
+ *
  * The expected mutants are the ones Stryker's instrumenter makes of the planted source; a release of
  * it that mutates the source differently fails here first, which is the point.
  *
@@ -33,6 +36,8 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import { behaviorLines } from './mutation-reading.ts';
 
 const tool = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -117,6 +122,27 @@ const run = (...args: string[]) =>
     cwd: root,
     encoding: 'utf8',
   });
+
+// What `changed` counts as a line with behaviour: a specifier that names only a type is erased
+// with its type, in an export as in an import, so its line has nothing a test could show running.
+check('a type-only export or import specifier carries no behaviour', () => {
+  const text = [
+    'import {', // 1: an import, none of it behaviour
+    '  type Shape,', // 2
+    '  build,', // 3
+    "} from './shape';", // 4
+    'export {', // 5: behaviour, the declaration exports a value
+    '  type Shape,', // 6: a type-only specifier
+    '  build,', // 7: a value
+    '};', // 8
+    'export const made: Shape = build();', // 9
+    '',
+  ].join('\n');
+  assert.deepEqual(
+    [...behaviorLines(text, 'demo.ts')].sort((a, b) => a - b),
+    [5, 7, 8, 9],
+  );
+});
 
 try {
   mkdirSync(join(root, 'packages/demo/src'), { recursive: true });
