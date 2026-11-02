@@ -286,8 +286,8 @@ describe('MessageFormat catalog integration', () => {
  * the same message written without the option.
  *
  * `u:dir` and `u:id` are implemented. The rest of the namespace is refused here rather than
- * ignored, because `u:locale` is a real option in the spec: accepting it quietly would mean a
- * message formatted in the wrong locale with nothing to say so.
+ * ignored. `u:locale`, a draft option the specification has since dropped, is refused too: a
+ * message that still wrote it would be formatted in the wrong locale with nothing to say so.
  */
 describe('Thoth MessageFormat u: options', () => {
   const diagnosticsFor = (message: string) => {
