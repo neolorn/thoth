@@ -166,6 +166,30 @@ export function regionStarts(
   );
 }
 
+/**
+ * Which part reads the mutants of a file that begin at an offset: the part of the last region that
+ * starts at or before it, since a mutant takes the directives its node is entered under. Where two
+ * regions start at the same place, the first is empty and the later one reads.
+ */
+export function regionOwner(
+  text: string,
+  regions: readonly { readonly from: number; readonly shard: number }[],
+  fileName: string,
+): (offset: number) => number {
+  const starts = regionStarts(
+    text,
+    regions.map(({ from }) => from),
+    fileName,
+  );
+  return (offset) => {
+    let owner = (regions[0] as { shard: number }).shard;
+    starts.forEach((start, index) => {
+      if (start <= offset) owner = (regions[index] as { shard: number }).shard;
+    });
+    return owner;
+  };
+}
+
 /** The division, with each half's parts read into regions per file and checked to tile each file. */
 export function readDivision(
   division: Division = JSON.parse(

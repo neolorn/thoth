@@ -22,6 +22,12 @@
  * other tests, a mutant of another mutator than `CallExpression` that a whole reading does not
  * make, and a folder that already holds a join.
  *
+ * Each part is also checked alone, as `check-part` checks it when it has run: both parts fit in
+ * either order, and the parts the regions name for the whole reading's mutants are the parts the
+ * instrumenter gives them. A part that leaves a mutant of its regions unread, reads one of another
+ * part's, is checked twice, reads one a part checked before has read, has other tests than the
+ * first checked, or comes after the files changed, must stop at that part.
+ *
  * Usage: `node tools/mutation-join-self-test.ts`
  */
 import assert from 'node:assert/strict';
@@ -30,8 +36,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  checkPart,
   instrumentFiles,
   joinParts,
+  type PartsChecked,
+  regionOwners,
   type Report,
   type ReportMutant,
   unmarkLocation,
@@ -422,6 +431,92 @@ try {
           ]),
           second,
         ],
+      }),
+  );
+
+  // Each part checked alone as soon as it has run, against its regions' share of the whole list.
+  const expected = regionOwners(
+    whole,
+    originals,
+    new Map([[file, regions]]),
+    1,
+  );
+  const checkOne = (part: Report, partIndex: number, checked?: PartsChecked) =>
+    checkPart({ originals, whole, expected, part, partIndex, checked });
+  const afterFirst = checkOne(first, 0);
+  check(
+    'each part fits alone, and the regions name the part the instrumenter gives',
+    () => {
+      const afterSecond = checkOne(second, 1, afterFirst.checked);
+      assert.deepEqual(afterSecond.checked.owners, expected);
+      assert.equal(afterFirst.read + afterSecond.read, whole.length);
+      assert.deepEqual(
+        [...afterFirst.dropped, ...afterSecond.dropped],
+        [...joined.dropped],
+      );
+      assert.deepEqual(afterSecond.checked.parts, [0, 1]);
+      const reversed = checkOne(first, 0, checkOne(second, 1).checked);
+      assert.deepEqual(reversed.checked.owners, expected);
+      assert.equal(reversed.checked.tests.part, 1);
+    },
+  );
+  refuses(
+    'a part that leaves a mutant of its regions unread stops at that part',
+    /leaves 1 mutant\(s\) of its own regions unread/u,
+    () =>
+      checkOne(
+        withMutants(second, (mutants) =>
+          mutants.filter((_, index) => index !== firstRead(second)),
+        ),
+        1,
+        afterFirst.checked,
+      ),
+  );
+  refuses(
+    "a part that reads a mutant of another part's regions stops at that part",
+    /lies in a region of part 1, and part 0 reads it/u,
+    () => checkOne(second, 0),
+  );
+  refuses('a part checked twice stops', /checked already/u, () =>
+    checkOne(first, 0, afterFirst.checked),
+  );
+  refuses(
+    'a mutant a part checked before has read stops the next part',
+    /is read by parts 0 and 1/u,
+    () =>
+      checkOne(second, 1, {
+        ...afterFirst.checked,
+        owners: afterFirst.checked.owners.map((owner, index) =>
+          index === expected.indexOf(1) ? 0 : owner,
+        ),
+      }),
+  );
+  refuses(
+    'a part with other tests than the first checked stops at that part',
+    /other tests than part 0/u,
+    () =>
+      checkOne(
+        {
+          ...second,
+          testFiles: {
+            ...second.testFiles,
+            'packages/sample/test/b.test.ts': {
+              source: '// packages/sample/test/b.test.ts\n',
+              tests: [{ id: '0', name: 'reads another member' }],
+            },
+          },
+        },
+        1,
+        afterFirst.checked,
+      ),
+  );
+  refuses(
+    'files that changed since the first part was checked stop the next',
+    /the files have changed/u,
+    () =>
+      checkOne(second, 1, {
+        ...afterFirst.checked,
+        wholeCount: whole.length + 1,
       }),
   );
 } finally {

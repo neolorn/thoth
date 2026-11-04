@@ -45,23 +45,41 @@
  * them, and a later incremental reading compares their sources, locations, replacements and tests
  * with the tree's own. Nothing is written unless every check passes, and nothing is written over.
  *
- * Usage: node tools/mutation-join.ts <configuration> <output folder> <part report.json>...
+ * `check-part` holds one part's report, as soon as the part has run, to everything the join will
+ * ask of it that does not need the parts still to come: its sources are the files, every
+ * unignored mutant is one a whole reading makes in this part's own regions or a `CallExpression`
+ * mutant to drop, every mutant a whole reading makes in those regions is read, none is read by a
+ * part checked before, and its tests are named once each and are the first checked part's. The
+ * parts checked so far are kept in a state file, written only when a part passes. A reading in
+ * parts that runs for days then stops at the part that does not fit, not at the join.
+ *
+ * Usage:
+ *   node tools/mutation-join.ts <configuration> <output folder> <part report.json>...
+ *   node tools/mutation-join.ts check-part <half> <part> <part report.json> <state file>
  *
  * `tools/mutation-join-self-test.ts` is its self-test.
  */
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
   readFileSync,
   realpathSync,
+  renameSync,
   writeFileSync,
 } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { DISABLE, RESTORE, mutatedFiles } from './mutation-shards.ts';
+import {
+  DISABLE,
+  RESTORE,
+  mutatedFiles,
+  readDivision,
+  regionOwner,
+} from './mutation-shards.ts';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -206,6 +224,158 @@ const placeKey = (file: string, mutatorName: string, location: Location) =>
 const testKey = (file: string, { name, location }: ReportTest) =>
   `${file}\n${location === undefined ? '' : `${location.start.line}:${location.start.column}`}\n${name}`;
 
+/** Each place a whole reading makes a mutant at, with the indexes of the mutants there. */
+const placesOf = (whole: readonly WholeMutant[]) => {
+  const byPlace = new Map<string, number[]>();
+  whole.forEach((mutant, index) => {
+    const key = placeKey(mutant.file, mutant.mutatorName, mutant.location);
+    byPlace.set(key, [...(byPlace.get(key) ?? []), index]);
+  });
+  return byPlace;
+};
+
+/**
+ * Reads one part's mutants against a whole reading's: checks each source against the file, moves
+ * each unignored mutant back to the file's place, and hands `read` the index of the whole
+ * reading's mutant it is, or lists it in `dropped`. `owners` holds the part that has read each
+ * whole mutant so far, and is updated.
+ */
+function readPartMutants(
+  part: Report,
+  partIndex: number,
+  {
+    originals,
+    whole,
+    byPlace,
+    owners,
+    dropped,
+    read,
+  }: {
+    readonly originals: ReadonlyMap<string, string>;
+    readonly whole: readonly WholeMutant[];
+    readonly byPlace: ReadonlyMap<string, readonly number[]>;
+    readonly owners: number[];
+    readonly dropped: Dropped[];
+    readonly read: (
+      index: number,
+      mutant: ReportMutant,
+      file: string,
+      language: string,
+    ) => void;
+  },
+): void {
+  for (const [file, entry] of Object.entries(part.files)) {
+    const original = originals.get(file);
+    assert.ok(
+      original !== undefined,
+      `Part ${partIndex} reads ${file}, which the configuration does not mutate.`,
+    );
+    assert.ok(
+      unmark(entry.source).text === original,
+      `Part ${partIndex}'s ${file}, with its directives removed, is not the file as it is.`,
+    );
+    for (const mutant of entry.mutants) {
+      if (mutant.status === 'Ignored') continue;
+      const location = unmarkLocation(entry.source, mutant.location);
+      const replacement = mutant.replacement ?? mutant.mutatorName;
+      const candidates =
+        byPlace.get(placeKey(file, mutant.mutatorName, location)) ?? [];
+      const stripped = replacement.replace(PRINTED_DIRECTIVE, '');
+      const index =
+        candidates.find(
+          (c) => owners[c] === -1 && whole[c]?.replacement === replacement,
+        ) ??
+        candidates.find(
+          (c) => owners[c] === -1 && whole[c]?.replacement === stripped,
+        ) ??
+        candidates.find(
+          (c) =>
+            whole[c]?.replacement === replacement ||
+            whole[c]?.replacement === stripped,
+        );
+      if (index === undefined) {
+        assert.equal(
+          mutant.mutatorName,
+          'CallExpression',
+          `Part ${partIndex} reads a ${mutant.mutatorName} mutant at ${file} ${at(location)} that a whole reading does not make, and only a CallExpression mutant can be one.`,
+        );
+        dropped.push({
+          part: partIndex,
+          file,
+          mutatorName: mutant.mutatorName,
+          replacement,
+          location,
+          status: mutant.status,
+        });
+        continue;
+      }
+      assert.equal(
+        owners[index],
+        -1,
+        `${file} ${at(location)} ${mutant.mutatorName} is read by parts ${owners[index]} and ${partIndex}.`,
+      );
+      owners[index] = partIndex;
+      read(index, mutant, file, entry.language);
+    }
+  }
+}
+
+/** A part's tests by its own ids, each named by test file and name; a name twice stops it. */
+function testKeysOf(part: Report, partIndex: number): Map<string, string> {
+  const byId = new Map<string, string>();
+  const seen = new Set<string>();
+  for (const [file, { tests }] of Object.entries(part.testFiles ?? {})) {
+    for (const test of tests) {
+      const key = testKey(file, test);
+      assert.ok(
+        !seen.has(key),
+        `Part ${partIndex} reports the test ${JSON.stringify(test.name)} of ${file} twice.`,
+      );
+      seen.add(key);
+      byId.set(test.id, key);
+    }
+  }
+  return byId;
+}
+
+/** Each test file's source as a digest, so the parts' test files can be held to the first's. */
+const testSourcesOf = (part: Report): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(part.testFiles ?? {}).map(([file, { source }]) => [
+      file,
+      createHash('sha256')
+        .update(source ?? '')
+        .digest('hex'),
+    ]),
+  );
+
+/** Holds a part's tests to the first part's: the same names in the same test files. */
+function sameTests(
+  partIndex: number,
+  keys: ReadonlyMap<string, string>,
+  sources: Readonly<Record<string, string>>,
+  first: {
+    readonly part: number;
+    readonly keys: readonly string[];
+    readonly sources: Readonly<Record<string, string>>;
+  },
+): void {
+  const expected = new Set(first.keys);
+  const actual = new Set(keys.values());
+  assert.ok(
+    actual.size === expected.size &&
+      [...actual].every((key) => expected.has(key)),
+    `Part ${partIndex} reports other tests than part ${first.part}.`,
+  );
+  for (const [file, digest] of Object.entries(sources)) {
+    assert.equal(
+      digest,
+      first.sources[file],
+      `Part ${partIndex}'s test file ${file} is not part ${first.part}'s.`,
+    );
+  }
+}
+
 /**
  * The join of the parts' reports, against the files as they are (`originals`, by the path the
  * reports name them by) and the mutants a whole reading makes of them (`whole`, in the order the
@@ -223,11 +393,7 @@ export function joinParts({
   assert.ok(parts.length > 0, 'There are no parts to join.');
   const owners = whole.map(() => -1);
   const owned: (ReportMutant | undefined)[] = whole.map(() => undefined);
-  const byPlace = new Map<string, number[]>();
-  whole.forEach((mutant, index) => {
-    const key = placeKey(mutant.file, mutant.mutatorName, mutant.location);
-    byPlace.set(key, [...(byPlace.get(key) ?? []), index]);
-  });
+  const byPlace = placesOf(whole);
   const languages = new Map<string, string>();
   const dropped: Dropped[] = [];
 
@@ -237,61 +403,17 @@ export function joinParts({
       (parts[0] as Report).schemaVersion,
       `Part ${partIndex} has report schema ${part.schemaVersion}, and part 0 ${(parts[0] as Report).schemaVersion}.`,
     );
-    for (const [file, entry] of Object.entries(part.files)) {
-      const original = originals.get(file);
-      assert.ok(
-        original !== undefined,
-        `Part ${partIndex} reads ${file}, which the configuration does not mutate.`,
-      );
-      assert.ok(
-        unmark(entry.source).text === original,
-        `Part ${partIndex}'s ${file}, with its directives removed, is not the file as it is.`,
-      );
-      languages.set(file, entry.language);
-      for (const mutant of entry.mutants) {
-        if (mutant.status === 'Ignored') continue;
-        const location = unmarkLocation(entry.source, mutant.location);
-        const replacement = mutant.replacement ?? mutant.mutatorName;
-        const candidates =
-          byPlace.get(placeKey(file, mutant.mutatorName, location)) ?? [];
-        const stripped = replacement.replace(PRINTED_DIRECTIVE, '');
-        const index =
-          candidates.find(
-            (c) => owners[c] === -1 && whole[c]?.replacement === replacement,
-          ) ??
-          candidates.find(
-            (c) => owners[c] === -1 && whole[c]?.replacement === stripped,
-          ) ??
-          candidates.find(
-            (c) =>
-              whole[c]?.replacement === replacement ||
-              whole[c]?.replacement === stripped,
-          );
-        if (index === undefined) {
-          assert.equal(
-            mutant.mutatorName,
-            'CallExpression',
-            `Part ${partIndex} reads a ${mutant.mutatorName} mutant at ${file} ${at(location)} that a whole reading does not make, and only a CallExpression mutant can be one.`,
-          );
-          dropped.push({
-            part: partIndex,
-            file,
-            mutatorName: mutant.mutatorName,
-            replacement,
-            location,
-            status: mutant.status,
-          });
-          continue;
-        }
-        assert.equal(
-          owners[index],
-          -1,
-          `${file} ${at(location)} ${mutant.mutatorName} is read by parts ${owners[index]} and ${partIndex}.`,
-        );
-        owners[index] = partIndex;
+    readPartMutants(part, partIndex, {
+      originals,
+      whole,
+      byPlace,
+      owners,
+      dropped,
+      read: (index, mutant, file, language) => {
         owned[index] = mutant;
-      }
-    }
+        languages.set(file, language);
+      },
+    });
   });
 
   const unread = whole
@@ -311,36 +433,21 @@ export function joinParts({
 
   // The tests, numbered once by test file and name, the same in every part.
   const first = parts[0] as Report;
-  const keysOf = (part: Report, partIndex: number) => {
-    const byId = new Map<string, string>();
-    for (const [file, { tests }] of Object.entries(part.testFiles ?? {})) {
-      for (const test of tests) {
-        const key = testKey(file, test);
-        assert.ok(
-          ![...byId.values()].includes(key),
-          `Part ${partIndex} reports the test ${JSON.stringify(test.name)} of ${file} twice.`,
-        );
-        byId.set(test.id, key);
-      }
-    }
-    return byId;
-  };
-  const partKeys = parts.map(keysOf);
+  const partKeys = parts.map(testKeysOf);
   const firstKeys = [...(partKeys[0] as Map<string, string>).values()];
   const unified = new Map(firstKeys.map((key, index) => [key, String(index)]));
+  const firstSources = testSourcesOf(first);
   parts.forEach((part, partIndex) => {
-    const keys = new Set((partKeys[partIndex] as Map<string, string>).values());
-    assert.ok(
-      keys.size === unified.size && [...keys].every((key) => unified.has(key)),
-      `Part ${partIndex} reports other tests than part 0.`,
+    sameTests(
+      partIndex,
+      partKeys[partIndex] as Map<string, string>,
+      testSourcesOf(part),
+      {
+        part: 0,
+        keys: firstKeys,
+        sources: firstSources,
+      },
     );
-    for (const [file, { source }] of Object.entries(part.testFiles ?? {})) {
-      assert.equal(
-        source,
-        first.testFiles?.[file]?.source,
-        `Part ${partIndex}'s test file ${file} is not part 0's.`,
-      );
-    }
   });
   const carry = (partIndex: number, ids: readonly string[] | undefined) =>
     ids?.map((id) => {
@@ -399,6 +506,156 @@ export function joinParts({
       ...(first.framework === undefined ? {} : { framework: first.framework }),
     },
     dropped,
+  };
+}
+
+/** What `check-part` keeps of the parts checked so far. */
+export interface PartsChecked {
+  readonly schemaVersion: string;
+  /** How many mutants a whole reading made when the first part was checked. */
+  readonly wholeCount: number;
+  /** For each of them, the part that has read it, or -1. */
+  readonly owners: readonly number[];
+  readonly parts: readonly number[];
+  readonly tests: {
+    readonly part: number;
+    readonly keys: readonly string[];
+    readonly sources: Readonly<Record<string, string>>;
+  };
+}
+
+/**
+ * The part each mutant of a whole reading belongs to, from where its node starts: for a file the
+ * division names, the part of its region there; for one it does not, `unnamed`.
+ */
+export function regionOwners(
+  whole: readonly WholeMutant[],
+  originals: ReadonlyMap<string, string>,
+  regions: ReadonlyMap<
+    string,
+    readonly { readonly from: number; readonly shard: number }[]
+  >,
+  unnamed: number,
+): number[] {
+  const owners = new Map<string, ((offset: number) => number) | undefined>();
+  const starts = new Map<string, number[]>();
+  return whole.map((mutant) => {
+    const text = originals.get(mutant.file) as string;
+    if (!owners.has(mutant.file)) {
+      const fileRegions = regions.get(mutant.file);
+      owners.set(
+        mutant.file,
+        fileRegions === undefined
+          ? undefined
+          : regionOwner(text, fileRegions, mutant.file),
+      );
+      starts.set(mutant.file, lineStarts(text));
+    }
+    const owner = owners.get(mutant.file);
+    return owner === undefined
+      ? unnamed
+      : owner(
+          offsetOf(starts.get(mutant.file) as number[], mutant.location.start),
+        );
+  });
+}
+
+/**
+ * Holds one part's report to what the join will ask of it, before the other parts have run, and
+ * answers the state with this part added and the mutants it adds to the dropped list. `expected`
+ * names, for each whole mutant, the part whose regions it lies in. It throws, changing nothing, on
+ * a part that does not fit.
+ */
+export function checkPart({
+  originals,
+  whole,
+  expected,
+  part,
+  partIndex,
+  checked,
+}: {
+  readonly originals: ReadonlyMap<string, string>;
+  readonly whole: readonly WholeMutant[];
+  readonly expected: readonly number[];
+  readonly part: Report;
+  readonly partIndex: number;
+  readonly checked: PartsChecked | undefined;
+}): {
+  readonly checked: PartsChecked;
+  readonly dropped: readonly Dropped[];
+  readonly read: number;
+} {
+  assert.equal(expected.length, whole.length);
+  if (checked !== undefined) {
+    assert.ok(
+      !checked.parts.includes(partIndex),
+      `Part ${partIndex} has been checked already.`,
+    );
+    assert.equal(
+      whole.length,
+      checked.wholeCount,
+      `A whole reading makes ${whole.length} mutants now and ${checked.wholeCount} when the first part was checked, so the files have changed.`,
+    );
+    assert.equal(
+      part.schemaVersion,
+      checked.schemaVersion,
+      `Part ${partIndex} has report schema ${part.schemaVersion}, and the parts before ${checked.schemaVersion}.`,
+    );
+  }
+  const owners = [...(checked?.owners ?? whole.map(() => -1))];
+  const dropped: Dropped[] = [];
+  let read = 0;
+  readPartMutants(part, partIndex, {
+    originals,
+    whole,
+    byPlace: placesOf(whole),
+    owners,
+    dropped,
+    read: (index) => {
+      const mutant = whole[index] as WholeMutant;
+      assert.equal(
+        expected[index],
+        partIndex,
+        `${mutant.file} ${at(mutant.location)} ${mutant.mutatorName} lies in a region of part ${expected[index]}, and part ${partIndex} reads it.`,
+      );
+      read += 1;
+    },
+  });
+  const unread = whole
+    .map((mutant, index) => ({ mutant, index }))
+    .filter(
+      ({ index }) =>
+        expected[index] === partIndex && owners[index] !== partIndex,
+    );
+  assert.equal(
+    unread.length,
+    0,
+    `Part ${partIndex} leaves ${unread.length} mutant(s) of its own regions unread, the first ${unread
+      .slice(0, 5)
+      .map(
+        ({ mutant }) =>
+          `${mutant.file} ${at(mutant.location)} ${mutant.mutatorName}`,
+      )
+      .join('; ')}.`,
+  );
+  const keys = testKeysOf(part, partIndex);
+  const sources = testSourcesOf(part);
+  const tests = checked?.tests ?? {
+    part: partIndex,
+    keys: [...keys.values()],
+    sources,
+  };
+  sameTests(partIndex, keys, sources, tests);
+  return {
+    checked: {
+      schemaVersion: checked?.schemaVersion ?? part.schemaVersion,
+      wholeCount: whole.length,
+      owners,
+      parts: [...(checked?.parts ?? []), partIndex],
+      tests,
+    },
+    dropped,
+    read,
   };
 }
 
@@ -539,7 +796,70 @@ export function writeJoined(folder: string, { report, dropped }: Joined): void {
   );
 }
 
+async function checkPartCommand([
+  half,
+  part,
+  report,
+  state,
+]: string[]): Promise<void> {
+  assert.ok(
+    half !== undefined &&
+      part !== undefined &&
+      report !== undefined &&
+      state !== undefined,
+    'Usage: node tools/mutation-join.ts check-part <half> <part> <part report.json> <state file>',
+  );
+  const division = readDivision();
+  assert.equal(division.problems.length, 0, division.problems.join('\n'));
+  const entry = division.halves[half];
+  assert.ok(entry !== undefined, `There is no half named ${half}.`);
+  const partIndex = Number(part);
+  assert.ok(
+    Number.isInteger(partIndex) && partIndex >= 0 && partIndex < entry.count,
+    `${half} has parts 0 to ${entry.count - 1}.`,
+  );
+  const config = (
+    (await import(
+      pathToFileURL(resolve(workspaceRoot, entry.configuration)).href
+    )) as {
+      default: StrykerConfiguration;
+    }
+  ).default;
+  const files = (await mutatedFiles(entry.configuration)).map((file) => ({
+    file,
+    text: readFileSync(resolve(workspaceRoot, file), 'utf8'),
+  }));
+  const originals = new Map(files.map(({ file, text }) => [file, text]));
+  const whole = await wholeMutants(workspaceRoot, files, config);
+  const checkedBefore = existsSync(resolve(state))
+    ? (JSON.parse(readFileSync(resolve(state), 'utf8')) as PartsChecked)
+    : undefined;
+  const result = checkPart({
+    originals,
+    whole,
+    expected: regionOwners(whole, originals, entry.regions, entry.count - 1),
+    part: JSON.parse(readFileSync(resolve(report), 'utf8')) as Report,
+    partIndex,
+    checked: checkedBefore,
+  });
+  const written = `${resolve(state)}.new`;
+  writeFileSync(written, `${JSON.stringify(result.checked)}\n`);
+  renameSync(written, resolve(state));
+  process.stdout.write(
+    `${half} part ${partIndex} fits: it reads ${result.read} mutant(s), every one a whole reading makes in its regions (${whole.length} in the half); ${result.dropped.length} CallExpression mutant(s) to drop; ${result.checked.tests.keys.length} tests, the same as part ${result.checked.tests.part}'s; parts checked ${result.checked.parts.join(', ')}.\n`,
+  );
+  for (const mutant of result.dropped) {
+    process.stdout.write(
+      `  to drop: ${mutant.file} ${at(mutant.location)} ${mutant.mutatorName}\n`,
+    );
+  }
+}
+
 async function main(): Promise<void> {
+  if (process.argv[2] === 'check-part') {
+    await checkPartCommand(process.argv.slice(3));
+    return;
+  }
   const [configuration, folder, ...reports] = process.argv.slice(2);
   assert.ok(
     configuration !== undefined && folder !== undefined && reports.length > 0,
