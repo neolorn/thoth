@@ -318,7 +318,7 @@ assert.match(
     ],
     2,
   ).join('\n'),
-  /verify:angular-22\.0\.4 was handed NG_BUILD_MAX_WORKERS=3 on a share of 2\./u,
+  /verify:angular-22\.0\.8 was handed NG_BUILD_MAX_WORKERS=3 on a share of 2\./u,
   "A stage's runners handed more workers than its share went unreported.",
 );
 

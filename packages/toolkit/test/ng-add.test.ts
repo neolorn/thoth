@@ -68,7 +68,7 @@ async function application(
   const workspace = await run.runExternalSchematic(
     '@schematics/angular',
     'workspace',
-    { name: 'my-app', newProjectRoot: 'projects', version: '22.2.1' },
+    { name: 'my-app', newProjectRoot: 'projects', version: '22.2.5' },
   );
   return run.runExternalSchematic(
     '@schematics/angular',
@@ -93,7 +93,7 @@ async function applications(run: TestRunner): Promise<UnitTestTree> {
     {
       name: 'stores',
       newProjectRoot: 'projects',
-      version: '22.2.1',
+      version: '22.2.5',
     },
   );
   for (const name of ['shop', 'admin']) {
