@@ -44,7 +44,7 @@
  * The options of `start` are `--priority normal` (the level in day and efficiency, below normal
  * otherwise), `--wait <seconds>` (how long to wait for a running command to end before refusing),
  * `--manages-priority` (the command sets its own processes' priorities from the level file, as the
- * gate does) and `--directory <dir>` (where the command runs, the current directory otherwise).
+ * gate and `tools/run-mutation.ts` do) and `--directory <dir>` (where the command runs, the current directory otherwise).
  * `start` exits once the launcher is started; the command's output goes to the log, and how it
  * ended to the status file, with the cap's folder. `start` and the launcher exit 125 when the mode
  * file names no mode; the launcher exits 124 when another capped command holds the job and 125

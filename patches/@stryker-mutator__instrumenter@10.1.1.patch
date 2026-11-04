@@ -1,0 +1,12 @@
+diff --git a/dist/src/util/syntax-helpers.js b/dist/src/util/syntax-helpers.js
+index 9318ad6d9b1856c7dc5c4b7f2e6a677a2f8ae6b9..4ada3793c33605bad500b2b503258401e68833b6 100644
+--- a/dist/src/util/syntax-helpers.js
++++ b/dist/src/util/syntax-helpers.js
+@@ -137,7 +137,6 @@ function isDeclareModule(path) {
+     return path.isTSModuleDeclaration() && (path.node.declare ?? false);
+ }
+ const tsTypeAnnotationNodeTypes = Object.freeze([
+-    'TSAsExpression',
+     'TSInterfaceDeclaration',
+     'TSTypeAnnotation',
+     'TSTypeAliasDeclaration',

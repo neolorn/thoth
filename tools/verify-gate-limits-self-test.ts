@@ -52,6 +52,7 @@ import {
   aboveLevel,
   descendantsOf,
   holdDown,
+  levelForSystem,
   levelInReading,
   liftUp,
   processorsBetween,
@@ -59,6 +60,8 @@ import {
 } from './process-tree.ts';
 import type { PriorityLevel } from './process-tree.ts';
 import { takeHeavyJobLock } from './heavy-job-lock.ts';
+import { followLevel, mutationLevel } from './run-mutation.ts';
+import { wslGateProcessors } from './verify-in-wsl.ts';
 import { startCaptured } from './stage-output.ts';
 import { steps as declaredSteps } from './verify-stages.ts';
 import { workingRoot } from './working-state.ts';
@@ -308,14 +311,14 @@ assert.match(
     [
       {
         event: 'start',
-        id: 'verify:angular-22.0.4',
+        id: 'verify:angular-22.0.8',
         processors: 2,
         settings: { ...runnerEnvironment(2), NG_BUILD_MAX_WORKERS: '3' },
       },
     ],
     2,
   ).join('\n'),
-  /verify:angular-22\.0\.4 was handed NG_BUILD_MAX_WORKERS=3 on a share of 2\./u,
+  /verify:angular-22\.0\.8 was handed NG_BUILD_MAX_WORKERS=3 on a share of 2\./u,
   "A stage's runners handed more workers than its share went unreported.",
 );
 
@@ -327,12 +330,12 @@ const hosted = createScheduler({
   steps: [
     { id: 'format:check', processors: undefined },
     { id: 'lint:self-test', processors: undefined },
-    { id: 'verify:angular-22.0.4', processors: 4 },
+    { id: 'verify:angular-22.0.8', processors: 4 },
   ],
   dependencies: new Map([
     ['format:check', []],
     ['lint:self-test', []],
-    ['verify:angular-22.0.4', ['format:check', 'lint:self-test']],
+    ['verify:angular-22.0.8', ['format:check', 'lint:self-test']],
   ]),
   results: hostedResults,
   budget: 2,
@@ -346,7 +349,7 @@ for (const id of ['format:check', 'lint:self-test']) {
 }
 assert.deepEqual(
   [...hosted.running],
-  [['verify:angular-22.0.4', 2]],
+  [['verify:angular-22.0.8', 2]],
   'The planted hosted run did not go on to the Angular stage on its share.',
 );
 const hostedWindow = processorsBetween(
@@ -469,6 +472,80 @@ assert.deepEqual(
   [8, 6, 0, -10],
   'A level is not read in the units a process reading uses.',
 );
+// A mutation run takes the cap's level as the gate does: normal while the level file says so,
+// below normal for any other text, a file that cannot be read, and a run with no file named.
+const mutationLevelBy = (text: string | undefined): PriorityLevel =>
+  mutationLevel({ THOTH_VERIFY_PRIORITY_FILE: 'level' }, () => {
+    if (text === undefined) throw new Error('ENOENT');
+    return text;
+  });
+assert.deepEqual(
+  [
+    mutationLevelBy('normal'),
+    mutationLevelBy('stage'),
+    mutationLevelBy(undefined),
+    mutationLevel({}, () => 'normal'),
+  ],
+  ['normal', 'below-normal', 'below-normal', 'below-normal'],
+  'A mutation run does not take the cap level: normal at night, below normal otherwise and when run bare.',
+);
+// And it follows the level while it runs: a switch to normal raises the processes of its tree below
+// normal, a switch away lowers the ones at normal, a process above normal is left either way, and
+// one that has ended is not counted.
+const followed: [number, number][] = [];
+const tree = [
+  { pid: 21, priority: 6 },
+  { pid: 22, priority: 8 },
+  { pid: 23, priority: 10 },
+  { pid: 77, priority: 6 },
+  { pid: 78, priority: 8 },
+];
+const follow = (level: PriorityLevel): number =>
+  followLevel(
+    tree,
+    level,
+    (pid, priority) => {
+      if (pid === 77 || pid === 78) throw new Error('gone');
+      followed.push([pid, priority]);
+    },
+    'win32',
+  );
+assert.equal(
+  follow('normal'),
+  1,
+  'A switch to normal did not count the one process it raised.',
+);
+assert.equal(
+  follow('below-normal'),
+  1,
+  'A switch away from normal did not count the one process it lowered.',
+);
+assert.deepEqual(
+  followed,
+  [
+    [21, levelForSystem('normal')],
+    [22, levelForSystem('below-normal')],
+  ],
+  'A mutation run did not follow a switch of the cap level over its own processes.',
+);
+// The suite in WSL takes the budget the cap names here, and every processor of the Linux machine
+// when none is named; a budget that is not a whole number above zero is refused, not passed on.
+assert.deepEqual(
+  [
+    wslGateProcessors({ THOTH_VERIFY_PROCESSORS: '16' }),
+    wslGateProcessors({}),
+    wslGateProcessors({ THOTH_VERIFY_PROCESSORS: '' }),
+  ],
+  ['16', '"$(nproc)"', '"$(nproc)"'],
+  'The suite in WSL does not take the budget THOTH_VERIFY_PROCESSORS names, or takes one where none is named.',
+);
+for (const refused of ['0', 'all', '1.5', '-2']) {
+  assert.throws(
+    () => wslGateProcessors({ THOTH_VERIFY_PROCESSORS: refused }),
+    /whole number of processors above zero/u,
+    `The WSL gate passed on a budget of ${refused}.`,
+  );
+}
 // How a stage is started at its level, with the platform and the priority call planted. On Windows
 // the gate is below normal and a child takes its parent's class, so the gate stands at normal for
 // the length of the start and no longer. Elsewhere a process cannot take back a priority it gave

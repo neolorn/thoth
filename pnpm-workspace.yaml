@@ -4,8 +4,15 @@ packages:
 autoInstallPeers: false
 strictPeerDependencies: true
 savePrefix: ''
-nodeVersion: 26.10.0
+nodeVersion: 26.13.0
 engineStrict: true
+
+# `@angular/build` lists this binding as optional, and the binding pins `@emnapi/core` and
+# `@emnapi/runtime` to a prerelease its own `@napi-rs/wasm-runtime` does not accept as a peer, so a
+# strict install refuses it. It is the parser for WebAssembly hosts, and no host this repository
+# builds or tests on is one, so it is left out rather than strict peer checking loosened.
+ignoredOptionalDependencies:
+  - '@oxc-parser/binding-wasm32-wasi'
 
 allowBuilds:
   '@parcel/watcher': true
@@ -18,3 +25,11 @@ allowBuilds:
   # self-test fails if module resolution is not working, so nothing here needs to run a script
   # from a package to work.
   unrs-resolver: false
+
+# Stryker's instrumenter lists `TSAsExpression` among the type nodes it never mutates inside, so the
+# expression an `as` assertion wraps, a table written `as const` included, is never read although
+# it runs. The patch removes that one entry. It is keyed to the exact version: a patch that no
+# longer applies fails the install, so an upgrade of the instrumenter has to look at it again, and
+# `tools/mutation-reading-self-test.ts` fails if the expressions inside an assertion go unmutated.
+patchedDependencies:
+  '@stryker-mutator/instrumenter@10.1.1': patches/@stryker-mutator__instrumenter@10.1.1.patch

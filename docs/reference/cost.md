@@ -6,7 +6,7 @@ This page is generated from the packages and is not edited by hand.
 
 ## How it is measured
 
-Two applications install the built packages and are built for production with the Angular CLI (`@angular/build` 22.2.1), which links the partially compiled runtime and removes what nothing reaches. Compressed sizes are gzip at level 9 and Brotli at quality 11, per file, on Node 26.10.0.
+Two applications install the built packages and are built for production with the Angular CLI (`@angular/build` 22.2.5), which links the partially compiled runtime and removes what nothing reaches. Compressed sizes are gzip at level 9 and Brotli at quality 11, per file, on Node 26.13.0.
 
 - Minimal consumer: selects the setup, one locale switcher and the recovery message, and nothing else.
 - Full consumer: selects routing, forms, server rendering, hydration and the request handler.
@@ -19,12 +19,12 @@ The bytes of each entry point's own module in each build, before compression, as
 
 | Entry point              | Minimal consumer, initial | Minimal consumer, lazy | Minimal consumer, server | Full consumer, initial | Full consumer, lazy | Full consumer, server |
 | ------------------------ | ------------------------: | ---------------------: | -----------------------: | ---------------------: | ------------------: | --------------------: |
-| `@neolorn/thoth`         |                   221,982 |                      0 |                        0 |                294,925 |                   0 |               252,674 |
-| `@neolorn/thoth/core`    |                    30,311 |                      0 |                        0 |                 69,772 |                   0 |               121,160 |
+| `@neolorn/thoth`         |                   222,071 |                      0 |                        0 |                294,840 |                   0 |               252,710 |
+| `@neolorn/thoth/core`    |                    30,324 |                      0 |                        0 |                 69,751 |                   0 |               121,154 |
 | `@neolorn/thoth/forms`   |                         0 |                      0 |                        0 |                  4,384 |                   0 |                 3,547 |
 | `@neolorn/thoth/http`    |                         0 |                      0 |                        0 |                      0 |                   0 |                 6,874 |
-| `@neolorn/thoth/router`  |                         0 |                      0 |                        0 |                 41,268 |                   0 |                34,316 |
-| `@neolorn/thoth/ssr`     |                         0 |                      0 |                        0 |                      0 |                   0 |                 1,074 |
+| `@neolorn/thoth/router`  |                         0 |                      0 |                        0 |                 41,330 |                   0 |                34,277 |
+| `@neolorn/thoth/ssr`     |                         0 |                      0 |                        0 |                      0 |                   0 |                 1,075 |
 | `@neolorn/thoth/testing` |                         0 |                      0 |                        0 |                      0 |                   0 |                     0 |
 
 ## Locale data in the runtime
@@ -42,12 +42,12 @@ Everything each build emits, including Angular and the application itself.
 
 | Application      | Part    | Files |     Bytes |    gzip |  Brotli |
 | ---------------- | ------- | ----: | --------: | ------: | ------: |
-| Minimal consumer | initial |     1 |   342,315 | 104,141 |  89,207 |
-| Minimal consumer | lazy    |     4 |     8,718 |   4,294 |   3,506 |
+| Minimal consumer | initial |     1 |   343,907 | 104,320 |  89,345 |
+| Minimal consumer | lazy    |     4 |     8,718 |   4,289 |   3,508 |
 | Minimal consumer | server  |     0 |         0 |       0 |       0 |
-| Full consumer    | initial |     1 |   739,107 | 214,484 | 179,426 |
-| Full consumer    | lazy    |     6 |    63,092 |  17,543 |  15,360 |
-| Full consumer    | server  |    20 | 1,639,061 | 480,286 | 413,763 |
+| Full consumer    | initial |     1 |   742,219 | 214,900 | 179,615 |
+| Full consumer    | lazy    |     6 |    63,096 |  17,544 |  15,348 |
+| Full consumer    | server  |    20 | 1,407,230 | 416,768 | 358,975 |
 
 ## Generated contracts
 
@@ -55,18 +55,18 @@ The generated code in the initial files, and each lazily loaded catalog: one sco
 
 ### Minimal consumer
 
-Generated code in the initial files: 13,874 bytes.
+Generated code in the initial files: 13,879 bytes.
 
 | Scope | Locale | Bytes |  gzip | Brotli |
 | ----- | ------ | ----: | ----: | -----: |
-| shell | ar     | 2,323 | 1,138 |    916 |
-| shell | ar-EG  | 2,032 | 1,040 |    845 |
-| shell | en-US  | 2,249 | 1,034 |    858 |
-| shell | th     | 2,114 | 1,082 |    887 |
+| shell | ar     | 2,323 | 1,135 |    917 |
+| shell | ar-EG  | 2,032 | 1,039 |    845 |
+| shell | en-US  | 2,249 | 1,033 |    858 |
+| shell | th     | 2,114 | 1,082 |    888 |
 
 ### Full consumer
 
-Generated code in the initial files: 51,219 bytes.
+Generated code in the initial files: 51,199 bytes.
 
 | Scope | Locale |  Bytes |  gzip | Brotli |
 | ----- | ------ | -----: | ----: | -----: |
@@ -90,15 +90,15 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Entry point              |   Bytes |   gzip | Brotli |
 | ------------------------ | ------: | -----: | -----: |
-| `@neolorn/thoth`         | 431,577 | 91,703 | 73,782 |
-| `@neolorn/thoth/core`    | 118,741 | 30,877 | 25,009 |
-| `@neolorn/thoth/forms`   |   7,171 |  2,250 |  1,957 |
+| `@neolorn/thoth`         | 431,683 | 91,726 | 73,782 |
+| `@neolorn/thoth/core`    | 118,728 | 30,874 | 24,982 |
+| `@neolorn/thoth/forms`   |   7,167 |  2,248 |  1,952 |
 | `@neolorn/thoth/http`    |  13,810 |  4,157 |  3,618 |
-| `@neolorn/thoth/router`  |  56,872 | 13,444 | 11,575 |
-| `@neolorn/thoth/ssr`     |   1,769 |    679 |    564 |
-| `@neolorn/thoth/testing` |   9,646 |  3,216 |  2,760 |
+| `@neolorn/thoth/router`  |  56,891 | 13,439 | 11,573 |
+| `@neolorn/thoth/ssr`     |   1,793 |    685 |    571 |
+| `@neolorn/thoth/testing` |   9,669 |  3,223 |  2,770 |
 
 | Package                  | Files |     Bytes |
 | ------------------------ | ----: | --------: |
-| `@neolorn/thoth`         |    38 | 3,210,335 |
-| `@neolorn/thoth-toolkit` |   288 | 4,681,911 |
+| `@neolorn/thoth`         |    38 | 3,180,249 |
+| `@neolorn/thoth-toolkit` |   288 | 4,683,547 |

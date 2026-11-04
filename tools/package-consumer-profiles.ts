@@ -49,17 +49,18 @@ export const consumerProfiles = new Map<string, RowProfile>([
   [
     'package-consumer',
     {
-      angular: '22.2.1',
-      angularTooling: '22.2.1',
+      angular: '22.2.4',
+      angularTooling: '22.2.5',
       typescript: '6.0.3',
       rxjs: '7.8.2',
       label: 'Thoth development row',
     },
   ],
   [
-    'angular-22.0.4-consumer',
+    'angular-22.0.8-consumer',
     {
-      angular: '22.0.4',
+      angular: '22.0.8',
+      angularTooling: '22.0.9',
       typescript: '6.0.3',
       rxjs: '7.8.2',
       label: 'Angular patch compatibility row',
@@ -87,8 +88,8 @@ export const consumerProfiles = new Map<string, RowProfile>([
   [
     'strict-consumer',
     {
-      angular: '22.2.1',
-      angularTooling: '22.2.1',
+      angular: '22.2.4',
+      angularTooling: '22.2.5',
       typescript: '6.0.3',
       rxjs: '7.8.2',
       label: 'Demanding compiler options',

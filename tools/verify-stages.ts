@@ -596,11 +596,11 @@ const declared: readonly StageDeclaration[] = Object.freeze([
     writes: ['consumer:ngadd'],
   },
   {
-    id: 'verify:angular-22.0.4',
+    id: 'verify:angular-22.0.8',
     processors: 4,
     minimumProcessors: 3,
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
-    writes: ['consumer:angular-22.0.4'],
+    writes: ['consumer:angular-22.0.8'],
     claims: true,
   },
   {
@@ -827,8 +827,8 @@ const declared: readonly StageDeclaration[] = Object.freeze([
     ],
   },
   {
-    id: 'verify:browser-assurance:angular-22.0.4',
-    reads: ['consumer:angular-22.0.4', 'source:packages'],
+    id: 'verify:browser-assurance:angular-22.0.8',
+    reads: ['consumer:angular-22.0.8', 'source:packages'],
     exclusive: true,
     claims: true,
     needs: [

@@ -11,7 +11,7 @@
 # differ. Each mode's limits are in cap-common.ps1; cap-mode.ps1 switches a running job by its
 # name. The command's environment carries THOTH_CAP_JOB, the job's name, and THOTH_VERIFY_PROCESSORS
 # for night (every logical processor) and efficiency (the efficiency cores). A command that manages
-# its own priorities (the gate) is handed the cap's priority-level.txt as THOTH_VERIFY_PRIORITY_FILE
+# its own priorities (the gate, a mutation run) is handed the cap's priority-level.txt as THOTH_VERIFY_PRIORITY_FILE
 # unless the caller named another.
 #
 #   powershell.exe -NoProfile -ExecutionPolicy Bypass -File cap-run.ps1 [-Priority BelowNormal|Normal]
@@ -30,7 +30,7 @@
 #
 # -Log sends the command's output to a file; -Status writes how it ended (exit code, times, what the
 # job counted) to a file. -ManagesPriority says the command sets its own processes' priorities (the
-# gate), so a mode switch leaves them to it.
+# gate, a mutation run), so a mode switch leaves them to it.
 #
 # Exit codes of the launcher itself: 124 refused (a capped command is running), 125 not started,
 # which includes a mode file that cannot be read or names no mode (cap-common.ps1): the refusal

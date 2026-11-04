@@ -225,9 +225,9 @@ const NUMBER_LITERAL = NUMBER_LITERAL_PATTERN;
  * available behaviours, because the author had no way to find out.
  *
  * `u:dir` and `u:id` are implemented and validated here. Everything else in the namespace is
- * refused rather than ignored: `u:locale` is a real option in the spec that Thoth does not
- * implement, and accepting it quietly would mean a message that formats in the wrong locale with
- * nothing to say so.
+ * refused rather than ignored. `u:locale`, a draft option the specification has since dropped, is
+ * refused too: a message that still wrote it would format in the wrong locale with nothing to say
+ * so.
  */
 const UNICODE_OPTION_PREFIX = 'u:';
 const UNICODE_DIRECTION_VALUES = new Set(['ltr', 'rtl', 'auto', 'inherit']);

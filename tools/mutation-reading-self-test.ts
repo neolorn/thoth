@@ -15,6 +15,13 @@
  * also read nor differing; a listed mutant absent from it, or `Ignored` in it, fails the merge before
  * any file is written.
  *
+ * `behaviorLines`, which `changed` reads lines through, is checked on its own: a specifier that
+ * names only a type, with its comma, is not a line with behaviour, in an export as in an import.
+ *
+ * The installed instrumenter is checked to mutate inside an `as` assertion, `as const` included,
+ * which it does only with the repository's patch applied (`patches/`, named in
+ * `pnpm-workspace.yaml`).
+ *
  * The expected mutants are the ones Stryker's instrumenter makes of the planted source; a release of
  * it that mutates the source differently fails here first, which is the point.
  *
@@ -27,12 +34,16 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import { behaviorLines } from './mutation-reading.ts';
 
 const tool = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -117,6 +128,101 @@ const run = (...args: string[]) =>
     cwd: root,
     encoding: 'utf8',
   });
+
+// What `changed` counts as a line with behaviour: a specifier that names only a type is erased
+// with its type, in an export as in an import, so its line has nothing a test could show running.
+check('a type-only export or import specifier carries no behaviour', () => {
+  const text = [
+    'import {', // 1: an import, none of it behaviour
+    '  type Shape,', // 2
+    '  build,', // 3
+    "} from './shape';", // 4
+    'export {', // 5: behaviour, the declaration exports a value
+    '  type Shape,', // 6: a type-only specifier
+    '  build,', // 7: a value
+    '};', // 8
+    'export const made: Shape = build();', // 9
+    '',
+  ].join('\n');
+  assert.deepEqual(
+    [...behaviorLines(text, 'demo.ts')].sort((a, b) => a - b),
+    [5, 7, 8, 9],
+  );
+});
+
+// The instrumenter as Stryker loads it, from beside the installed core.
+const instrumenter = async () => {
+  const core = realpathSync(
+    resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      '../node_modules/@stryker-mutator/core',
+    ),
+  );
+  const from = createRequire(join(core, 'package.json'));
+  return (await import(
+    pathToFileURL(from.resolve('@stryker-mutator/instrumenter')).href
+  )) as {
+    Instrumenter: new (logger: unknown) => {
+      instrument(
+        files: { name: string; mutate: boolean; content: string }[],
+        options: unknown,
+      ): Promise<{
+        mutants: { mutatorName: string; replacement: string }[];
+      }>;
+    };
+  };
+};
+const silent = () => undefined;
+const { Instrumenter } = await instrumenter();
+const { mutants: asMutants } = await new Instrumenter({
+  trace: silent,
+  debug: silent,
+  info: silent,
+  warn: silent,
+  error: silent,
+  fatal: silent,
+  isTraceEnabled: () => false,
+  isDebugEnabled: () => false,
+  isInfoEnabled: () => false,
+  isWarnEnabled: () => false,
+  isErrorEnabled: () => false,
+  isFatalEnabled: () => false,
+}).instrument(
+  [
+    {
+      name: 'as.ts',
+      mutate: true,
+      content: [
+        'export const flags = { on: true } as const;',
+        'export const total = (a: number, b: number) => (a - b) as number;',
+        '',
+      ].join('\n'),
+    },
+  ],
+  { ignorers: [], plugins: null, excludedMutations: [] },
+);
+
+// An `as` assertion is erased, but what it asserts about runs. Stryker's instrumenter counts the
+// whole assertion as a type node and mutates nothing inside it, which leaves a table written
+// `as const` and any expression cast for the compiler unread. The repository patches that out; the
+// mutants below are the ones inside the two assertions.
+check('an expression inside an `as` assertion is mutated', () => {
+  const made = new Set(
+    asMutants.map(
+      ({ mutatorName, replacement }) => `${mutatorName} ${replacement}`,
+    ),
+  );
+  for (const expected of [
+    'ObjectLiteral {}',
+    'BooleanLiteral false',
+    'ArithmeticOperator a + b',
+  ]) {
+    assert.ok(
+      made.has(expected),
+      `No ${expected} mutant inside an as assertion; made: ${[...made].join(', ')}`,
+    );
+  }
+});
 
 try {
   mkdirSync(join(root, 'packages/demo/src'), { recursive: true });

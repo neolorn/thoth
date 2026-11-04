@@ -14,6 +14,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The 0.x line is the alpha stage,
 then the betas, then the release candidates and the milestones that followed them.
 
+## [1.0.0-rc.3]
+
+The third release candidate of Thoth. It replaces `1.0.0-rc.2`, which was not published, and
+differs from it in the entries below. Its host ranges are those of `1.0.0-rc.1`, and its standards
+profile is still `thoth-1`, now with the IANA Time Zone Database 2026f. The toolkit depends on
+`@angular-devkit/architect` 0.2202.5, `@angular-devkit/core` 22.2.5,
+`@angular-devkit/schematics` 22.2.5, `@schematics/angular` 22.2.5 and `messageformat` 4.1.0; its
+other dependencies are unchanged. [Compatibility](docs/reference/compatibility.md) lists the
+combinations it is built and run on.
+
+### Changed
+
+- A project with no catalogs now refuses a message handle that no catalog defines, with `TH1403`, as
+  a project with catalogs already did.
+- The time zone identities come from the IANA Time Zone Database 2026f. Every name resolves to the
+  same zone as it did under 2026e.
+
 ## [1.0.0-rc.2]
 
 The second release candidate of Thoth. It replaces `1.0.0-rc.1`, which was not published, and
@@ -1027,5 +1044,6 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 - Catalogs compile to artifacts that are identical for identical input.
 - The `thoth` command line drives a project.
 
+[1.0.0-rc.3]: https://github.com/neolorn/thoth/releases/tag/v1.0.0-rc.3
 [1.0.0-rc.2]: https://github.com/neolorn/thoth/releases/tag/v1.0.0-rc.2
 [1.0.0-rc.1]: https://github.com/neolorn/thoth/releases/tag/v1.0.0-rc.1

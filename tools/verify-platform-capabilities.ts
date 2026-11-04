@@ -66,8 +66,8 @@ const compatibilityPage = 'docs/reference/compatibility.md';
 
 assert.equal(
   process.version,
-  'v26.10.0',
-  `The exact capability row requires Node v26.10.0; received ${process.version}`,
+  'v26.13.0',
+  `The exact capability row requires Node v26.13.0; received ${process.version}`,
 );
 
 // Spellings a consumer can declare, request or store that are not canonical: casing, including

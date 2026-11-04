@@ -160,7 +160,7 @@ An Angular component template could not be read or was refused: a symbolic link,
 
 ### TH1403
 
-The analysis exceeded its source-file or byte ceiling, or was asked to resolve something outside the generated `#i18n` namespace.
+The analysis exceeded its source-file or byte ceiling, was asked to resolve something outside the generated `#i18n` namespace, or found a message handle whose identity no catalog defines, such as a handle type kept from an earlier build or written by hand.
 
 ### TH1404
 

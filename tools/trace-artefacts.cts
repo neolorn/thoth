@@ -113,8 +113,8 @@ function install(traceFile: string, workspaceRoot: string): void {
         'consumer:package',
       ],
       [
-        'tmp/package-consumer-verification/angular-22.0.4-consumer',
-        'consumer:angular-22.0.4',
+        'tmp/package-consumer-verification/angular-22.0.8-consumer',
+        'consumer:angular-22.0.8',
       ],
       [
         'tmp/package-consumer-verification/lower-bounds-consumer',

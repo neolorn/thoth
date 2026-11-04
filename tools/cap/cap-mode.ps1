@@ -16,7 +16,7 @@
 # a margin, the limit is set to what it holds plus the margin, and cap-stepper.ps1, started
 # detached, steps it down as the job's use falls until it is the mode's own.
 #
-# A command started with -ManagesPriority (the gate) sets its own processes' priorities from the
+# A command started with -ManagesPriority (the gate, a mutation run) sets its own processes' priorities from the
 # level file this script writes beside mode.txt, so its processes are left to it.
 # Only processes that are in the job are touched: their priority class, and the job's affinity.
 param([Parameter(Position = 0)][ValidateSet('day', 'night', 'efficiency', 'show')][string]$Mode = 'show')

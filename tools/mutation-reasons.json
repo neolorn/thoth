@@ -61,7 +61,7 @@
       "original": "''",
       "replacement": "\"Stryker was here!\"",
       "category": "equivalent",
-      "reason": "It stands in for an absent header only, and the replacement text spells no directive that lines 916 to 931 read, so the reading is the same empty one. It stands in for a missing argument only, and neither the empty string nor the replacement matches the digits pattern beside it, so the lifetime is 0 either way. createPathPrefixLocalePolicy holds every prefix to validPrefix, at least one character (lines 1156 and 1376), and refuses a default locale outside the set (line 1388), so the default locale's prefix is never undefined or empty once line 4946 has let a policy through. With an empty prefix the general branch returns the same path: `startsWith('')` holds, `slice(0)` is the path, and the path is never empty because line 5158 takes it from pathOnlyTarget, which begins with \"/\".",
+      "reason": "It stands in for an absent header only, and the replacement text spells no directive that lines 936 to 951 read, so the reading is the same empty one. It stands in for a missing argument only, and neither the empty string nor the replacement matches the digits pattern beside it, so the lifetime is 0 either way. createPathPrefixLocalePolicy holds every prefix to validPrefix, at least one character (lines 1313 and 1532), and refuses a default locale outside the set (line 1544), so the default locale's prefix is never undefined or empty once line 5362 has let a policy through. With an empty prefix the general branch returns the same path: `startsWith('')` holds, `slice(0)` is the path, and the path is never empty because line 5575 takes it from pathOnlyTarget, which begins with \"/\".",
       "count": 3
     },
     {
@@ -70,7 +70,7 @@
       "original": "level === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The stated caching is read by property only (lines 872, 1051 and 1060), and a `level` property holding undefined reads the same as an absent one."
+      "reason": "The stated caching is read by property only (lines 892, 1071 and 1080), and a `level` property holding undefined reads the same as an absent one."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -78,7 +78,7 @@
       "original": "maxAge === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The stated caching is read by property only (lines 872, 1051 and 1060), and a `maxAge` property holding undefined reads the same as an absent one."
+      "reason": "The stated caching is read by property only (lines 892, 1071 and 1080), and a `maxAge` property holding undefined reads the same as an absent one."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -86,7 +86,7 @@
       "original": "sharedMaxAge === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The stated caching is read by property only (lines 872, 1051 and 1060), and a `sharedMaxAge` property holding undefined reads the same as an absent one."
+      "reason": "The stated caching is read by property only (lines 892, 1071 and 1080), and a `sharedMaxAge` property holding undefined reads the same as an absent one."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -94,7 +94,7 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "The planted entry is a string, which the loop on line 914 destructures to the name `S`, and no case on lines 916 to 931 reads that name. The empty prefix list belongs to a locale-neutral policy, where line 3739 takes the neutral branch and continues before the loop on line 3755 reads `prefixes`. The query only adds a suffix to the built address, and line 4725 resolves `splitSuffix(address)[0]`, which drops it; the address is read nowhere else.",
+      "reason": "The planted entry is a string, which the loop on line 934 destructures to the name `S`, and no case on lines 936 to 951 reads that name. The empty prefix list belongs to a locale-neutral policy, where line 4125 takes the neutral branch and continues before the loop on line 4141 reads `prefixes`. The query only adds a suffix to the built address, and line 5141 resolves `splitSuffix(address)[0]`, which drops it; the address is read nowhere else.",
       "count": 3
     },
     {
@@ -112,7 +112,7 @@
       "original": "name.length > 0",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "An empty name matches no case on lines 916 to 931 in `statedCaching`, the only reader of the list, so keeping the entry changes no result."
+      "reason": "An empty name matches no case on lines 936 to 951 in `statedCaching`, the only reader of the list, so keeping the entry changes no result."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -120,7 +120,7 @@
       "original": "name.length > 0",
       "replacement": "name.length >= 0",
       "category": "equivalent",
-      "reason": "An empty name matches no case on lines 916 to 931 in `statedCaching`, the only reader of the list, so keeping the entry changes no result."
+      "reason": "An empty name matches no case on lines 936 to 951 in `statedCaching`, the only reader of the list, so keeping the entry changes no result."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -128,7 +128,7 @@
       "original": "'permanentRedirectMaxAge'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the field name `wholeSeconds` interpolates into its refusal message on line 1115, and nothing compares it."
+      "reason": "The literal is the field name `wholeSeconds` interpolates into its refusal message on line 1135, and nothing compares it."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -136,7 +136,7 @@
       "original": "'successMaxAge'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the field name `wholeSeconds` interpolates into its refusal message on line 1115, and nothing compares it."
+      "reason": "The literal is the field name `wholeSeconds` interpolates into its refusal message on line 1135, and nothing compares it."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -152,7 +152,7 @@
       "original": "floor !== undefined",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "For an absent floor `CACHE_LEVEL_RANK[undefined]` is undefined and the comparison on line 1078 is false, so the level is returned either way."
+      "reason": "For an absent floor `CACHE_LEVEL_RANK[undefined]` is undefined and the comparison on line 1098 is false, so the level is returned either way."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -160,7 +160,7 @@
       "original": "CACHE_LEVEL_RANK[floor] > CACHE_LEVEL_RANK[level]",
       "replacement": "CACHE_LEVEL_RANK[floor] >= CACHE_LEVEL_RANK[level]",
       "category": "equivalent",
-      "reason": "The three ranks on lines 1071 to 1073 are distinct, so equal ranks mean the floor and the level are the same value, and returning either is the same."
+      "reason": "The three ranks on lines 1091 to 1093 are distinct, so equal ranks mean the floor and the level are the same value, and returning either is the same."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -176,7 +176,7 @@
       "original": "(locale) => JSON.stringify(locale)",
       "replacement": "() => undefined",
       "category": "message-wording",
-      "reason": "It only shapes the list of locales printed inside the refusal message on line 1189; the refusal is asserted by its code, and nothing compares the wording."
+      "reason": "It only shapes the list of locales printed inside the refusal message on line 1355; the refusal is asserted by its code, and nothing compares the wording."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -184,7 +184,7 @@
       "original": "', '",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "It only shapes the list of locales printed inside the refusal message on line 1189; the refusal is asserted by its code, and nothing compares the wording. Builds the quoted list of canonical addresses inside the text of the refusal on line 3821, and nothing else reads it. `named` is the quoted list of the policy's origins, and it is only interpolated into the refusal messages of hostBuildLocale on lines 3969 and 3980.",
+      "reason": "It only shapes the list of locales printed inside the refusal message on line 1355; the refusal is asserted by its code, and nothing compares the wording. Builds the quoted list of canonical addresses inside the text of the refusal on line 4207, and nothing else reads it. `named` is the quoted list of the policy's origins, and it is only interpolated into the refusal messages of hostBuildLocale on lines 4355 and 4366.",
       "count": 3
     },
     {
@@ -266,7 +266,7 @@
       "original": "`Origin for ${locale}`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The literal is the label `trustedOrigin` interpolates into its refusal messages on lines 1461, 1467 and 1476, and nothing compares it."
+      "reason": "The literal is the label `trustedOrigin` interpolates into its refusal messages on lines 1623, 1629 and 1638, and nothing compares it."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -298,7 +298,7 @@
       "original": "'x-default URL'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the label `trustedOrigin` interpolates into its refusal messages on lines 1461, 1467 and 1476, and nothing compares it. The label is passed to trustedOrigin, which only interpolates it into the text of its three refusals (lines 1461, 1467 and 1476).",
+      "reason": "The literal is the label `trustedOrigin` interpolates into its refusal messages on lines 1623, 1629 and 1638, and nothing compares it. The label is passed to trustedOrigin, which only interpolates it into the text of its three refusals (lines 1623, 1629 and 1638).",
       "count": 2
     },
     {
@@ -323,7 +323,7 @@
       "original": "existing !== route.id",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "Line 1791 refuses two routes with one identity and the map holds only the identities of routes this loop has already passed, so a stored identity is never the current route and this operand is true whenever the first one is."
+      "reason": "Line 2196 refuses two routes with one identity and the map holds only the identities of routes this loop has already passed, so a stored identity is never the current route and this operand is true whenever the first one is."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -395,7 +395,7 @@
       "original": "!pattern.every((segment) => KEYABLE_SEGMENT.test(segment))",
       "replacement": "true",
       "category": "performance-only",
-      "reason": "A route that is not keyed is scanned instead, and matchRoute on lines 2282 to 2295 offers scanned and keyed routes the same comparison in table order, so keying fewer routes changes how many are compared and never which one answers."
+      "reason": "A route that is not keyed is scanned instead, and matchRoute on lines 2717 to 2730 offers scanned and keyed routes the same comparison in table order, so keying fewer routes changes how many are compared and never which one answers."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -403,7 +403,7 @@
       "original": "(segment) => KEYABLE_SEGMENT.test(segment)",
       "replacement": "() => undefined",
       "category": "performance-only",
-      "reason": "A route that is not keyed is scanned instead, and matchRoute on lines 2282 to 2295 offers scanned and keyed routes the same comparison in table order, so keying fewer routes changes how many are compared and never which one answers."
+      "reason": "A route that is not keyed is scanned instead, and matchRoute on lines 2717 to 2730 offers scanned and keyed routes the same comparison in table order, so keying fewer routes changes how many are compared and never which one answers."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -411,7 +411,7 @@
       "original": "!keyed.has(key)",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "A keyed pattern is its own lower-case path, line 1791 refuses two generated routes with one path and line 1858 refuses two routes with one path in a localized locale, so the key is never already present when this is reached."
+      "reason": "A keyed pattern is its own lower-case path, line 2196 refuses two generated routes with one path and line 2281 refuses two routes with one path in a localized locale, so the key is never already present when this is reached."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -479,7 +479,7 @@
       "original": "rawSegments.length === 1",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "An empty segment beside another needs '//' in the path, which line 2128 refuses, or a leading or trailing slash, which lines 2129 to 2131 remove, so an empty segment is always the only one."
+      "reason": "An empty segment beside another needs '//' in the path, which line 2563 refuses, or a leading or trailing slash, which lines 2564 to 2566 remove, so an empty segment is always the only one."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -487,7 +487,7 @@
       "original": "separator < 0",
       "replacement": "separator <= 0",
       "category": "equivalent",
-      "reason": "A separator at index 0 leaves an empty name, which line 2159 refuses whatever the value was read as."
+      "reason": "A separator at index 0 leaves an empty name, which line 2592 refuses whatever the value was read as."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -495,7 +495,7 @@
       "original": "fragment === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The parsed target is internal, and every reader takes parsed.fragment by value and tests it against undefined (lines 2336, 2673, 2808, 2949 and 3159), so a present key holding undefined reads the same as an absent one."
+      "reason": "The parsed target is internal, and every reader takes parsed.fragment by value and tests it against undefined (lines 2771, 3070, 3195, 3340 and 3530), so a present key holding undefined reads the same as an absent one."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -503,7 +503,7 @@
       "original": "canonical === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "safeParameterSegment returns false for a value that is not a string (line 1759), so the second operand refuses an undefined spelling without this one."
+      "reason": "safeParameterSegment returns false for a value that is not a string (line 2136), so the second operand refuses an undefined spelling without this one."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -511,7 +511,7 @@
       "original": "candidate.order > limit",
       "replacement": "candidate.order >= limit",
       "category": "equivalent",
-      "reason": "limit is the order of a keyed route and every candidate is a scanned one; localeIndex (lines 2005 to 2014) puts a route in exactly one of the two with its own order, so candidate.order never equals limit and > and >= stop the scan at the same place"
+      "reason": "limit is the order of a keyed route and every candidate is a scanned one; localeIndex (lines 2429 to 2438) puts a route in exactly one of the two with its own order, so candidate.order never equals limit and > and >= stop the scan at the same place"
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -527,7 +527,7 @@
       "original": "first === undefined",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "all three callers (lines 3767, 3812, 3878) pass the result of String.prototype.split, which always has a first element, so first is never undefined"
+      "reason": "all three callers (lines 4153, 4198, 4264) pass the result of String.prototype.split, which always has a first element, so first is never undefined"
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -586,7 +586,7 @@
       "original": "resolution.status === 'redirect'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "Past lines 3282 and 3291 the resolution is a redirect, gone, malformed or an unsupported locale, and only a redirect carries a locale field (the union on lines 578 to 640), so the others return the same undefined."
+      "reason": "Past lines 3664 and 3673 the resolution is a redirect, gone, malformed or an unsupported locale, and only a redirect carries a locale field (the union on lines 598 to 660), so the others return the same undefined."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -594,7 +594,7 @@
       "original": "arrival.status === 'redirect'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "Only a redirect carries a reason field (lines 602 to 623 of the resolution union), so the comparison with canonical-correction is already false for every other status."
+      "reason": "Only a redirect carries a reason field (lines 622 to 643 of the resolution union), so the comparison with canonical-correction is already false for every other status."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -610,7 +610,7 @@
       "original": "{ ok: false, reason: 'unrepresentable', parameter: name }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "Lines 2369 and 2711 read only that ok is not true, and line 4089 falls past its three named reasons to the route-unavailable error, which an object with no ok and no reason reaches the same way."
+      "reason": "Lines 2803 and 3106 read only that ok is not true, and line 4497 falls past its three named reasons to the route-unavailable error, which an object with no ok and no reason reaches the same way."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -618,7 +618,7 @@
       "original": "'unrepresentable'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "No caller compares this reason: line 4089 names the other three and falls through to the route-unavailable error for anything else, and lines 2369 and 2711 read only the ok field."
+      "reason": "No caller compares this reason: line 4497 names the other three and falls through to the route-unavailable error for anything else, and lines 2803 and 3106 read only the ok field."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -642,7 +642,7 @@
       "original": "(path) => JSON.stringify(`/${path}`)",
       "replacement": "() => undefined",
       "category": "message-wording",
-      "reason": "Builds the quoted list of canonical addresses inside the text of the refusal on line 3821, and nothing else reads it."
+      "reason": "Builds the quoted list of canonical addresses inside the text of the refusal on line 4207, and nothing else reads it."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -650,7 +650,7 @@
       "original": "`/${path}`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "Builds the quoted list of canonical addresses inside the text of the refusal on line 3821, and nothing else reads it."
+      "reason": "Builds the quoted list of canonical addresses inside the text of the refusal on line 4207, and nothing else reads it."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -666,7 +666,7 @@
       "original": "(each) => JSON.stringify(each)",
       "replacement": "() => undefined",
       "category": "message-wording",
-      "reason": "`named` is the quoted list of the policy's origins, and it is only interpolated into the refusal messages of hostBuildLocale on lines 3969 and 3980."
+      "reason": "`named` is the quoted list of the policy's origins, and it is only interpolated into the refusal messages of hostBuildLocale on lines 4355 and 4366."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -706,7 +706,7 @@
       "original": "'SEO projection origin'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The label is passed to trustedOrigin, which only interpolates it into the text of its three refusals (lines 1461, 1467 and 1476)."
+      "reason": "The label is passed to trustedOrigin, which only interpolates it into the text of its three refusals (lines 1623, 1629 and 1638)."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -714,7 +714,7 @@
       "original": "'sitemap origin'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The label is passed to trustedOrigin, which only interpolates it into the text of its three refusals (lines 1461, 1467 and 1476)."
+      "reason": "The label is passed to trustedOrigin, which only interpolates it into the text of its three refusals (lines 1623, 1629 and 1638)."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -722,7 +722,7 @@
       "original": "seo.indexing !== 'indexable'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "A projection that is not indexable carries the frozen empty `alternates` of line 4376, so the loop on line 4668 it would fall into publishes nothing."
+      "reason": "A projection that is not indexable carries the frozen empty `alternates` of line 4790, so the loop on line 5084 it would fall into publishes nothing."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -730,7 +730,7 @@
       "original": "current.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "`flush` runs with nothing collected only for an empty entry list, and the page it would then push has exactly the contents and count the fallbacks on lines 4788 and 4794 give."
+      "reason": "`flush` runs with nothing collected only for an empty entry list, and the page it would then push has exactly the contents and count the fallbacks on lines 5204 and 5210 give."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -738,7 +738,7 @@
       "original": "current.length > 0",
       "replacement": "current.length >= 0",
       "category": "equivalent",
-      "reason": "Differs only while nothing is collected yet, where the `flush()` it would call returns at once on line 4764."
+      "reason": "Differs only while nothing is collected yet, where the `flush()` it would call returns at once on line 5180."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -746,7 +746,7 @@
       "original": "current.length > 0",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "Differs only while nothing is collected yet, where the `flush()` it would call returns at once on line 4764."
+      "reason": "Differs only while nothing is collected yet, where the `flush()` it would call returns at once on line 5180."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -762,7 +762,7 @@
       "original": "context.origin === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "`{ origin: undefined }` and `{}` read alike: the resolver reads the context only as `context.origin` on line 3041 and tests it against undefined on line 3061."
+      "reason": "`{ origin: undefined }` and `{}` read alike: the resolver reads the context only as `context.origin` on line 3418 and tests it against undefined on line 3439."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -770,7 +770,7 @@
       "original": "resolution.status !== 'redirect'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "A resolution that is not a redirect never carries `httpStatus` 308 (the union on lines 605 to 637), so the second operand returns it unchanged."
+      "reason": "A resolution that is not a redirect never carries `httpStatus` 308 (the union on lines 625 to 657), so the second operand returns it unchanged."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -794,7 +794,7 @@
       "original": "''",
       "replacement": "\"Stryker was here!\"",
       "category": "equivalent",
-      "reason": "The stand-in for an absent Accept-Language goes straight to parseAcceptLanguage, which drops any range not matching /^[A-Za-z0-9-]+$/ (core/src/locale-negotiation.ts:53-60); the replacement text has spaces and '!', so both yield an empty list and the same negotiation. The literal is the constant tail of the once-per-pair key for an absence or a removal; the key is only ever tested for membership in `reported`, the resolution and outcome before it keep keys distinct, and a constant tail cannot make two of them collide or one of them match 'empty-render'. The stand-in for an absent Sec-Purpose is read only by /prefetch|prerender/iu on line 742, which matches neither the empty string nor the replacement text, so the request is classified the same.",
+      "reason": "The stand-in for an absent Accept-Language goes straight to parseAcceptLanguage, which drops any range not matching /^[A-Za-z0-9-]+$/ (core/src/locale-negotiation.ts:54-61); the replacement text has spaces and '!', so both yield an empty list and the same negotiation. The literal is the constant tail of the once-per-pair key for an absence or a removal; the key is only ever tested for membership in `reported`, the resolution and outcome before it keep keys distinct, and a constant tail cannot make two of them collide or one of them match 'empty-render'. The stand-in for an absent Sec-Purpose is read only by /prefetch|prerender/iu on line 840, which matches neither the empty string nor the replacement text, so the request is classified the same.",
       "count": 2
     },
     {
@@ -803,7 +803,7 @@
       "original": "preferred === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The mutant passes `locale: undefined` instead of omitting the key, and the resolver reads the context only as `context.locale === undefined` (core/src/routing.ts:2539) and servedPreference(policy, context.locale), which returns on undefined (routing.ts:3010), so both shapes resolve identically."
+      "reason": "The mutant passes `locale: undefined` instead of omitting the key, and the resolver reads the key only as `context.locale`, which it hands to servedPreference (core/src/routing.ts:3077 and 3267); servedPreference reads an undefined locale as no preference (routing.ts:2959-2960), and nothing asks whether the key is present, so both shapes resolve identically."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -811,7 +811,7 @@
       "original": "!carriesDeclaration &&\n      !answeredWithoutContent &&\n      !drewNothing",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "failedUndeclared is read once, in the choice of `effective` on line 554, after carriesDeclaration (550) and drewNothing (552) have each selected their own descriptor, and answeredWithoutContent means a 304 or redirect status, which `rendered.status >= 400` (548) excludes; dropping the three guards changes its value only in cases where the response is built from another branch, so every response is the same."
+      "reason": "failedUndeclared is read once, in the choice of `effective` on line 609, after carriesDeclaration (605) and drewNothing (607) have each selected their own descriptor, and answeredWithoutContent means a 304 or redirect status, which `rendered.status >= 400` (603) excludes; dropping the three guards changes its value only in cases where the response is built from another branch, so every response is the same."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -819,7 +819,7 @@
       "original": "!carriesDeclaration &&\n      !answeredWithoutContent &&\n      !drewNothing",
       "replacement": "!carriesDeclaration && !answeredWithoutContent || !drewNothing",
       "category": "equivalent",
-      "reason": "The value differs from the original only when drewNothing or carriesDeclaration holds, where line 550 or 552 selects the descriptor before failedUndeclared is consulted on line 554, or when answeredWithoutContent holds, where the status is 304 or a redirect and line 548 is false; the response is the same in every case."
+      "reason": "The value differs from the original only when drewNothing or carriesDeclaration holds, where line 605 or 607 selects the descriptor before failedUndeclared is consulted on line 609, or when answeredWithoutContent holds, where the status is 304 or a redirect and line 603 is false; the response is the same in every case."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -827,7 +827,7 @@
       "original": "!carriesDeclaration &&\n      !answeredWithoutContent",
       "replacement": "!carriesDeclaration || !answeredWithoutContent",
       "category": "equivalent",
-      "reason": "The two differ only when exactly one of carriesDeclaration and answeredWithoutContent holds: a carried declaration takes the first branch of `effective` (line 550) whatever failedUndeclared is, and answeredWithoutContent means status 304 or 301-308, so `rendered.status >= 400` (548) makes failedUndeclared false either way."
+      "reason": "The two differ only when exactly one of carriesDeclaration and answeredWithoutContent holds: a carried declaration takes the first branch of `effective` (line 605) whatever failedUndeclared is, and answeredWithoutContent means status 304 or 301-308, so `rendered.status >= 400` (603) makes failedUndeclared false either way."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -835,7 +835,7 @@
       "original": "!carriesDeclaration &&\n      !answeredWithoutContent",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "Without these two guards failedUndeclared can become true only for a carried declaration, whose descriptor line 550 selects before line 554 reads failedUndeclared, or for a 304 or redirect, which line 548 excludes; the chosen descriptor and the response are unchanged."
+      "reason": "Without these two guards failedUndeclared can become true only for a carried declaration, whose descriptor line 605 selects before line 609 reads failedUndeclared, or for a 304 or redirect, which line 603 excludes; the chosen descriptor and the response are unchanged."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -843,7 +843,7 @@
       "original": "declared !== undefined",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "carriesDeclaration is defined on line 514 as `declared !== undefined && resolution.status === 'success'`, so the second operand is true whenever the first is; it is there to narrow the type for pageOutcomeHttpDescriptor."
+      "reason": "carriesDeclaration is defined on line 569 as `declared !== undefined && resolution.status === 'success'`, so the second operand is true whenever the first is; it is there to narrow the type for pageOutcomeHttpDescriptor."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -851,7 +851,7 @@
       "original": "resolved.contentLanguage === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The mutant gives the descriptor a `contentLanguage` key holding undefined instead of no key, and its one reader, line 441, tests `effective.contentLanguage !== undefined`, so the header is set or left off identically; the descriptor never leaves the handler."
+      "reason": "The mutant gives the descriptor a `contentLanguage` key holding undefined instead of no key, and its one reader, line 492, tests `effective.contentLanguage !== undefined`, so the header is set or left off identically; the descriptor never leaves the handler."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -859,7 +859,7 @@
       "original": "cacheControl === null",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The mutant hands routeCacheHeaders `'cache-control': null` where the original omits the key, and its only reader is statedCaching, which reads `value ?? ''` (core/src/routing.ts:914), so a null entry and an absent one produce the same headers."
+      "reason": "The mutant hands routeCacheHeaders `'cache-control': null` where the original omits the key, and its only reader is statedCaching, which reads `value ?? ''` (core/src/routing.ts:934), so a null entry and an absent one produce the same headers."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -867,7 +867,7 @@
       "original": "vary === null",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The mutant hands routeCacheHeaders `vary: null` where the original omits the key, and its only reader is fieldNames, which reads `value ?? ''` (core/src/routing.ts:1003-1008), so a null entry and an absent one produce the same headers."
+      "reason": "The mutant hands routeCacheHeaders `vary: null` where the original omits the key, and its only reader is fieldNames, which reads `value ?? ''` (core/src/routing.ts:1023-1028), so a null entry and an absent one produce the same headers."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -875,7 +875,7 @@
       "original": "'an absent entity'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The phrase is interpolated into the console warning on line 723 and nothing compares or returns it; the suite asserts that the report is written, how often, and that it names the address and the statuses."
+      "reason": "The phrase is interpolated into the console warning on line 821 and nothing compares or returns it; the suite asserts that the report is written, how often, and that it names the address and the statuses."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -883,7 +883,7 @@
       "original": "'a permanent removal'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The phrase is interpolated into the console warning on line 723 and nothing compares or returns it; the suite asserts that the report is written, how often, and that it names the address and the statuses."
+      "reason": "The phrase is interpolated into the console warning on line 821 and nothing compares or returns it; the suite asserts that the report is written, how often, and that it names the address and the statuses."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -899,7 +899,7 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "For a request with no Cookie header the mutant loops once over an entry that has no '=', which line 789 skips, and returns undefined on line 801 as the original does after no iteration."
+      "reason": "For a request with no Cookie header the mutant loops once over an entry that has no '=', which line 887 skips, and returns undefined on line 899 as the original does after no iteration."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -907,7 +907,7 @@
       "original": "separator < 0",
       "replacement": "separator <= 0",
       "category": "equivalent",
-      "reason": "An entry whose '=' is at index 0 has an empty name, and the cookie name is never empty (ɵassertStorableCookie refuses a name that is not a token at construction, core/src/cookie-attributes.ts:27 and 58), so the original also moves on to the next entry, from line 790, and the value returned is the same."
+      "reason": "An entry whose '=' is at index 0 has an empty name, and the cookie name is never empty (ɵassertStorableCookie refuses a name that is not a token at construction, core/src/cookie-attributes.ts:29 and 69), so the original also moves on to the next entry, from line 888, and the value returned is the same."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -915,7 +915,7 @@
       "original": "value.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The mutant returns '' for an empty cookie value where the original returns undefined, and both readers treat them alike: servedLocale gets undefined from canonicalizeLanguageTag('') (its subtag pattern needs one to eight characters, core/src/language-tag.ts:42 and 66), and `settled !== carried` on line 454 is true for either because settled is a locale."
+      "reason": "The mutant returns '' for an empty cookie value where the original returns undefined, and both readers treat them alike: servedLocale gets undefined from canonicalizeLanguageTag('') (its subtag pattern needs one to eight characters, core/src/language-tag.ts:42 and 66), and `settled !== carried` on line 505 is true for either because settled is a locale."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -1584,7 +1584,7 @@
       "original": "typeof raw !== 'string'",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "Without the clause a value that is neither a number nor a string is coerced to text by the pattern test, which changes the answer only for a value whose text is a number literal; an operand is a literal string, an input admitted by isValidInput (lines 405 to 433: null, undefined, boolean, Date, number or string), an extension value admitted by matchesExtensionType (lines 435 to 458), a number (line 1040) or a Date (line 1145), and none of the non-string, non-number ones has such text."
+      "reason": "Without the clause a value that is neither a number nor a string is coerced to text by the pattern test, which changes the answer only for a value whose text is a number literal; an operand is a literal string, an input admitted by isValidInput (lines 493 to 521: null, undefined, boolean, Date, number or string), an extension value admitted by matchesExtensionType (lines 523 to 546), a number (line 1143) or a Date (line 1311), and none of the non-string, non-number ones has such text."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1641,7 +1641,7 @@
       "original": "'name'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The property read here only fills the variable name into the text of the refusal; the lookup that decides the refusal is on line 615."
+      "reason": "The property read here only fills the variable name into the text of the refusal; the lookup that decides the refusal is on line 701."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1657,7 +1657,7 @@
       "original": "typeof value !== 'string'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "UNICODE_DIRECTIONS (line 646) holds four strings and Set.prototype.has compares without coercion, so a value that is not a string is refused by the second clause exactly as by the first."
+      "reason": "UNICODE_DIRECTIONS (line 732) holds four strings and Set.prototype.has compares without coercion, so a value that is not a string is refused by the second clause exactly as by the first."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1689,7 +1689,7 @@
       "original": "direction === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The mutant gives the result an own direction property holding undefined instead of no property; its two readers, applyUnicodeOptions (lines 734 and 737) and slotOptions (line 1675, which reads only id), compare the property with undefined and never enumerate the object."
+      "reason": "The mutant gives the result an own direction property holding undefined instead of no property; its two readers, applyUnicodeOptions (lines 831 and 834) and slotOptions (line 1862, which reads only id), compare the property with undefined and never enumerate the object."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1697,7 +1697,7 @@
       "original": "id === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The mutant gives the result an own id property holding undefined instead of no property; its two readers, applyUnicodeOptions (lines 734 and 742) and slotOptions (line 1675), compare the property with undefined and never enumerate the object."
+      "reason": "The mutant gives the result an own id property holding undefined instead of no property; its two readers, applyUnicodeOptions (lines 831 and 839) and slotOptions (line 1862), compare the property with undefined and never enumerate the object."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1705,7 +1705,7 @@
       "original": "entries.length === Object.keys(options).length",
       "replacement": "false",
       "category": "performance-only",
-      "reason": "The mutant always returns a frozen copy holding the same entries where the original returns the mapping itself when nothing was removed; readOptions (line 632) already froze that mapping, no caller compares it by identity, and only the allocation differs."
+      "reason": "The mutant always returns a frozen copy holding the same entries where the original returns the mapping itself when nothing was removed; readOptions (line 718) already froze that mapping, no caller compares it by identity, and only the allocation differs."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1713,7 +1713,7 @@
       "original": "unicode.direction === undefined && unicode.id === undefined",
       "replacement": "false",
       "category": "performance-only",
-      "reason": "With neither option written the two spreads on lines 737 to 742 add nothing, so the mutant returns a frozen copy of the same resolved value where the original returns the value itself; no caller compares a resolved value by identity."
+      "reason": "With neither option written the two spreads on lines 834 to 839 add nothing, so the mutant returns a frozen copy of the same resolved value where the original returns the value itself; no caller compares a resolved value by identity."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1721,7 +1721,7 @@
       "original": "unicode.id === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The mutant writes an id property holding undefined when only u:dir was given; every value passed to applyUnicodeOptions is built on lines 1219, 1233, 1245 and 1340 without an id, and the one reader, valuePart (line 1643), compares it with undefined, so no part gains or loses an id. The mutant gives the slot frame an id of undefined, and freezeSlot leaves an undefined id out of the part again on line 1698.",
+      "reason": "The mutant writes an id property holding undefined when only u:dir was given; every value passed to applyUnicodeOptions is built on lines 1389, 1403, 1415 and 1505 without an id, and the one reader, valuePart (line 1823), compares it with undefined, so no part gains or loses an id. The mutant gives the slot frame an id of undefined, and freezeSlot leaves an undefined id out of the part again on line 1885.",
       "count": 2
     },
     {
@@ -1730,7 +1730,7 @@
       "original": "profile === undefined",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "checkFunctionOptions is called with the literal string on line 1217, with one of the six numeric names of the switch on lines 1226 to 1231 (through lines 882 and 974) and with one of the three date names on lines 1241 to 1243 (through line 915); MESSAGE_FUNCTION_OPTIONS in message-function-options.ts has a profile for all ten, so the profile is never undefined."
+      "reason": "checkFunctionOptions is called with the literal string on line 1387, with one of the six numeric names of the switch on lines 1396 to 1401 (through lines 978 and 1072) and with one of the three date names on lines 1411 to 1413 (through line 1011); MESSAGE_FUNCTION_OPTIONS in message-function-options.ts has a profile for all ten, so the profile is never undefined."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1802,7 +1802,7 @@
       "original": "referenced?.kind",
       "replacement": "referenced.kind",
       "category": "unreachable",
-      "reason": "An expression with no operand reaches the extension branch with an undefined operand, which matchesExtensionType (lines 435 to 458) accepts for none of the five types, so lines 1270 to 1277 refuse it before extensionOperandOptions is called on line 1280; referenced is never undefined here."
+      "reason": "An expression with no operand reaches the extension branch with an undefined operand, which matchesExtensionType (lines 523 to 546) accepts for none of the five types, so lines 1440 to 1447 refuse it before extensionOperandOptions is called on line 1450; referenced is never undefined here."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1810,7 +1810,7 @@
       "original": "profile?.accepts",
       "replacement": "profile.accepts",
       "category": "unreachable",
-      "reason": "numericOperandOptions is called only from the six numeric cases of the switch on lines 1226 to 1236, and MESSAGE_FUNCTION_OPTIONS in message-function-options.ts has a profile for each of the six, so the profile is never undefined."
+      "reason": "numericOperandOptions is called only from the six numeric cases of the switch on lines 1396 to 1406, and MESSAGE_FUNCTION_OPTIONS in message-function-options.ts has a profile for each of the six, so the profile is never undefined."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1891,7 +1891,7 @@
       "original": "!PLURAL_KEYWORDS.has(key)",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "A key outside the six categories that reaches line 1066 is compared with what Intl.PluralRules.select returns, which is always one of the six, so it is unequal and the result is false either way."
+      "reason": "A key outside the six categories that reaches line 1200 is compared with what Intl.PluralRules.select returns, which is always one of the six, so it is unequal and the result is false either way."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1899,7 +1899,7 @@
       "original": "NUMBER_LITERAL.test(left) && !NUMBER_LITERAL.test(right)",
       "replacement": "NUMBER_LITERAL.test(left) || !NUMBER_LITERAL.test(right)",
       "category": "equivalent",
-      "reason": "selectorsCompare calls betterThan only for two different keys that both match (line 1534 skips equal keys); two different keys matching one number are one numeric literal (line 1055) and one category (line 1066), and for that pair in either order && and || give the same answer."
+      "reason": "selectorsCompare calls betterThan only for two different keys that both match (line 1715 skips equal keys); two different keys matching one number are one numeric literal (line 1181) and one category (line 1200), and for that pair in either order && and || give the same answer."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1915,7 +1915,7 @@
       "original": "environment.formatting.timeZone === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the context zone undefined the mutant spreads timeZone: undefined, which line 1115 overrides when the message names a zone and line 1117 refuses otherwise, exactly as with the key absent."
+      "reason": "With the context zone undefined the mutant spreads timeZone: undefined, which line 1252 overrides when the message names a zone and line 1254 refuses otherwise, exactly as with the key absent."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1923,7 +1923,7 @@
       "original": "environment.formatting.calendar === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the context calendar undefined the mutant spreads calendar: undefined, which Intl.DateTimeFormat reads as absent and JSON.stringify drops from the cache key on line 265."
+      "reason": "With the context calendar undefined the mutant spreads calendar: undefined, which Intl.DateTimeFormat reads as absent and JSON.stringify drops from the cache key on line 332."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -2003,7 +2003,7 @@
       "original": "`:${name}`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The literal is the label unicodeOptions (lines 668-705) interpolates into the text of its three u: option refusals and uses for nothing else."
+      "reason": "The literal is the label unicodeOptions (lines 754-791) interpolates into the text of its three u: option refusals and uses for nothing else."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -2124,7 +2124,7 @@
       "original": "typeof name !== 'string'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The map read on line 1562 is keyed by input names, which catalog-runtime.ts line 589 requires to be strings, and by declaration names, which line 1429 requires to be strings, so a selector that is not a string finds nothing and line 1563 refuses it with the same code."
+      "reason": "The map read on line 1743 is keyed by input names, which catalog-runtime.ts line 602 requires to be strings, and by declaration names, which line 1610 requires to be strings, so a selector that is not a string finds nothing and line 1744 refuses it with the same code."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -2172,7 +2172,7 @@
       "original": "'markup'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the label unicodeOptions (lines 668-705) interpolates into the text of its u: option refusals for markup and uses for nothing else."
+      "reason": "The literal is the label unicodeOptions (lines 754-791) interpolates into the text of its u: option refusals for markup and uses for nothing else."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -2188,7 +2188,7 @@
       "original": "typeof part['name'] !== 'string'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The map read on line 1738 is keyed by slot contract names, which catalog-runtime.ts line 625 requires to be strings, so a markup name that is not a string finds no contract and line 1739 refuses it with the same code."
+      "reason": "The map read on line 1925 is keyed by slot contract names, which catalog-runtime.ts line 636 requires to be strings, so a markup name that is not a string finds no contract and line 1926 refuses it with the same code."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -2196,7 +2196,7 @@
       "original": "typeof part['markupKind'] !== 'string'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "A markup kind that is not a string matches none of the three cases on lines 1742 to 1764, and the default on line 1772 refuses it with the same code unless an earlier check already has."
+      "reason": "A markup kind that is not a string matches none of the three cases on lines 1929 to 1951, and the default on line 1959 refuses it with the same code unless an earlier check already has."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -2880,7 +2880,7 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "Each default stands in for an absent list and its one placeholder string is never read as a member. NO_INHERITED_LOCALES: catalogConsultationOrder keeps only chain members the store has an artifact for, and it has none for the placeholder. transferredParticipants: ParticipantCoordinator keys the record by its participantId, which a string has not, and reads records only by a registered string id. transferredCatalogs inside Array.isArray: any array answers the same. transferredCatalogs handed to seed, in the constructor and in createChild: LocalCatalogStore.seed returns without effect for a value that is not a data record. commitHooks in publish and in dispose: the placeholder has no committed and no dispose, and both are reached through an optional call. The applied list in commit: the placeholder has no rollback, reached through an optional call inside a try block. The slots, requiredExtensions, inputNames and slotNames of the recovery message, catalog and handle in recoveryText: the message is plain, so evaluatePattern refuses markup before a slot contract is read, and evaluateCandidate and findEvaluationCandidate read no requiredExtensions, inputNames or slotNames. pseudoLocales in the constructor: formatting asks the set only about a locale locale resolution answered, which refuses any locale outside the supported ones (locale-resolution.ts line 153), and the placeholder, which has spaces, is none.",
+      "reason": "Each default stands in for an absent list and its one placeholder string is never read as a member. NO_INHERITED_LOCALES: catalogConsultationOrder keeps only chain members the store has an artifact for, and it has none for the placeholder. transferredParticipants: ParticipantCoordinator keys the record by its participantId, which a string has not, and reads records only by a registered string id. transferredCatalogs inside Array.isArray: any array answers the same. transferredCatalogs handed to seed, in the constructor and in createChild: LocalCatalogStore.seed returns without effect for a value that is not a data record. commitHooks in publish and in dispose: the placeholder has no committed and no dispose, and both are reached through an optional call. The applied list in commit: the placeholder has no rollback, reached through an optional call inside a try block. The slots, requiredExtensions, inputNames and slotNames of the recovery message, catalog and handle in recoveryText: the message is plain, so evaluatePattern refuses markup before a slot contract is read, and evaluateCandidate and findEvaluationCandidate read no requiredExtensions, inputNames or slotNames. pseudoLocales in the constructor: formatting asks the set only about a locale locale resolution answered, which refuses any locale outside the supported ones (locale-resolution.ts line 120), and the placeholder, which has spaces, is none.",
       "count": 13
     },
     {
@@ -2913,7 +2913,7 @@
       "original": "messageSeparator + 1",
       "replacement": "messageSeparator - 1",
       "category": "equivalent",
-      "reason": "The message identifier read here is given to the one compiled message and to the handle that looks it up (lines 1845 and 1897) and to nothing else, so any text for it matches itself, and diagnostics name the message by the whole identity."
+      "reason": "The message identifier read here is given to the one compiled message and to the handle that looks it up (lines 2005 and 2057) and to nothing else, so any text for it matches itself, and diagnostics name the message by the whole identity."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -2921,7 +2921,7 @@
       "original": "identity.slice(messageSeparator + 1)",
       "replacement": "identity",
       "category": "equivalent",
-      "reason": "The message identifier read here is given to the one compiled message and to the handle that looks it up (lines 1845 and 1897) and to nothing else, so any text for it matches itself, and diagnostics name the message by the whole identity."
+      "reason": "The message identifier read here is given to the one compiled message and to the handle that looks it up (lines 2005 and 2057) and to nothing else, so any text for it matches itself, and diagnostics name the message by the whole identity."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -2929,7 +2929,7 @@
       "original": "{\n  if (typeof body !== 'object' || body === null) return 1;\n  const record = body as Readonly<Record<string, unknown>>;\n  if (record['kind'] === 'pattern' && Array.isArray(record['pattern'])) {\n    return Math.max(1, record['pattern'].length);\n  }\n  if (record['kind'] === 'select' && Array.isArray(record['variants'])) {\n    return Math.max(\n      1,\n      ...record['variants'].map((variant) => {\n",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "Without a bound the evaluator counts parts against not-a-number and never refuses, and with it never refuses either: a plain pattern yields at most one part for each element (evaluator.ts lines 1715 to 1737), the bound is that count, and a body past the fixed ceiling is refused with the same code by the projection (evaluator.ts line 1810)."
+      "reason": "Without a bound the evaluator counts parts against not-a-number and never refuses, and with it never refuses either: a plain pattern yields at most one part for each element (evaluator.ts lines 1902 to 1924), the bound is that count, and a body past the fixed ceiling is refused with the same code by the projection (evaluator.ts line 1997)."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -2937,7 +2937,7 @@
       "original": "record['kind'] === 'select'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "A body reaches this line with a kind other than select only when it is no pattern with its parts, and evaluateCandidateInternal refuses every such body (evaluator.ts lines 2125 to 2132) whatever bound was computed for it."
+      "reason": "A body reaches this line with a kind other than select only when it is no pattern with its parts, and evaluateCandidateInternal refuses every such body (evaluator.ts lines 2312 to 2319) whatever bound was computed for it."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -2945,7 +2945,7 @@
       "original": "{\n        if (typeof variant !== 'object' || variant === null) return 1;\n        const pattern = (variant as Readonly<Record<string, unknown>>)[\n          'pattern'\n        ];\n        return Array.isArray(pattern) ? Math.max(1, pattern.length) : 1;\n      }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "An empty callback makes the bound not-a-number, which never refuses, and the original bound is the longest variant, which the selected variant cannot exceed because a plain pattern yields at most one part for each element (evaluator.ts lines 1715 to 1737)."
+      "reason": "An empty callback makes the bound not-a-number, which never refuses, and the original bound is the longest variant, which the selected variant cannot exceed because a plain pattern yields at most one part for each element (evaluator.ts lines 1902 to 1924)."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -2953,7 +2953,7 @@
       "original": "false",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "publishing is read only on line 2539, after line 2538 has returned for a runtime with no snapshot, and the publication that set the first snapshot assigned it on lines 1312 and 1322. initializationFollowsFailure is read only after an initialization exists, and initialize assigns the field before it creates one, so its initial value is never read either.",
+      "reason": "publishing is read only on line 2831, after line 2830 has returned for a runtime with no snapshot, and the publication that set the first snapshot assigned it on lines 1445 and 1455. initializationFollowsFailure is read only after an initialization exists, and initialize assigns the field before it creates one, so its initial value is never read either.",
       "count": 2
     },
     {
@@ -2962,7 +2962,7 @@
       "original": "configuration.scopes.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With no scopes every later path refuses with the same code: invalid extensions (extensions.ts 51-58), an empty or non-list bootstrapScopes on lines 1152-1154, and any non-empty list exceeds the empty scope map on line 1375."
+      "reason": "With no scopes every later path refuses with the same code: invalid extensions (extensions.ts 43-54), an empty or non-list bootstrapScopes on lines 1255-1257, and any non-empty list exceeds the empty scope map on line 1529."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3027,7 +3027,7 @@
       "original": "{\n    this.operationControllers.delete(controller);\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "operationControllers is read only by dispose, which aborts and clears it; aborting a controller whose operation has settled reaches no listener because waitForSignal removes them at settle (runtime-safety.ts:447-455)."
+      "reason": "operationControllers is read only by dispose, which aborts and clears it; aborting a controller whose operation has settled reaches no listener because waitForSignal removes them at settle (runtime-safety.ts:475-483)."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3035,7 +3035,7 @@
       "original": "this.operationControllers.delete(controller);",
       "replacement": ";",
       "category": "equivalent",
-      "reason": "operationControllers is read only by dispose, which aborts and clears it; aborting a controller whose operation has settled reaches no listener because waitForSignal removes them at settle (runtime-safety.ts:447-455)."
+      "reason": "operationControllers is read only by dispose, which aborts and clears it; aborting a controller whose operation has settled reaches no listener because waitForSignal removes them at settle (runtime-safety.ts:475-483)."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3101,7 +3101,7 @@
       "original": "'message'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "The evaluator compares a message's kind only with 'empty' (evaluator.ts:2114), so any other value behaves as 'message'."
+      "reason": "The evaluator compares a message's kind only with 'empty' (evaluator.ts:2301), so any other value behaves as 'message'."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3142,7 +3142,7 @@
       "original": "{\n          irNodes: outputBound,\n          depth: 1,\n          selectors: 0,\n          variants: 0,\n          inputs: 0,\n          slots: 0,\n          outputParts: outputBound,\n        }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "A recovery body yields one output part per pattern element, so the missing maximumMessage bound is never exceeded, and past 65,536 parts projectLocalizedParts (evaluator.ts:1810) refuses with the same code."
+      "reason": "A recovery body yields one output part per pattern element, so the missing maximumMessage bound is never exceeded, and past 65,536 parts projectLocalizedParts (evaluator.ts:1997) refuses with the same code."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3207,7 +3207,7 @@
       "original": "this.active?.publicSnapshot",
       "replacement": "this.active.publicSnapshot",
       "category": "equivalent",
-      "reason": "active is undefined here only after dispose, which aborted the transition controller (2929); the catch at 2413 reports an aborted transition as cancelled whatever was thrown. this.active is undefined after 2287 only once dispose has run, and dispose aborts this controller (2929), so the check on 2371 throws before this line reads it. The committed snapshot is set by the initialization awaited on line 2287 and cleared only by dispose (line 2959), which aborts the pending controller first (line 2929), and line 2371 throws on an aborted signal with no await between it and this line. active is undefined here only after dispose, which aborted the transition controller (2929); the catch at 2413 reports an aborted transition as cancelled whatever was thrown. this.active is undefined after 2287 only once dispose has run, and dispose aborts this controller (2929), so the check on 2371 throws before this line reads it. The committed snapshot is set by the initialization awaited on line 2287 and cleared only by dispose (line 2959), which aborts the pending controller first (line 2929), and line 2371 throws on an aborted signal with no await between it and this line.",
+      "reason": "active is undefined here only after dispose, which aborted the transition controller (3302); the catch at 2705 reports an aborted transition as cancelled whatever was thrown. this.active is undefined after 2556 only once dispose has run, and dispose aborts this controller (3302), so the check on 2655 throws before this line reads it. The committed snapshot is set by the initialization awaited on line 2556 and cleared only by dispose (line 3332), which aborts the pending controller first (line 3302), and line 2655 throws on an aborted signal with no await between it and this line. active is undefined here only after dispose, which aborted the transition controller (3302); the catch at 2705 reports an aborted transition as cancelled whatever was thrown. this.active is undefined after 2556 only once dispose has run, and dispose aborts this controller (3302), so the check on 2655 throws before this line reads it. The committed snapshot is set by the initialization awaited on line 2556 and cleared only by dispose (line 3332), which aborts the pending controller first (line 3302), and line 2655 throws on an aborted signal with no await between it and this line.",
       "count": 2
     },
     {
@@ -4776,7 +4776,7 @@
       "original": "value.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "An empty string goes on to canonicalizeLanguageTag, whose subtag check (core/src/language-tag.ts:65-66) answers undefined for it, so line 119 returns undefined as the removed clause did."
+      "reason": "An empty string goes on to canonicalizeLanguageTag, whose subtag check (core/src/language-tag.ts:65-66) answers undefined for it, so line 121 returns undefined as the removed clause did."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4784,7 +4784,7 @@
       "original": "typeof value['kind'] !== 'string'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "This is the clause on the kind's type alone: a kind that is not text matches no case of the strict switch on line 175 and reaches the default on line 298, which returns undefined as the clause did."
+      "reason": "This is the clause on the kind's type alone: a kind that is not text matches no case of the strict switch on line 177 and reaches the default on line 300, which returns undefined as the clause did."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4792,7 +4792,7 @@
       "original": "value['language'] === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the language absent, canonicalLanguage(undefined) returns undefined at line 116, the value the removed branch produced."
+      "reason": "With the language absent, canonicalLanguage(undefined) returns undefined at line 118, the value the removed branch produced."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4817,7 +4817,7 @@
       "original": "typeof value['status'] !== 'string'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "This is the clause on the status type alone: a status that is not text matches no case of the strict switch on line 340 and reaches the default on line 422, or is refused at line 339 first, and both return undefined."
+      "reason": "This is the clause on the status type alone: a status that is not text matches no case of the strict switch on line 342 and reaches the default on line 424, or is refused at line 341 first, and both return undefined."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4825,7 +4825,7 @@
       "original": "value['representation'] === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the representation absent, sanitizeRepresentation(undefined) returns undefined at line 173, the value the removed branch produced."
+      "reason": "With the representation absent, sanitizeRepresentation(undefined) returns undefined at line 175, the value the removed branch produced."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4833,7 +4833,7 @@
       "original": "typeof value['reason'] !== 'string'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "A reason that is not text is not a member of the set of six strings, so the next clause on line 411 refuses the same values."
+      "reason": "A reason that is not text is not a member of the set of six strings, so the next clause on line 413 refuses the same values."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4841,7 +4841,7 @@
       "original": "value['report'] === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the report absent, sanitizeParticipantReport(undefined) returns undefined at line 337, the value the removed branch produced."
+      "reason": "With the report absent, sanitizeParticipantReport(undefined) returns undefined at line 339, the value the removed branch produced."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4849,7 +4849,7 @@
       "original": "value['status'] === 'preparing' && report !== undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "A preparing attempt that carries a report is refused by lines 487-489 as well, because no admitted report has the status 'preparing'."
+      "reason": "A preparing attempt that carries a report is refused by lines 489-491 as well, because no admitted report has the status 'preparing'."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4857,7 +4857,7 @@
       "original": "'status'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "Reading a field named '' makes this clause never hold, and a preparing attempt that carries a report is still refused by lines 487-489, because no admitted report has the status 'preparing'."
+      "reason": "Reading a field named '' makes this clause never hold, and a preparing attempt that carries a report is still refused by lines 489-491, because no admitted report has the status 'preparing'."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4865,7 +4865,7 @@
       "original": "'preparing'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "Comparing the status with '' makes this clause never hold, and a preparing attempt that carries a report is still refused by lines 487-489, because no admitted report has the status 'preparing'."
+      "reason": "Comparing the status with '' makes this clause never hold, and a preparing attempt that carries a report is still refused by lines 489-491, because no admitted report has the status 'preparing'."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4873,7 +4873,7 @@
       "original": "item['current'] === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the current absent, sanitizeCurrent(undefined) returns undefined at line 435, the value the removed branch produced."
+      "reason": "With the current absent, sanitizeCurrent(undefined) returns undefined at line 433, the value the removed branch produced."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4881,7 +4881,7 @@
       "original": "item['attempt'] === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the attempt absent, sanitizeTransferAttempt(undefined) returns undefined at line 461, the value the removed branch produced."
+      "reason": "With the attempt absent, sanitizeTransferAttempt(undefined) returns undefined at line 459, the value the removed branch produced."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4905,7 +4905,7 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "The stray default entry is stored under the key undefined, and the map is read only at line 707 by an identity line 670 has already required to be a string, so it is never found. The extra entry is only read by the rollback loop, where reading its adapter throws inside the try on line 1203 and the catch on line 1210 discards it.",
+      "reason": "In the constructor the stray default entry is stored under the key undefined (line 668), and the map is read only at line 761 by an identity line 724 has already required to be a string, so it is never found. In commitPrepared the extra entry of invoked is read only by the rollback loop (line 1282), which hands it to tell(): reading its adapter throws inside the hook the try on line 684 calls (line 685), and the catch on line 686 discards it before anything else of it is read.",
       "count": 2
     },
     {
@@ -4938,7 +4938,7 @@
       "original": "deadline === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The adapter then carries deadlineMilliseconds: undefined where it carried no such key, and both readers compare the value with undefined (lines 796 and 934), so no timer is set and registrations() omits it either way."
+      "reason": "The adapter then carries deadlineMilliseconds: undefined where it carried no such key, and both readers compare the value with undefined (lines 844 and 1003), so no timer is set and registrations() omits it either way."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -4946,7 +4946,7 @@
       "original": "compatibleTransfer !== undefined",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "A registration that adopted no record has no current, so both readers of the flag answer the same with it set: line 917 also needs a current, and line 1276 already holds when there is none; line 921 clears it at the first preparation."
+      "reason": "A registration that adopted no record has no current, so both readers of the flag answer the same with it set: line 983 also needs a current, and line 1354 already holds when there is none; line 990 clears it at the first preparation."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -5035,7 +5035,7 @@
       "original": "'abort'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "The listener left on the signal can only reject the abort promise after the race on line 963 has settled, and that promise already has the race as its handler, so a late rejection reaches nobody.",
+      "reason": "The listener left on the signal can only reject the abort promise after the race on line 1032 has settled, and that promise already has the race as its handler, so a late rejection reaches nobody.",
       "count": 2
     },
     {
@@ -5108,7 +5108,7 @@
       "original": "failed === undefined",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "failed is assigned on line 1141 before anything in the loop can throw, and the three callers pass an array (line 1247, localization.ts lines 1789 and 2327), so the catch never sees it undefined."
+      "reason": "failed is assigned on line 1219 before anything in the loop can throw, and the three callers pass an array (line 1325, localization.ts lines 1938 and 2600), so the catch never sees it undefined."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -5181,7 +5181,7 @@
       "original": "this.transferred.clear();",
       "replacement": ";",
       "category": "equivalent",
-      "reason": "The map is read only by register (line 707), which refuses on a disposed coordinator (line 664), so clearing it releases memory and changes no result."
+      "reason": "The map is read only by register (line 761), which refuses on a disposed coordinator (line 718), so clearing it releases memory and changes no result."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -5619,7 +5619,7 @@
       "original": "values.indexOf(identity) === index",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "The merged recovery list is read in three ways after this filter: whether it is empty, by recoveryModule (generated-contracts.ts line 755) through new Set, and by recoveryRepresentations (compiled-artifacts.ts line 890) through new Set. A repeated identity changes none of the three."
+      "reason": "The merged recovery list is read in three ways after this filter: whether it is empty, by recoveryModule (generated-contracts.ts line 890) through new Set, and by recoveryRepresentations (compiled-artifacts.ts line 900) through new Set. A repeated identity changes none of the three."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5644,7 +5644,7 @@
       "original": "missingFromPolicy.length === 1",
       "replacement": "true",
       "category": "message-wording",
-      "reason": "Each of the five tests on line 718 chooses between the singular and the plural form of a phrase inside the TH1408 summary for configured locales with no address.",
+      "reason": "Each of the five tests on line 892 chooses between the singular and the plural form of a phrase inside the TH1408 summary for configured locales with no address.",
       "count": 5
     },
     {
@@ -5653,7 +5653,7 @@
       "original": "missingFromPolicy.length === 1",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "Each of the five tests on line 718 chooses between the singular and the plural form of a phrase inside the TH1408 summary for configured locales with no address.",
+      "reason": "Each of the five tests on line 892 chooses between the singular and the plural form of a phrase inside the TH1408 summary for configured locales with no address.",
       "count": 5
     },
     {
@@ -5662,7 +5662,7 @@
       "original": "missingFromPolicy.length === 1",
       "replacement": "missingFromPolicy.length !== 1",
       "category": "message-wording",
-      "reason": "Each of the five tests on line 718 chooses between the singular and the plural form of a phrase inside the TH1408 summary for configured locales with no address.",
+      "reason": "Each of the five tests on line 892 chooses between the singular and the plural form of a phrase inside the TH1408 summary for configured locales with no address.",
       "count": 5
     },
     {
@@ -5671,7 +5671,7 @@
       "original": "'it'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The singular pronoun inside the summaries of TH1408 (lines 718 and 727) and TH1417 (line 762).",
+      "reason": "The singular pronoun inside the summaries of TH1408 (lines 892 and 901) and TH1417 (line 997).",
       "count": 7
     },
     {
@@ -5680,7 +5680,7 @@
       "original": "missingFromConfiguration.length === 1",
       "replacement": "true",
       "category": "message-wording",
-      "reason": "Each of the four tests on line 727 chooses between the singular and the plural form of a phrase inside the TH1408 summary for policy locales with no catalogs.",
+      "reason": "Each of the four tests on line 901 chooses between the singular and the plural form of a phrase inside the TH1408 summary for policy locales with no catalogs.",
       "count": 4
     },
     {
@@ -5689,7 +5689,7 @@
       "original": "missingFromConfiguration.length === 1",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "Each of the four tests on line 727 chooses between the singular and the plural form of a phrase inside the TH1408 summary for policy locales with no catalogs.",
+      "reason": "Each of the four tests on line 901 chooses between the singular and the plural form of a phrase inside the TH1408 summary for policy locales with no catalogs.",
       "count": 4
     },
     {
@@ -5698,7 +5698,7 @@
       "original": "missingFromConfiguration.length === 1",
       "replacement": "missingFromConfiguration.length !== 1",
       "category": "message-wording",
-      "reason": "Each of the four tests on line 727 chooses between the singular and the plural form of a phrase inside the TH1408 summary for policy locales with no catalogs.",
+      "reason": "Each of the four tests on line 901 chooses between the singular and the plural form of a phrase inside the TH1408 summary for policy locales with no catalogs.",
       "count": 4
     },
     {
@@ -5748,7 +5748,7 @@
       "original": "leading === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "On line 807 the value is element 0 of String.prototype.split, which always exists. On line 848 it is element 1 of an address absoluteAddress (static-analysis.ts line 1830) returned only because it begins with \"/\", so the split has at least two elements. Neither is ever undefined.",
+      "reason": "On line 1053 the value is element 0 of String.prototype.split, which always exists. On line 1094 it is element 1 of an address absoluteAddress (static-analysis.ts line 1802) returned only because it begins with \"/\", so the split has at least two elements. Neither is ever undefined.",
       "count": 2
     },
     {
@@ -5765,7 +5765,7 @@
       "original": "mention.kind === 'literal'",
       "replacement": "true",
       "category": "message-wording",
-      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 909."
+      "reason": "The test on line 1151 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 1156."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5773,7 +5773,7 @@
       "original": "mention.kind === 'literal'",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 909."
+      "reason": "The test on line 1151 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 1156."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5781,7 +5781,7 @@
       "original": "mention.kind === 'literal'",
       "replacement": "mention.kind !== 'literal'",
       "category": "message-wording",
-      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 909."
+      "reason": "The test on line 1151 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 1156."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5789,7 +5789,7 @@
       "original": "'literal'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The test on line 904 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 909."
+      "reason": "The test on line 1151 chooses which of three phrases describes the mention inside the TH1410 summary; the severity is decided separately on line 1156."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5805,7 +5805,7 @@
       "original": "mention.siblingDirection === undefined",
       "replacement": "true",
       "category": "message-wording",
-      "reason": "The test on line 906 chooses whether the TH1410 summary mentions the dir attribute beside the lang attribute."
+      "reason": "The test on line 1153 chooses whether the TH1410 summary mentions the dir attribute beside the lang attribute."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5813,7 +5813,7 @@
       "original": "mention.siblingDirection === undefined",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "The test on line 906 chooses whether the TH1410 summary mentions the dir attribute beside the lang attribute."
+      "reason": "The test on line 1153 chooses whether the TH1410 summary mentions the dir attribute beside the lang attribute."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5821,7 +5821,7 @@
       "original": "mention.siblingDirection === undefined",
       "replacement": "mention.siblingDirection !== undefined",
       "category": "message-wording",
-      "reason": "The test on line 906 chooses whether the TH1410 summary mentions the dir attribute beside the lang attribute."
+      "reason": "The test on line 1153 chooses whether the TH1410 summary mentions the dir attribute beside the lang attribute."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5862,7 +5862,7 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "The array is the value of deferredScopes when no analysis ran, and deferredScopes is read only on line 935 inside the branch taken when analysis is not undefined."
+      "reason": "The array is the value of deferredScopes when no analysis ran, and deferredScopes is read only on line 1186 inside the branch taken when analysis is not undefined."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5870,7 +5870,7 @@
       "original": "scopes.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the test false an empty scope list is passed as scopes: []. generateContracts reads route.scopes on lines 702 and 729 of generated-contracts.ts with \"=== undefined || length === 0\", so an empty list and an absent one produce the same projection identity and the same row."
+      "reason": "With the test false an empty scope list is passed as scopes: []. generateContracts reads route.scopes on lines 837 and 864 of generated-contracts.ts with \"=== undefined || length === 0\", so an empty list and an absent one produce the same projection identity and the same row."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5878,7 +5878,7 @@
       "original": "indexing === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "analyzeApplication gives every route an indexing class (static-analysis.ts line 2618, whose classify returns one of three strings), so the test is never true and removing its true branch changes nothing."
+      "reason": "analyzeApplication gives every route an indexing class (static-analysis.ts line 2590, whose classify returns one of three strings), so the test is never true and removing its true branch changes nothing."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5886,7 +5886,7 @@
       "original": "caching === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the test false a route without a caching class is passed as caching: undefined. generateContracts reads it on lines 698 and 729 of generated-contracts.ts with \"=== undefined\", the same answer an absent property gives."
+      "reason": "With the test false a route without a caching class is passed as caching: undefined. generateContracts reads it on lines 833 and 864 of generated-contracts.ts with \"=== undefined\", the same answer an absent property gives."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5894,7 +5894,7 @@
       "original": "sitemap === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the test false a route without a sitemap claim is passed as sitemap: undefined. generateContracts reads it on lines 701 and 712 to 725 of generated-contracts.ts with \"=== undefined\", the same answer an absent property gives."
+      "reason": "With the test false a route without a sitemap claim is passed as sitemap: undefined. generateContracts reads it on lines 836 and 847 to 860 of generated-contracts.ts with \"=== undefined\", the same answer an absent property gives."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -5902,7 +5902,7 @@
       "original": "error.type !== 'missing-syntax'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "Without the early return an error of another type is matched against /^Missing (.+) at \\d+$/. messageformat 4.0.0 writes \"Missing\" into a message only when its MissingSyntax helper passes the expected token (lib/errors.js, lib/data-model/parse.js line 11), and that helper always sets the type missing-syntax; every other error carries its type name as its message, the pattern does not match, and the general sentence is returned as before."
+      "reason": "Without the early return an error of another type is matched against /^Missing (.+) at \\d+$/. messageformat 4.1.0 writes \"Missing\" into a message only when its MissingSyntax helper passes the expected token (lib/errors.js, lib/data-model/parse.js line 11), and that helper always sets the type missing-syntax; every other error carries its type name as its message, the pattern does not match, and the general sentence is returned as before."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -5910,7 +5910,7 @@
       "original": "options.path === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the test false a caller that named no entry passes path: undefined to toolkitDiagnostic, which reads it with options.path?.slice and \"safePath ?? []\" (diagnostics.ts lines 266 to 279) and writes the same empty path an absent property gives. All four places, lines 718, 741, 798 and 810, spread the option into a toolkitDiagnostic call in this one form.",
+      "reason": "With the test false a caller that named no entry passes path: undefined to toolkitDiagnostic, which reads it with options.path?.slice and \"safePath ?? []\" (diagnostics.ts lines 268 to 281) and writes the same empty path an absent property gives. All four places, lines 726, 749, 806 and 818, spread the option into a toolkitDiagnostic call in this one form.",
       "count": 4
     },
     {
@@ -5919,7 +5919,7 @@
       "original": "error instanceof MessageSyntaxError",
       "replacement": "true",
       "category": "unreachable",
-      "reason": "The rethrow on line 755 is the branch this test guards. parseMessage is handed a string (line 733) and raises only through the SyntaxError and MissingSyntax helpers of messageformat 4.0.0 lib/data-model/parse.js lines 11 and 12, both of which construct MessageSyntaxError, so the catch on line 749 never holds anything else."
+      "reason": "The rethrow on line 764 is the branch this test guards. parseMessage is handed a string (line 742) and raises only through the SyntaxError and MissingSyntax helpers of messageformat 4.1.0 lib/data-model/parse.js lines 11 and 12, both of which construct MessageSyntaxError, so the catch on line 758 never holds anything else."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -5959,7 +5959,7 @@
       "original": "', '",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The separator between listed names inside a summary: the allowed directions of TH1204 on line 853 and the selecting functions of TH1206 on line 1161.",
+      "reason": "The separator between listed names inside a summary: the allowed directions of TH1204 on line 862 and the selecting functions of TH1206 on line 1168.",
       "count": 2
     },
     {
@@ -5976,7 +5976,7 @@
       "original": "false",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "The flag is read once, on line 1037, beside resolved?.complete !== true. Both places, lines 1005 and 1019, run only for an option whose value is a variable and whose name is outside the u: namespace, which makes literalOptions answer complete: false (line 894) and resolveCarried pass it on (line 946), so line 1037 returns whatever the flag holds.",
+      "reason": "The flag is read once, on line 1045, beside resolved?.complete !== true. Both places, lines 998 and 1013, run only for an option whose value is a variable and whose name is outside the u: namespace, which makes literalOptions answer complete: false (line 902) and resolveCarried pass it on (line 954), so line 1045 returns whatever the flag holds.",
       "count": 2
     },
     {
@@ -6009,7 +6009,7 @@
       "original": "declaration === undefined",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "A name with no declaration is reached only from a selector that no annotated declaration leads to. validate refuses such a selector as missing-selector-annotation (messageformat 4.0.0 lib/data-model/validate.js, the annotated set) and lines 767 to 769 return that failure before line 1141 asks, so every name the loop on lines 1130 to 1137 looks up is declared."
+      "reason": "A name with no declaration is reached only from a selector that no annotated declaration leads to. validate refuses such a selector as missing-selector-annotation (messageformat 4.1.0 lib/data-model/validate.js, the annotated set) and lines 776 to 778 return that failure before line 1151 asks, so every name the loop on lines 1137 to 1144 looks up is declared."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -6033,7 +6033,7 @@
       "original": "value.kind !== 'literal'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "A markup option that is not a literal carries no `value` member, so `allowed.includes(value.value)` on line 325 is asked for undefined, which a declared list of strings never holds; the TH1805 diagnostic is pushed with or without the kind test."
+      "reason": "A markup option that is not a literal carries no `value` member, so `allowed.includes(value.value)` on line 328 is asked for undefined, which a declared list of strings never holds; the TH1805 diagnostic is pushed with or without the kind test."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6090,7 +6090,7 @@
       "original": "'message-local'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "On lines 892, 910, 932 and 1128 the fallback kind is only compared with 'code', looked up in interactiveSlotKinds, and looked up in the registry; neither \"message-local\" nor the empty string is 'code' or a built-in kind, and a registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 310), so neither is found. On line 1865 a slot kind is never the empty string (line 1028 supplies a name), so the changed comparison also records 'message-local' as a key, and line 1888 drops it because no descriptor can carry that id.",
+      "reason": "On lines 930, 948, 970 and 1166 the fallback kind is only compared with 'code', looked up in interactiveSlotKinds, and looked up in the registry; neither \"message-local\" nor the empty string is 'code' or a built-in kind, and a registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 311), so neither is found. On line 1881 a slot kind is never the empty string (line 1066 supplies a name), so the changed comparison also records 'message-local' as a key, and line 1904 drops it because no descriptor can carry that id.",
       "count": 5
     },
     {
@@ -6107,7 +6107,7 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "On line 972 the placeholder becomes the single pattern of an explicitly empty message and is walked as text, so each slot counts zero uses where the original has no count, and both read as optional and not repeatable. On line 1123 it becomes one `within` parent that is neither a declared slot nor a built-in name, so its kind is message-local, which is neither code nor interactive.",
+      "reason": "On line 1011 the placeholder becomes the single pattern of an explicitly empty message and is walked as text, so each slot counts zero uses where the original has no count, and both read as optional and not repeatable. On line 1162 it becomes one `within` parent that is neither a declared slot nor a built-in name, so its kind is message-local, which is neither code nor interactive.",
       "count": 2
     },
     {
@@ -6124,7 +6124,7 @@
       "original": "[...parents].sort(compareCodeUnit)",
       "replacement": "[...parents]",
       "category": "equivalent",
-      "reason": "allowedParents is read once, on line 1152, where it is copied and sorted with the same comparator, so the order it has on line 1103 never reaches a result."
+      "reason": "allowedParents is read once, on line 1191, where it is copied and sorted with the same comparator, so the order it has on line 1142 never reaches a result."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6132,7 +6132,7 @@
       "original": "refinement.within?.includes",
       "replacement": "refinement.within.includes",
       "category": "equivalent",
-      "reason": "The left operand on line 1105 has already established that refinement.within is defined, and the refinement is data that answers the same on the next read, so the optional call never short-circuits."
+      "reason": "The left operand on line 1144 has already established that refinement.within is defined, and the refinement is data that answers the same on the next read, so the optional call never short-circuits."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6148,7 +6148,7 @@
       "original": "'code, which holds only text and values'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The text is only interpolated into the TH1303 summary on line 1139; an empty string is still not undefined, so the test on line 1134 pushes the same diagnostic with the same code and path."
+      "reason": "The text is only interpolated into the TH1303 summary on line 1178; an empty string is still not undefined, so the test on line 1173 pushes the same diagnostic with the same code and path."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6156,7 +6156,7 @@
       "original": "'another interactive slot'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The text is only interpolated into the TH1303 summary on line 1139; an empty string is still not undefined, so the test on line 1134 pushes the same diagnostic with the same code and path."
+      "reason": "The text is only interpolated into the TH1303 summary on line 1178; an empty string is still not undefined, so the test on line 1173 pushes the same diagnostic with the same code and path."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6188,7 +6188,7 @@
       "original": "'plural'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "On line 1287 the default is read only by the comparisons with 'exact' and 'ordinal' on lines 1288 and 1291, and on line 1291 the kind is read only by comparisons with 'ordinal' (lines 1195 and 1351). The empty string fails each of those comparisons exactly as 'plural' does, so the cardinal table is read either way. At another place: The word 'plural' inside the TH1308 summary on line 1351, read by a person.",
+      "reason": "On line 1336 the default is read only by the comparisons with 'exact' and 'ordinal' on lines 1337 and 1340, and on line 1340 the kind is read only by comparisons with 'ordinal' (lines 1233 and 1402). The empty string fails each of those comparisons exactly as 'plural' does, so the cardinal table is read either way. At another place: The word 'plural' inside the TH1308 summary on line 1402, read by a person.",
       "count": 3
     },
     {
@@ -6261,7 +6261,7 @@
       "original": "', '",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The separator between the names a summary lists: the operand types inside the TH1302 summary on line 796 and the missing categories inside the TH1308 summary on line 1369.",
+      "reason": "The separator between the names a summary lists: the operand types inside the TH1302 summary on line 834 and the missing categories inside the TH1308 summary on line 1405.",
       "count": 2
     },
     {
@@ -6278,7 +6278,7 @@
       "original": "source.kind !== target.kind",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "A target entry cannot declare slots (parseCatalog refuses them with TH1105, catalog.ts line 1118), so lines 1024 to 1027 give a target slot the kind of the source slot of the same name whenever there is one. Where there is none, the first clause on line 1457 has already decided."
+      "reason": "A target entry cannot declare slots (parseCatalog refuses them with TH1105, catalog.ts line 1140), so lines 1063 to 1066 give a target slot the kind of the source slot of the same name whenever there is one. Where there is none, the first clause on line 1508 has already decided."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6302,7 +6302,7 @@
       "original": "literalCount += 1",
       "replacement": "literalCount -= 1",
       "category": "equivalent",
-      "reason": "literalCount is read once, compared with 0 on line 1575. Counting down from 0 leaves it nonzero exactly when counting up does."
+      "reason": "literalCount is read once, compared with 0 on line 1626. Counting down from 0 leaves it nonzero exactly when counting up does."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6326,7 +6326,7 @@
       "original": "Object.keys(authored.segments).sort(compareCodeUnit)",
       "replacement": "Object.keys(authored.segments)",
       "category": "equivalent",
-      "reason": "segmentNames is read once, by some() on line 1587 with a predicate that looks at one name at a time, so the order of the names changes nothing."
+      "reason": "segmentNames is read once, by some() on line 1638 with a predicate that looks at one name at a time, so the order of the names changes nothing."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6350,7 +6350,7 @@
       "original": "type === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "extensionDescriptor compares each registered id with its argument by === (extensions.ts line 656), and a registered id is a string, so asked about an undefined type it answers undefined, the value the guard supplies on lines 1658 and 1787.",
+      "reason": "extensionDescriptor compares each registered id with its argument by === (extensions.ts line 670), and a registered id is a string, so asked about an undefined type it answers undefined, the value the guard supplies on lines 1687 and 1819.",
       "count": 2
     },
     {
@@ -6375,7 +6375,7 @@
       "original": "!standardFunctionNames.has(name)",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "The change also records the standard function names as message-function keys. The lookup on line 1870 finds no descriptor for any of them, because a registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 311) and no standard function name contains a colon, so line 1876 drops them."
+      "reason": "The change also records the standard function names as message-function keys. The lookup on line 1901 finds no descriptor for any of them, because a registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 311) and no standard function name contains a colon, so line 1907 drops them."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6383,7 +6383,7 @@
       "original": "!builtInSlotKinds.has(slot.kind) && slot.kind !== 'message-local'",
       "replacement": "!builtInSlotKinds.has(slot.kind) || slot.kind !== 'message-local'",
       "category": "equivalent",
-      "reason": "With || the condition holds for every kind, so the built-in kinds and 'message-local' are recorded as keys too. A registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 311) and none of those six names contains a colon, so the lookup on line 1870 finds nothing for them and line 1876 drops them."
+      "reason": "With || the condition holds for every kind, so the built-in kinds and 'message-local' are recorded as keys too. A registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 311) and none of those six names contains a colon, so the lookup on line 1901 finds nothing for them and line 1907 drops them."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6391,7 +6391,7 @@
       "original": "!builtInSlotKinds.has(slot.kind) && slot.kind !== 'message-local'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "The change also records the built-in kinds and 'message-local' as rich-slot-kind keys. The lookup on line 1870 finds no descriptor for any of them, because a registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 311) and none of those six names contains a colon, so line 1876 drops them."
+      "reason": "The change also records the built-in kinds and 'message-local' as rich-slot-kind keys. The lookup on line 1901 finds no descriptor for any of them, because a registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 311) and none of those six names contains a colon, so line 1907 drops them."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6399,7 +6399,7 @@
       "original": "slot.kind !== 'message-local'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "The change also records 'message-local' as a rich-slot-kind key. No descriptor carries that id, because a registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 311), so the lookup on line 1870 answers undefined and line 1876 drops it."
+      "reason": "The change also records 'message-local' as a rich-slot-kind key. No descriptor carries that id, because a registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 311), so the lookup on line 1901 answers undefined and line 1907 drops it."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6407,7 +6407,7 @@
       "original": "descriptor === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "Without the guard the callback returns the descriptor on the next line, which is the same undefined, and the filter on line 1876 removes it."
+      "reason": "Without the guard the callback returns the descriptor on the next line, which is the same undefined, and the filter on line 1907 removes it."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6944,7 +6944,7 @@
       "original": "result.diagnostics[0]?.code",
       "replacement": "result.diagnostics[0].code",
       "category": "equivalent",
-      "reason": "A failed result is built only by toolkitFailure, which throws on an empty list (diagnostics.ts line 225), so the first diagnostic of a failure always exists and the optional step never short-circuits."
+      "reason": "A failed result is built only by toolkitFailure, which throws on an empty list (diagnostics.ts line 227), so the first diagnostic of a failure always exists and the optional step never short-circuits."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7032,7 +7032,7 @@
       "original": "existingTemplate !== undefined",
       "replacement": "false",
       "category": "message-wording",
-      "reason": "The condition on line 1717 only chooses between two summaries of one TH1305 finding with one path, the duplicate-template sentence and the generated-name sentence, so the change puts the second sentence on both."
+      "reason": "The condition on line 1733 only chooses between two summaries of one TH1305 finding with one path, the duplicate-template sentence and the generated-name sentence, so the change puts the second sentence on both."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7072,7 +7072,7 @@
       "original": "severity === 'error'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "Every finding analyzeCatalogSet collects is built by semanticDiagnostic, whose severity is error unless a completeness policy supplies it, and the three calls that pass one (lines 1372, 1413 and 2179) carry TH1308, TH1307 and TH1306, all in COMPLETENESS_CODES. A finding that is not an error therefore already fails the second half of the conjunction."
+      "reason": "Every finding analyzeCatalogSet collects is built by semanticDiagnostic, whose severity is error unless a completeness policy supplies it, and the three calls that pass one (lines 1408, 1449 and 2194) carry TH1308, TH1307 and TH1306, all in COMPLETENESS_CODES. A finding that is not an error therefore already fails the second half of the conjunction."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7080,7 +7080,7 @@
       "original": "[...seen].filter((scopeId) => !eager.has(scopeId)).sort(compareCodeUnit)",
       "replacement": "[...seen].filter(scopeId => !eager.has(scopeId))",
       "category": "equivalent",
-      "reason": "The list deferredScopeIds returns is read in two places, routeScopes line 273 and indexModule (generated-contracts.ts line 552), and both turn it into a Set and only ask has(scopeId), so its order reaches no output."
+      "reason": "The list deferredScopeIds returns is read in two places, routeScopes line 285 and indexModule (generated-contracts.ts line 609), and both turn it into a Set and only ask has(scopeId), so its order reaches no output."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7088,7 +7088,7 @@
       "original": "files\n      .filter(({ path }) => path.endsWith('.ts'))",
       "replacement": "files",
       "category": "equivalent",
-      "reason": "virtualModules is called once, with the files generateContracts returns (line 623), and every path that function builds is a literal ending in '.ts' or a scope id followed by '.ts' (generated-contracts.ts lines 791 to 814), so the filter removes nothing."
+      "reason": "virtualModules is called once, with the files generateContracts returns (line 790), and every path that function builds is a literal ending in '.ts' or a scope id followed by '.ts' (generated-contracts.ts lines 917 to 948), so the filter removes nothing."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7096,7 +7096,7 @@
       "original": "'.ts'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "The literal is the suffix the filter in virtualModules keeps; every path generateContracts returns ends in '.ts' (generated-contracts.ts lines 791 to 814), so a filter that keeps every path keeps the same files."
+      "reason": "The literal is the suffix the filter in virtualModules keeps; every path generateContracts returns ends in '.ts' (generated-contracts.ts lines 917 to 948), so a filter that keeps every path keeps the same files."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7104,7 +7104,7 @@
       "original": "request.extensions === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The changed code hands analyzeCatalogSet an extensions key holding undefined where the original leaves the key out; analyzeCatalogSet only reads request.extensions as a value (semantic-model.ts lines 2033 to 2286) and never asks whether the key is present."
+      "reason": "The changed code hands analyzeCatalogSet an extensions key holding undefined where the original leaves the key out; analyzeCatalogSet only reads request.extensions as a value (semantic-model.ts lines 2051 to 2301) and never asks whether the key is present."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7112,7 +7112,7 @@
       "original": "request.requireCompleteTargets === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The changed code hands analyzeCatalogSet a requireCompleteTargets key holding undefined where the original leaves the key out; the only reads compare the value with true (semantic-model.ts lines 2094 and 2170), which undefined and an absent key answer alike."
+      "reason": "The changed code hands analyzeCatalogSet a requireCompleteTargets key holding undefined where the original leaves the key out; the only reads compare the value with true (semantic-model.ts lines 2112 and 2185), which undefined and an absent key answer alike."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7120,7 +7120,7 @@
       "original": "request.recoveryMessageIdentities === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The changed code hands the provisional generateContracts a recoveryMessageIdentities key holding undefined where the original leaves the key out; generateContracts reads it as options.recoveryMessageIdentities ?? [] (generated-contracts.ts line 806), which gives the empty list for both."
+      "reason": "The changed code hands the provisional generateContracts a recoveryMessageIdentities key holding undefined where the original leaves the key out; generateContracts reads it as options.recoveryMessageIdentities ?? [] (generated-contracts.ts line 940), which gives the empty list for both."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7128,7 +7128,7 @@
       "original": "diagnostics.push(...provisionalContracts.diagnostics);",
       "replacement": ";",
       "category": "equivalent",
-      "reason": "The line is reached only when the provisional generateContracts succeeded, and every diagnostic that function raises is an error (TH1305 at generated-contracts.ts lines 277 and 294, TH1304 at line 764, none passing a severity) that makes it return a failure at line 819, so the list pushed here is always empty."
+      "reason": "The line is reached only when the provisional generateContracts succeeded, and every diagnostic that function raises is an error (TH1305 at generated-contracts.ts lines 299 and 316, and TH1501 from recoveryRootRefusal, pushed at line 894, none passing a severity, so each takes the default error of diagnostics.ts line 279) that makes it return a failure at line 954, so the list pushed here is always empty."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7136,7 +7136,7 @@
       "original": "request.analysis.maxDiagnostics === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The changed code hands analyzeApplication a maxDiagnostics key holding undefined where the original leaves the key out; its one read is request.maxDiagnostics ?? 100 (static-analysis.ts line 3367), which gives 100 for both."
+      "reason": "The changed code hands analyzeApplication a maxDiagnostics key holding undefined where the original leaves the key out; its one read is request.maxDiagnostics ?? 100 (static-analysis.ts line 3339), which gives 100 for both."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7144,7 +7144,7 @@
       "original": "request.analysis.compilerOptions === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The changed code hands analyzeApplication a compilerOptions key holding undefined where the original leaves the key out; its two reads are request.compilerOptions ?? fallbackOptions and request.compilerOptions?.paths ?? {} (static-analysis.ts lines 3303 and 3307), which answer alike for both."
+      "reason": "The changed code hands analyzeApplication a compilerOptions key holding undefined where the original leaves the key out; its two reads are request.compilerOptions ?? fallbackOptions and request.compilerOptions?.paths ?? {} (static-analysis.ts lines 3275 and 3279), which answer alike for both."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7184,7 +7184,7 @@
       "original": "diagnostics.push(...contracts.diagnostics);",
       "replacement": ";",
       "category": "equivalent",
-      "reason": "`generateContracts` raises only TH1304 and TH1305, both at the default error severity (generated-contracts.ts lines 276, 293 and 763), and returns a failure when any error is present, so on the success path this line is reached with `contracts.diagnostics` always empty and the push adds nothing."
+      "reason": "`generateContracts` raises only TH1305 (generated-contracts.ts lines 299 and 316) and TH1501 through recoveryRootRefusal (pushed at line 894), all at the default error severity (diagnostics.ts line 279), and returns a failure when any error is present (line 954), so on the success path this line is reached with `contracts.diagnostics` always empty and the push adds nothing."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7200,7 +7200,7 @@
       "original": "recoveryMessageIdentities.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the guard gone an empty list is passed to generateContracts (line 936) or to compileLocalArtifacts (line 979). Each reads the option once, as options.recoveryMessageIdentities ?? [] and request.recoveryMessageIdentities ?? [], so an empty list and an absent option produce the same recovery module and the same recovery payload.",
+      "reason": "With the guard gone an empty list is passed to generateContracts (line 1187) or to compileLocalArtifacts (line 1230). Each reads the option once, as options.recoveryMessageIdentities ?? [] and request.recoveryMessageIdentities ?? [], so an empty list and an absent option produce the same recovery module and the same recovery payload.",
       "count": 2
     },
     {
@@ -7258,7 +7258,7 @@
       "original": "profile === undefined",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "Lines 784 to 804 return TH1203 for any function that is neither in the built-in profile nor registered, MESSAGE_FUNCTION_OPTIONS has an entry for each of the ten built-in names and customProfiles one for each registered name, so no function reaches this line without a profile."
+      "reason": "Lines 792 to 812 return TH1203 for any function that is neither in the built-in profile nor registered, MESSAGE_FUNCTION_OPTIONS has an entry for each of the ten built-in names and customProfiles one for each registered name, so no function reaches this line without a profile."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -7290,7 +7290,7 @@
       "original": "current !== undefined && !seen.has(current)",
       "replacement": "current !== undefined || !seen.has(current)",
       "category": "equivalent",
-      "reason": "The walk starts at a selector, and lines 760 to 770 have already refused any selector whose chain of declarations does not end at one that names a function and any declaration that refers to itself or to a later one; so the walk returns at line 1136 before current is undefined or a name repeats."
+      "reason": "The walk starts at a selector, and lines 768 to 778 have already refused any selector whose chain of declarations does not end at one that names a function and any declaration that refers to itself or to a later one; so the walk returns at line 1142 before current is undefined or a name repeats."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -7306,7 +7306,7 @@
       "original": "seen.add(current);",
       "replacement": ";",
       "category": "equivalent",
-      "reason": "A name can repeat only on a chain that reaches a declaration with no function whose operand is itself or a later name, and lines 760 to 770 refuse that as a duplicate declaration or a selector with no annotation before the walk runs; with no repeat, seen is never what ends the loop."
+      "reason": "A name can repeat only on a chain that reaches a declaration with no function whose operand is itself or a later name, and lines 768 to 778 refuse that as a duplicate declaration or a selector with no annotation before the walk runs; with no repeat, seen is never what ends the loop."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7347,7 +7347,7 @@
       "original": "message.resultKind === 'plain'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "A message is structured only when its pattern holds markup (message-format.ts line 963), and a graph is accepted only when every closing part closes one that opened (lines 902 to 913). A structured message in an accepted graph therefore has an opening or standalone part, which adds its name to the slot counts (line 919), and effectiveSlots makes a slot contract of every counted name (lines 1028 and 1184), so the slots test on line 702 refuses it as this one did."
+      "reason": "A message is structured only when its pattern holds markup (message-format.ts line 968), and a graph is accepted only when every closing part closes one that opened (lines 902 to 913). A structured message in an accepted graph therefore has an opening or standalone part, which adds its name to the slot counts (line 919), and effectiveSlots makes a slot contract of every counted name (lines 1028 and 1184), so the slots test on line 702 refuses it as this one did."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7355,7 +7355,7 @@
       "original": "selectors.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The early return on line 1346 is followed only by the loop over `selectors` on line 1348, which does nothing for an empty list, and the function returns nothing either way."
+      "reason": "The early return on line 1380 is followed only by the loop over `selectors` on line 1382, which does nothing for an empty list, and the function returns nothing either way."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7363,7 +7363,7 @@
       "original": "exemplar === undefined",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "Lines 1914 to 1916 store a group only after pushing a catalog onto it, and nothing removes one, so `catalogs[0]` on line 1925 is always a catalog and the guard on line 1926 never continues."
+      "reason": "Lines 1930 to 1932 store a group only after pushing a catalog onto it, and nothing removes one, so `catalogs[0]` on line 1941 is always a catalog and the guard on line 1942 never continues."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7371,7 +7371,7 @@
       "original": "catalog !== sourceCatalog",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "Line 1944 continues unless the source catalog's role is 'source', so by the filter on line 1984 the one catalog this clause excludes is also excluded by the role clause beside it, and the same catalogs are kept as targets."
+      "reason": "Line 1962 continues unless the source catalog's role is 'source', so by the filter on line 2002 the one catalog this clause excludes is also excluded by the role clause beside it, and the same catalogs are kept as targets."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -7435,7 +7435,7 @@
       "original": "request.analysis.typeNames === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the test false an absent typeNames is passed to analyzeApplication as typeNames: undefined, and its one read of the option (static-analysis.ts line 3310) is request.typeNames === undefined, so the program is built with the same compiler options an absent property gives."
+      "reason": "With the test false an absent typeNames is passed to analyzeApplication as typeNames: undefined, and its one read of the option (static-analysis.ts line 3282) is request.typeNames === undefined, so the program is built with the same compiler options an absent property gives."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7451,7 +7451,7 @@
       "original": "localePrefixes === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 791), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7459,7 +7459,7 @@
       "original": "prefixAliases === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 791), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7467,7 +7467,7 @@
       "original": "omitDefaultPrefix === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 791), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7475,7 +7475,7 @@
       "original": "localeOrigins === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 791), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7483,7 +7483,7 @@
       "original": "localeNeutralRoots === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 791), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7491,7 +7491,7 @@
       "original": "xDefault === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 791), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7623,12 +7623,60 @@
       "reason": "scopeModule and recoveryModule are the only sources of an error in generateContracts. The provisional generation at line 763 has already run both on the same graph and on every identity the request names, and configuredRecovery refuses (line 751) any configured identity recoveryRootRefusal would, so a generation that reaches this line cannot fail."
     },
     {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "MethodExpression",
+      "original": "scope.messages\n      .filter(({ identity }) => !reached.has(identity))\n      .map(({ messageId }) => messageId)\n      .sort(compareCodeUnit)",
+      "replacement": "scope.messages.filter(({\n  identity\n}) => !reached.has(identity)).map(({\n  messageId\n}) => messageId)",
+      "category": "equivalent",
+      "reason": "scope.messages is already in message-id order: analyzeCatalogSet sorts each scope's messages by messageId with compareCodeUnit (semantic-model.ts line 2154), and filter and map keep that order, so the sort finds the list sorted and the mutant lists the same unreached ids in the same order."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "scopeId === undefined",
+      "replacement": "false",
+      "category": "unreachable",
+      "reason": "deferredScopeIds is called with graph.value and the one analysis compileProject keeps (line 797), which analyzeApplication built with knownMessageIdentities set to every identity of that graph (line 791). A given list, empty included, makes addUsage refuse any identity outside it with TH1403 (static-analysis.ts line 3417) before the only push into messageUsages (line 3427), and scopeOf holds every identity of the graph (line 232), so scopeOf.get never answers undefined here."
+    },
+    {
       "file": "packages/toolkit/src/message-format.ts",
       "mutator": "StringLiteral",
       "original": "`MessageFormat source exceeds the ${RESOURCE_LIMITS.messageBytes}-byte implementation ceiling.`",
       "replacement": "``",
       "category": "message-wording",
       "reason": "The whole summary of the TH1201 finding for a message whose UTF-8 bytes pass the ceiling while its characters do not; its code and its path are what the case compares."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "ConditionalExpression",
+      "original": "name === undefined",
+      "replacement": "false",
+      "category": "unreachable",
+      "reason": "annotatingFunction answers undefined only for a selector no function annotates, directly or through re-bindings, and validate reports that as missing-selector-annotation, which returns at line 776 before this loop runs (line 768). Checked against messageformat 4.1.0: `.match $a`, `.local $b = {$a} .match $b` and a selector bound to a literal are refused, and `.input {$a :number} .local $b = {$a} .match $b` is valid."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "StringLiteral",
+      "original": "'string'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "With the empty string the test is false for every profile, as with the ConditionalExpression mutant on the same line: only :string has a string operand (message-function-options.ts line 615), it takes no option and inherits none, so the number check below builds an empty option set from it and refuses nothing."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "ConditionalExpression",
+      "original": "profile.operand === 'string'",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "Only :string has a string operand (message-function-options.ts line 615), and it takes no option and inherits none: a written option is refused (lines 997 and 1020 to 1030), which returns at line 1045, and its empty inheritsOnly keeps nothing of the operand's (inheritedOptions, message-function-options.ts line 643). So the options reaching the number check below are at most u: options, which numberFormatOptions skips as not numeric, and it builds an empty set that neither refusal check refuses: no diagnostic either way."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "OptionalChaining",
+      "original": "resolved?.complete",
+      "replacement": "resolved.complete",
+      "category": "equivalent",
+      "reason": "This callback has returned at line 976 for a function with no built-in profile, so resolveCarried is called on line 1044 for a built-in, and it answers undefined only when there is no profile at all (line 932). So resolved is always defined here, and `?.` and `.` read the same."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7958,7 +8006,8 @@
       "original": "'auto'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "The defaults of trailingZeroDisplay (line 276) and of signDisplay (line 416) are returned only when the option is absent, and both calls discard them; a written value is compared with the list of values, never with the default."
+      "reason": "The defaults of trailingZeroDisplay (line 276) and of signDisplay (line 416) are returned only when the option is absent, and both calls discard them; a written value is compared with the list of values, never with the default.",
+      "count": 2
     },
     {
       "file": "packages/toolkit/src/number-format-rules.ts",
@@ -8096,7 +8145,7 @@
       "original": "{ type: pluralType }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "hostLocale reads its options only for the keywords they take the place of (line 230), and the plural constructor reads no keyword: RELEVANT.plural on line 69 is empty. So { type } and {} give the same answer."
+      "reason": "hostFormattingTag hands its options only to hostLocale (line 300), which reads them only for the keywords they take the place of (host-locale.ts line 256), and the plural service takes the place of no keyword: RELEVANT.plural on host-locale.ts line 69 is empty. So { type } and {} give the same answer."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -8329,6 +8378,54 @@
       "replacement": "false",
       "category": "equivalent",
       "reason": "With the second test false, a unit with \"-per-\" twice reaches the two slices, and the second slice keeps the other \"-per-\", which no sanctioned identifier contains, so the answer is false, as before."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "StringLiteral",
+      "original": "'symbol'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "The currencyDisplay default (line 181) is returned only when the option is absent, and the call on line 177 discards it; a written value is compared with the list of values, never with the default."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "StringLiteral",
+      "original": "'best fit'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "The localeMatcher default (line 136) is returned only when the option is absent, and the call on line 132 discards it; a written value is compared with the list of values, never with the default."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "UnaryOperator",
+      "original": "-1",
+      "replacement": "+1",
+      "category": "equivalent",
+      "reason": "With +1, a unit with no \"-per-\" (i is -1) is no longer refused here and reaches the halves unit.slice(0, -1) and unit.slice(4), which are both sanctioned for no unit line 111 has not already accepted (checked over the 45 sanctioned units); and a unit whose \"-per-\" starts at index 1 is refused here, where its one-character first half would be refused anyway. So the answer is the same."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "LogicalOperator",
+      "original": "i === -1 || unit.indexOf('-per-', i + 1) !== -1",
+      "replacement": "i === -1 && unit.indexOf('-per-', i + 1) !== -1",
+      "category": "equivalent",
+      "reason": "With && the test never holds: when i is -1 there is no \"-per-\" for the second search to find. Every unit then reaches the halves. With no \"-per-\" they are unit.slice(0, -1) and unit.slice(4), and no unit that line 111 has not already accepted has both halves sanctioned (checked over the 45 sanctioned units); with a second \"-per-\", the second half holds \"-per-\", which no sanctioned unit does. So the answer is false either way."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "Regex",
+      "original": "/^[A-Z]{3}$/u",
+      "replacement": "/^[A-Z]{3}/u",
+      "category": "equivalent",
+      "reason": "Line 98 has already refused every length but three, and three characters that begin with three capitals are three capitals, so the end anchor matches nothing more."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "currency.length !== 3",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "The regex on line 99 is anchored at both ends and matches exactly three characters, so it refuses every other length on its own; asciiUppercase changes only a to z, one character for one, so the length it tests is the code's."
     }
   ]
 }

@@ -746,9 +746,9 @@ interface UnicodeOptions {
  * is the worst of the three available behaviours: an author who wrote `u:dir=rtl` got no diagnostic
  * and no isolation.
  *
- * Anything outside `u:dir` and `u:id` is refused rather than ignored. `u:locale` is a real option
- * in the spec that Thoth does not implement, and quietly accepting it would mean a message that
- * formats in the wrong locale with nothing to show for it. The toolkit rejects all of this at parse
+ * Anything outside `u:dir` and `u:id` is refused rather than ignored. `u:locale`, a draft option
+ * the specification has since dropped, is refused too: a message that still wrote it would format
+ * in the wrong locale with nothing to show for it. The toolkit rejects all of this at parse
  * time; this is the same rule applied to a compiled artifact that did not come through it.
  */
 function unicodeOptions(

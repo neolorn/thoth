@@ -194,7 +194,7 @@ export const MESSAGE_OPTION_RULES: Readonly<Record<string, MessageOptionRule>> =
      * `two` and `few` pass a completeness gate while shipping "2th" and "3th".
      *
      * `cardinal` is deliberately not here. It is what `Intl.PluralRules` calls this value and what
-     * `messageformat@4.0.0` declares in its types, but the specification spells it `plural`; taking
+     * `messageformat@4.1.0` declares in its types, but the specification spells it `plural`; taking
      * both would put two spellings of one thing into catalogs that are meant to be portable.
      */
     select: oneOf(['plural', 'ordinal', 'exact']),

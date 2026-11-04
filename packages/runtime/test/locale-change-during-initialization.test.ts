@@ -71,11 +71,14 @@ describe('a locale change asked for while the context is initializing', () => {
     const change = localization.changeLocale('ar-EG');
     release(catalogKey('shell', 'en-US'));
     await initializing;
-    await expect.poll(() => side.calls).toStrictEqual(['prepare en-US']);
+    // Read at once rather than polled: as the initialization settles, the change it held back has
+    // not touched the participant yet, and a poll's first read comes after the change has begun.
+    expect(side.calls).toStrictEqual(['prepare en-US']);
 
     // The change has begun, and has committed nothing yet: the region is told at the start of the
     // change that its work for the locale being left is no longer wanted.
     await expect.poll(() => side.contexts[0]?.signal.aborted).toBe(true);
+    expect(side.calls).toStrictEqual(['prepare en-US', 'discard en-US']);
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(side.contexts[0]?.signal.reason).toMatchObject({
       diagnostic: { code: 'superseded' },
