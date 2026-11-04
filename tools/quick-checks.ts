@@ -3,8 +3,9 @@
  *
  * They are the checks `CONTRIBUTING.md` lists to run before the verification suite: the formatter,
  * the linter, the typecheck, the anchors of the suite's injections, what a clean keeps
- * (`verify:clean:self-test`), the mutation reading tool (`verify:mutation-reading:self-test`), and
- * the unit suites of both packages. `--docs` adds the document and
+ * (`verify:clean:self-test`), the mutation reading tool (`verify:mutation-reading:self-test`), the
+ * join of a reading's parts (`verify:mutation-join:self-test`), and the unit suites of both
+ * packages. `--docs` adds the document and
  * generator checks that read the tree as it is and build nothing: the links, the normative map, the generated references, the coverage of the guides, and
  * the sterilization of the tree and its messages.
  *
@@ -89,6 +90,7 @@ const checks: (readonly [name: string, args: readonly string[]])[] = [
   ['verify:injection-anchors', []],
   ['verify:clean:self-test', []],
   ['verify:mutation-reading:self-test', []],
+  ['verify:mutation-join:self-test', []],
   [
     'test:runtime',
     [...excluded.flatMap((path) => ['--exclude', path]), ...workers],

@@ -44,6 +44,7 @@
     "verify:cap:self-test": "node ./tools/verify-cap-self-test.ts",
     "verify:clean:self-test": "node ./tools/verify-clean-self-test.ts",
     "verify:mutation-reading:self-test": "node ./tools/mutation-reading-self-test.ts",
+    "verify:mutation-join:self-test": "node ./tools/mutation-join-self-test.ts",
     "verify:browser-script-gate:self-test": "node ./tools/verify-browser-script-gate-self-test.ts",
     "verify:browser-teardown:self-test": "node ./tools/verify-browser-teardown-self-test.ts",
     "verify:normative-map:self-test": "node ./tools/verify-normative-map-self-test.ts",

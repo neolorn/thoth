@@ -12,12 +12,14 @@
  * region its node starts in, including a mutant whose node spans the cut, such as a function body
  * emptied whole. A line range would lose that mutant, since Stryker keeps a mutant from a range
  * only when the range holds all of it. Each file's regions are checked to cover it from its first
- * line to its last with no gap and no overlap, so every mutant is read once and only once.
+ * line to its last with no gap and no overlap, so every mutant is read once and only once. A part
+ * can also keep a `CallExpression` mutant that a whole reading filters out, and the join drops it.
  *
  * Where the cuts fall is an estimate and only decides how evenly the parts come out, never what
  * they read: `tools/mutation-shards.json` names them by line, and a cut moves to the first
  * statement that begins a line at or after its line, so an edit that moves code changes how long a
- * part takes and nothing else. `tools/divide-mutation-shards.ts` computes them from a reading.
+ * part takes and nothing else. `tools/divide-mutation-shards.ts` computes them from a reading, and
+ * `tools/mutation-join.ts` joins the parts' reports into the report of one reading.
  *
  * Usage:
  *   node tools/mutation-shards.ts check
@@ -85,8 +87,9 @@ export interface ReadDivision {
   readonly problems: string[];
 }
 
-const DISABLE = '/* Stryker disable all */ ';
-const RESTORE = '/* Stryker restore all */ ';
+/** The directives a part writes into a source, each followed by the space that ends it. */
+export const DISABLE = '/* Stryker disable all */ ';
+export const RESTORE = '/* Stryker restore all */ ';
 
 const fail: (message: string) => never = (message) => {
   process.stderr.write(`mutation-shards: ${message}\n`);
@@ -235,30 +238,44 @@ export async function partSources(
         `${file} carries a Stryker directive of its own, which would undo the division into parts.`,
       );
     }
-    const starts = regionStarts(
-      text,
-      regions.map(({ from }) => from),
-      file,
-    );
-    const insertions: { at: number; text: string }[] = [];
-    let enabled = true;
-    regions.forEach((region, index) => {
-      const owned = region.shard === shard;
-      if (owned !== enabled) {
-        insertions.push({
-          at: starts[index] as number,
-          text: owned ? RESTORE : DISABLE,
-        });
-        enabled = owned;
-      }
-    });
-    let marked = text;
-    for (const { at, text: directive } of insertions.reverse()) {
-      marked = `${marked.slice(0, at)}${directive}${marked.slice(at)}`;
-    }
-    result.push({ file, text: marked });
+    result.push({ file, text: markSource(text, regions, shard, file) });
   }
   return result;
+}
+
+/**
+ * A file's source as one part reads it: the directives written where the regions of other parts
+ * begin and where this part's begin again. `regions` are the file's, in order, each with the line
+ * it starts at and the part that reads it.
+ */
+export function markSource(
+  text: string,
+  regions: readonly { readonly from: number; readonly shard: number }[],
+  shard: number,
+  fileName: string,
+): string {
+  const starts = regionStarts(
+    text,
+    regions.map(({ from }) => from),
+    fileName,
+  );
+  const insertions: { at: number; text: string }[] = [];
+  let enabled = true;
+  regions.forEach((region, index) => {
+    const owned = region.shard === shard;
+    if (owned !== enabled) {
+      insertions.push({
+        at: starts[index] as number,
+        text: owned ? RESTORE : DISABLE,
+      });
+      enabled = owned;
+    }
+  });
+  let marked = text;
+  for (const { at, text: directive } of insertions.reverse()) {
+    marked = `${marked.slice(0, at)}${directive}${marked.slice(at)}`;
+  }
+  return marked;
 }
 
 async function main() {
