@@ -116,7 +116,7 @@ supported engine has the step:
 
 - ECMA-402 13th edition, section 16.1.2, SetNumberFormatDigitOptions, step 13: "If
   roundingIncrement is not 1, set mxfdDefault to mnfdDefault." V8 14.6, the engine of Node
-  26.10.0, leaves the step out and throws a `RangeError` for an option set that the edition accepts
+  26.13.0, leaves the step out and throws a `RangeError` for an option set that the edition accepts
   only because of it, such as a `roundingIncrement` with no fraction digits written. A release
   refuses such an option set where the message is compiled, as
   `04-message-authoring-and-catalogs.spec.md` section 6 states.
@@ -377,20 +377,20 @@ dependency, listed in `02-packages-and-platform.spec.md`.
 
 The toolkit package depends on `tslib` and eight packages, each bounded to one responsibility:
 
-- `@angular-devkit/architect` 0.2202.1 supplies the Angular CLI builder API the toolkit's builders
+- `@angular-devkit/architect` 0.2202.5 supplies the Angular CLI builder API the toolkit's builders
   are written against: `createBuilder`, the context a builder runs in, and target scheduling. It is
-  the version `@angular/build` 22.2.1 depends on. Only the builder modules and the `ng add` schematic
+  the version `@angular/build` 22.2.5 depends on. Only the builder modules and the `ng add` schematic
   import it, so neither the programmatic API nor the command line loads it.
-- `@angular-devkit/core` 22.2.1 supplies the schema registry, its transforms and the workspace
+- `@angular-devkit/core` 22.2.5 supplies the schema registry, its transforms and the workspace
   reader the builders run their Angular target through, so the target's options are validated as
   the Angular CLI validates them for that target's builder. It is the version
-  `@angular-devkit/architect` 0.2202.1 depends on. Only the builder modules import it.
-- `@angular-devkit/schematics` 22.2.1 supplies the Angular CLI schematic API the `ng add` schematic
+  `@angular-devkit/architect` 0.2202.5 depends on. Only the builder modules import it.
+- `@angular-devkit/schematics` 22.2.5 supplies the Angular CLI schematic API the `ng add` schematic
   is written against: the tree it edits and the rules it chains. It is the version `@angular/cli`
-  22.2.1 depends on. Only the schematic loads it.
-- `@schematics/angular` 22.2.1 supplies the published rules of `@schematics/angular/utility` the
+  22.2.5 depends on. Only the schematic loads it.
+- `@schematics/angular` 22.2.5 supplies the published rules of `@schematics/angular/utility` the
   `ng add` schematic uses to read and update `angular.json`, add a dependency, and add a root
-  provider. It is the version `@angular/cli` 22.2.1 depends on. Only the schematic loads it.
+  provider. It is the version `@angular/cli` 22.2.5 depends on. Only the schematic loads it.
 
 - `yaml` 2.9.1 parses YAML 1.2 through its documented document and node APIs. The toolkit applies
   its own restricted admission for profile, duplicate keys, tags, directives, aliases, anchors,
